@@ -30,10 +30,13 @@ _id = computed(() => this.tableId() || this.#generatedId);
 
 - `inject()` only. No constructor parameter DI.
 - Services live in **ECMAScript `#private` fields**: `#dialog = inject(MatDialog)`. Never mix with TypeScript `private` for injected services — one convention, enforced in review.
+- **Exception:** Angular query members (`contentChildren`, `viewChild`, …) cannot be ES-private (NG1053) — use TS `private readonly` there, with a comment naming the exception.
 - Scoped/session-like services acquired in initializers (`#upload = inject(Upload).session(...)`), released in `ngOnDestroy`.
 
 ## Components
 
+- **Templates and styles live in sibling files** (`templateUrl: './x.html'`, `styleUrl: './x.scss'`) — never inline. Scaffold with the CLI (`ng generate component`) so the files exist from the start; current CLI defaults, no file suffixes.
+- **The host element IS the container — no divitis.** Style `:host` instead of wrapping the template in a root `<div>`. Every wrapper element must earn its place (positioning context, ARIA role, drag host, conditional rendering); a wrapper that only carries a layout class belongs on `:host`.
 - `host: {}` metadata for host bindings — no `@HostBinding`/`@HostListener`.
 - State exposed to CSS via **data attributes**, not class soup: `'[attr.data-multi-select]': "..."`. Style against `[data-multi-select]`.
 - Children accessed via `viewChild()` signals; multi-view façades (table/tree) normalize their children behind a single computed:
@@ -104,6 +107,9 @@ cpVisibleClause = signal<any>(undefined);
 | `_name` | Internal-but-bindable (template needs it, consumers don't) |
 | `smart*` | Heuristic dispatch — tries strategies in priority order |
 
+- **No `Service`/`Directive`/`Component`/`Pipe` class suffixes** (modern Angular style guide). The name says what it does: `TreeController`, not `TreeControllerService`; `TreeNodeToggle`, not `TreeNodeToggleDirective`. File names match, without type suffixes (`tree-controller.ts`, not `tree-controller.service.ts`).
+- **Scaffold via `ng generate`**, never by hand — keeps file layout, tsconfig references, and naming aligned with current CLI defaults.
+
 ## Comments
 
 - Comment **why** and **what breaks**, never what the code visibly does.
@@ -112,6 +118,8 @@ cpVisibleClause = signal<any>(undefined);
 
 ## Review Checklist (the recurring ones)
 
+- [ ] Any inline `template:`/`styles:`? → sibling `.html`/`.scss` via `templateUrl`/`styleUrl`
+- [ ] Any root `<div>` wrapper doing what `:host` could do?
 - [ ] Any `computed()` with a side effect?
 - [ ] Any `linkedSignal` that's never written? → `computed`
 - [ ] Any `private x = inject(...)`? → `#x`

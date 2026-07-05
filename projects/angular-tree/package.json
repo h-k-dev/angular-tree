@@ -1,9 +1,23 @@
 {
   "name": "angular-tree",
   "version": "0.0.1",
+  "description": "High-performance headless Angular tree: virtualized (100k+ nodes), accessor-based, signals-only, zoneless. react-arborist internals with Angular Material DX.",
+  "keywords": [
+    "angular",
+    "tree",
+    "treeview",
+    "virtual-scroll",
+    "drag-and-drop",
+    "cdk",
+    "signals",
+    "headless"
+  ],
+  "license": "MIT",
   "peerDependencies": {
-    "@angular/common": "^21.2.0",
-    "@angular/core": "^21.2.0"
+    "@angular/cdk": "^21.2.0 || ^22.0.0",
+    "@angular/common": "^21.2.0 || ^22.0.0",
+    "@angular/core": "^21.2.0 || ^22.0.0",
+    "rxjs": "^7.8.0"
   },
   "dependencies": {
     "tslib": "^2.3.0"

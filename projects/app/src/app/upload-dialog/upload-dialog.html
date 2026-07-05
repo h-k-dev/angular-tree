@@ -1,0 +1,115 @@
+<h2 mat-dialog-title>Upload to…</h2>
+
+<mat-dialog-content>
+  <p class="upload-hint">
+    Double-click a folder, right-click a row (built-in menu), or use its ⋮ button (MatMenu).
+  </p>
+
+  <!-- Built-in context menu (treeContextMenu): right-click anywhere on any
+       row — folder or file — plus Shift+F10 and the more_vert button, all
+       through the tree's own trigger. We only project the items. -->
+  <angular-tree
+    #tree="angularTree"
+    class="upload-tree"
+    aria-label="Destination folders"
+    [dataSource]="roots"
+    [childrenAccessor]="children"
+    [expansionKey]="key"
+    [itemSize]="32"
+    [defaultExpandedKeys]="expandedKeys"
+    [typeaheadText]="nodeName"
+    [indentGuides]="true"
+  >
+    <ng-container *treeNodeDef="let node; when: isFolder; let isExpanded = isExpanded">
+      <button treeNodeToggle class="upload-toggle" [attr.aria-label]="'Toggle ' + node.name">
+        <mat-icon>{{ isExpanded ? 'expand_more' : 'chevron_right' }}</mat-icon>
+      </button>
+      <mat-icon class="upload-icon" [class.upload-icon--chosen]="isChosen(node)">
+        {{
+          isChosen(node) ? 'check_circle' : (node.icon ?? (isExpanded ? 'folder_open' : 'folder'))
+        }}
+      </mat-icon>
+      <span
+        class="upload-name"
+        [class.upload-name--chosen]="isChosen(node)"
+        (dblclick)="choose(node)"
+        >{{ node.name }}</span
+      >
+      <!-- Arbitrary action-button trigger: a plain MatMenu on the row's
+           ⋮ button — independent of the tree's built-in right-click menu,
+           proving the two coexist. matMenuTriggerData passes the node. -->
+      <button
+        class="upload-more"
+        [matMenuTriggerFor]="rowMenu"
+        [matMenuTriggerData]="{ node }"
+        [attr.aria-label]="'Options for ' + node.name"
+        (click)="$event.stopPropagation()"
+      >
+        <mat-icon>more_vert</mat-icon>
+      </button>
+    </ng-container>
+
+    <ng-template treeNodeDef let-node>
+      <span class="upload-toggle-spacer"></span>
+      <mat-icon class="upload-icon upload-icon--file">draft</mat-icon>
+      <span class="upload-name upload-name--file">{{ node.name }}</span>
+    </ng-template>
+
+    <!-- Items only — the tree's shell renders them in the overlay
+         container (stacking above the dialog, docs/CONTEXT-MENUS.md) -->
+    <ng-template treeContextMenu let-node>
+      @if (node.kind === 'folder') {
+        <button class="upload-menu-item" cdkMenuItem (cdkMenuItemTriggered)="choose(node)">
+          Upload here
+        </button>
+        <button
+          class="upload-menu-item"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="tree.expandDescendants(node)"
+        >
+          Expand subtree
+        </button>
+        <button
+          class="upload-menu-item"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="tree.collapse(node)"
+        >
+          Collapse
+        </button>
+      } @else {
+        @if (parentOf(node); as parent) {
+          <button class="upload-menu-item" cdkMenuItem (cdkMenuItemTriggered)="choose(parent)">
+            Upload to “{{ parent.name }}”
+          </button>
+        }
+      }
+    </ng-template>
+  </angular-tree>
+
+  <!-- MatMenu for the row's ⋮ button (arbitrary action-button trigger).
+       Renders in the CDK overlay container, above the dialog. -->
+  <mat-menu #rowMenu="matMenu">
+    <ng-template matMenuContent let-node="node">
+      <button mat-menu-item (click)="choose(node)">
+        <mat-icon>upload</mat-icon>
+        Upload here
+      </button>
+      <button mat-menu-item (click)="tree.expandDescendants(node)">
+        <mat-icon>unfold_more</mat-icon>
+        Expand subtree
+      </button>
+    </ng-template>
+  </mat-menu>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <span class="upload-destination">
+    @if (destination(); as folder) {
+      Destination: <strong>{{ folder.name }}</strong>
+    } @else {
+      No destination chosen
+    }
+  </span>
+  <button matButton mat-dialog-close>Cancel</button>
+  <button matButton="filled" [disabled]="!destination()" (click)="confirm()">Upload</button>
+</mat-dialog-actions>

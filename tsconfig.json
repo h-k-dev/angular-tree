@@ -4,7 +4,11 @@
   "compileOnSave": false,
   "compilerOptions": {
     "paths": {
-      "angular-tree": ["./dist/angular-tree"]
+      "angular-tree": ["./projects/angular-tree/src/public-api.ts", "./dist/angular-tree"],
+      "angular-tree/testing": [
+        "./projects/angular-tree/testing/public-api.ts",
+        "./dist/angular-tree/testing"
+      ]
     },
     "strict": true,
     "noImplicitOverride": true,
@@ -31,6 +35,12 @@
     },
     {
       "path": "./projects/angular-tree/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/app/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/app/tsconfig.spec.json"
     }
   ]
 }

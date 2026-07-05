@@ -1,64 +1,65 @@
-# AngularTree
+# angular-tree
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.0.
+High-performance, headless Angular tree component: react-arborist internals, Angular Material DX. Zoneless, signals-only, `@angular/cdk` as the only runtime dependency.
 
-## Code scaffolding
+- **Virtualized** — 100k+ nodes at 60fps (CDK virtual scroll, flat internal model, O(n) recompute)
+- **Headless** — the tree ships no UI it doesn't own: node content, checkboxes, editors, and menu items are your templates; the tree owns behavior, ARIA, and mechanics
+- **Accessor-based** — no forced node shape; describe your data with functions, never reshape it
+- **Complete interaction set** — multi-select (Ctrl/Shift/checkbox cascade), drag & drop with per-node guards, lazy loading, inline rename, type-ahead, search filtering, full APG keyboard map, RTL, built-in context-menu host
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Install
 
 ```bash
-ng generate --help
+npm install angular-tree
 ```
 
-## Building
+Peer dependencies: `@angular/core|common|cdk` ≥ 21.2, `rxjs` ≥ 7.8.
 
-To build the library, run:
+## Quick start
 
-```bash
-ng build angular-tree
+```html
+<angular-tree
+  #tree="angularTree"
+  [dataSource]="roots()"
+  [childrenAccessor]="getChildren"
+  [expansionKey]="getKey"
+  [itemSize]="32"
+  (activated)="open($event)"
+  (moved)="applyMove($event)"
+  (renamed)="applyRename($event)"
+>
+  <!-- folder template — `when` predicates are typed type guards -->
+  <ng-container *treeNodeDef="let node; when: isFolder; let isExpanded = isExpanded">
+    <button treeNodeToggle>{{ isExpanded ? '▾' : '▸' }}</button>
+    <span>{{ node.name }}</span>
+  </ng-container>
+
+  <!-- leaf fallback -->
+  <ng-template treeNodeDef let-node>{{ node.name }}</ng-template>
+</angular-tree>
 ```
 
-This command will compile your project, and the build artifacts will be placed in the `dist/` directory.
-
-### Publishing the Library
-
-Once the project is built, you can publish your library by following these steps:
-
-1. Navigate to the `dist` directory:
-
-   ```bash
-   cd dist/angular-tree
-   ```
-
-2. Run the `npm publish` command to publish your library to the npm registry:
-   ```bash
-   npm publish
-   ```
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
+```ts
+// Accessors describe your data — the tree never mutates it. Async children = lazy loading.
+getChildren = (node: DocNode) => node.children ?? fetchChildren(node.id);
+getKey = (node: DocNode) => node.id;
 ```
 
-## Running end-to-end tests
+All mutations are **intents**: the tree emits `moved` / `renamed` / `selectionChange` / `toggled`, you apply them to your data, the tree re-renders. State stays yours.
 
-For end-to-end (e2e) testing, run:
+## Testing
 
-```bash
-ng e2e
-```
+`angular-tree/testing` ships a CDK test harness (`TreeHarness`, `TreeNodeHarness`) including a real drag-gesture simulation (`dragTo`).
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+## Docs
 
-## Additional Resources
+- [Theming](https://github.com/h-k-dev/angular-tree/tree/main/docs/THEMING.md) — `--tree-*` tokens, Material system-token chain
+- [Context menus](https://github.com/h-k-dev/angular-tree/tree/main/docs/CONTEXT-MENUS.md) — built-in host, external menu systems
+- [Virtualization](https://github.com/h-k-dev/angular-tree/tree/main/docs/VIRTUALIZATION.md) — sizing, autosize escape hatch
+- [Accessibility](https://github.com/h-k-dev/angular-tree/tree/main/docs/ACCESSIBILITY.md) — what the tree guarantees, the one row-template rule, announcements
+- [Recipes](https://github.com/h-k-dev/angular-tree/tree/main/docs/RECIPES.md) — `mat-checkbox`, loading masks, dialog refocus
+- [Migration](https://github.com/h-k-dev/angular-tree/tree/main/docs/MIGRATION.md) — from PrimeNG `p-tree` / jsTree: accessor adapters, CRUD → intents, synthetic nodes, typed actions
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## License
+
+MIT

@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "app",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["/private/tmp/claude-501/-Users-hongknop-Documents-private-repo-angular-tree/bb2900bf-beaa-45cd-8c39-6d8995482c92/scratchpad/serve.js"],
+      "port": 4300,
+      "autoPort": false
+    }
+  ]
+}

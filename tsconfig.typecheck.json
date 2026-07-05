@@ -1,0 +1,13 @@
+/* Full-repo template type-check without bundling: `npm run typecheck`. */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "types": []
+  },
+  "files": [],
+  "include": ["projects/app/src/**/*.ts", "projects/angular-tree/src/**/*.ts"],
+  "exclude": ["**/*.spec.ts"],
+  "references": []
+}

@@ -1,0 +1,300 @@
+@use './ghost-button' as *;
+
+// Fit the app — and therefore the tree — exactly into the viewport: the tree
+// scrolls internally, the page itself never does.
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app-toolbar {
+  flex: 0 0 auto;
+  gap: 0.25rem;
+}
+
+.app-title {
+  font-weight: 500;
+}
+
+.app-active-node {
+  margin-inline-start: 1rem;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.app-last-intent {
+  margin-inline-start: 1rem;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-primary);
+}
+
+.app-spacer {
+  flex: 1 1 auto;
+}
+
+.app-search {
+  margin-inline-end: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--mat-sys-outline);
+  border-radius: 1rem;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+}
+
+// The tree owns the rest of the viewport — this is what makes it scroll.
+.app-main {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+angular-tree {
+  height: 100%;
+  // Single knob for the toggle column: button target, leaf spacer, and indent
+  // step all derive from it — guides land centered under the toggle.
+  --toggle-size: 32px;
+  --tree-indent: var(--toggle-size);
+}
+
+// ---------------------------------------------------------------------------
+// Node template styling (consumer-land by design — the tree ships no UI)
+// ---------------------------------------------------------------------------
+// 32px touch/state target fits the 32px row exactly — Material's icon button
+// minimum target is too big for it.
+.node-toggle {
+  @include ghost-icon-button(var(--toggle-size));
+  // The chevron already has 4px of air inside the 32px target — cancel the
+  // tree's 0.5rem row gap so the node icon sits flush against the toggle.
+  margin-inline-end: -0.5rem;
+}
+
+.node-toggle-spacer {
+  inline-size: calc(var(--toggle-size) / 2);
+  flex: 0 0 auto;
+}
+
+.node-icon {
+  flex: 0 0 auto;
+  font-size: 20px;
+  inline-size: 20px;
+  block-size: 20px;
+  color: var(--mat-sys-on-surface-variant);
+
+  &--folder {
+    color: var(--mat-sys-primary);
+  }
+
+  &--smart {
+    color: var(--mat-sys-tertiary);
+  }
+
+  // File-type colors (dimmed via color-mix so both themes survive them)
+  &--pdf {
+    color: color-mix(in srgb, #e5484d 80%, var(--mat-sys-on-surface));
+  }
+  &--docx {
+    color: color-mix(in srgb, #3e7bfa 80%, var(--mat-sys-on-surface));
+  }
+  &--xlsx {
+    color: color-mix(in srgb, #2f9e44 80%, var(--mat-sys-on-surface));
+  }
+  &--eml {
+    color: color-mix(in srgb, #f59f00 80%, var(--mat-sys-on-surface));
+  }
+  &--png {
+    color: color-mix(in srgb, #9c36b5 80%, var(--mat-sys-on-surface));
+  }
+}
+
+.node-name--area {
+  font-weight: 500;
+}
+
+.node-name--smart {
+  color: var(--mat-sys-tertiary);
+  font-weight: 500;
+}
+
+.node-star {
+  flex: 0 0 auto;
+  font-size: 16px;
+  inline-size: 16px;
+  block-size: 16px;
+  color: #f59f00;
+}
+
+// Status chips — pure template content, the tree knows nothing about them
+.node-chip {
+  flex: 0 0 auto;
+  padding: 0 0.5rem;
+  border-radius: 0.625rem;
+  font: var(--mat-sys-label-small);
+  line-height: 1.25rem;
+  text-transform: capitalize;
+
+  &--draft {
+    background: var(--mat-sys-surface-container-highest);
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  &--signed {
+    background: var(--mat-sys-primary-container);
+    color: var(--mat-sys-on-primary-container);
+  }
+
+  &--final {
+    background: var(--mat-sys-tertiary-container);
+    color: var(--mat-sys-on-tertiary-container);
+  }
+
+  &--smart {
+    background: var(--mat-sys-tertiary-container);
+    color: var(--mat-sys-on-tertiary-container);
+    text-transform: none;
+  }
+}
+
+// Folder child-count pill
+.node-count {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  margin-inline-end: 1rem;
+  min-inline-size: 1.5rem;
+  border-radius: 0.625rem;
+  background: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-small);
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+// Items projected into the tree's built-in menu shell (.tree-menu) — the
+// shell is the tree's, the item styling is ours.
+.doc-menu-item {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+  text-align: start;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--mat-sys-surface-container-highest);
+  }
+}
+
+// Icon-as-checkbox host: bare button, the icon inside carries the visuals.
+// Touch target + radius are tokenized (--tree-checkbox-*, see docs/THEMING.md);
+// the tree ships no checkbox UI, so the tokens are consumed here, in consumer land.
+.node-check {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--tree-checkbox-touch-target, 32px);
+  block-size: var(--tree-checkbox-touch-target, 32px);
+  padding: 0;
+  border: none;
+  border-radius: var(--tree-checkbox-radius, 100vw);
+  background: transparent;
+  cursor: pointer;
+  // The 32px touch target already carries ~6px of air around the 20px icon —
+  // cancel the row gap so the label sits flush against it.
+  margin-inline-end: -0.5rem;
+
+  // State layers follow mat-checkbox colors (size stays ours): on-surface
+  // at 8% hover / 12% pressed, shifting to primary once checked.
+  &:hover {
+    background: color-mix(in srgb, var(--mat-sys-on-surface) 8%, transparent);
+  }
+
+  &:active {
+    background: color-mix(in srgb, var(--mat-sys-on-surface) 12%, transparent);
+  }
+
+  &:has(.node-icon--selected):hover {
+    background: color-mix(in srgb, var(--mat-sys-primary) 8%, transparent);
+  }
+
+  &:has(.node-icon--selected):active {
+    background: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--tree-focus-ring, var(--mat-sys-primary, #6750a4));
+    outline-offset: -2px;
+  }
+}
+
+.node-icon--selected {
+  color: var(--mat-sys-primary);
+}
+
+.node-checkbox {
+  flex: 0 0 auto;
+  inline-size: 20px;
+  block-size: 20px;
+  accent-color: var(--mat-sys-primary);
+}
+
+.node-rename {
+  font: inherit;
+  padding: 0 0.25rem;
+  border: 1px solid var(--mat-sys-primary);
+  border-radius: 4px;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+}
+
+.node-icon--spin {
+  animation: node-spin 1s linear infinite;
+}
+
+// Projected empty / loading content (the tree owns the centered slot)
+.tree-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    font-size: 40px;
+    inline-size: 40px;
+    block-size: 40px;
+    opacity: 0.6;
+  }
+
+  p {
+    margin: 0;
+    font: var(--mat-sys-body-medium);
+  }
+}
+
+@keyframes node-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.node-retry {
+  margin-inline-start: auto;
+}
+
+.node-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-meta {
+  margin-inline-start: auto;
+  padding-inline-end: 1rem;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

@@ -1,0 +1,35 @@
+// Shadcn-style ghost icon button: transparent at rest, subtle state layer on
+// hover, inset focus ring. $size is the square touch/state target — pass a
+// CSS custom property (e.g. var(--toggle-size)) to keep it themable.
+@mixin ghost-icon-button($size: 32px) {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  inline-size: $size;
+  block-size: $size;
+  padding: 0;
+  border: none;
+  // Fully-rounded state layer, like mat-icon-button's circular ripple.
+  border-radius: 100vw;
+  background: transparent;
+  color: var(--mat-sys-on-surface-variant);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+
+  // State layers lean on mat-icon-button: on-surface-variant at 8% hover /
+  // 12% pressed, instead of shadcn's opaque accent fill.
+  &:hover {
+    background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 8%, transparent);
+    color: var(--mat-sys-on-surface);
+  }
+
+  &:active {
+    background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 12%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--tree-focus-ring, var(--mat-sys-primary, #6750a4));
+    outline-offset: -2px;
+  }
+}

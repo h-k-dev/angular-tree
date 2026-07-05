@@ -1,0 +1,95 @@
+@use '../ghost-button' as *;
+
+mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  inline-size: min(36rem, 85vw);
+}
+
+.upload-hint {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// The dialog gives the tree a fixed frame; the tree scrolls inside it.
+.upload-tree {
+  block-size: min(24rem, 55vh);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+  // Same knob as the main tree: toggle target = indent step = 32px rows.
+  --toggle-size: 32px;
+  --tree-indent: var(--toggle-size);
+}
+
+.upload-toggle {
+  @include ghost-icon-button(var(--toggle-size));
+  // The chevron's inner air is the spacing — cancel the tree's row gap.
+  margin-inline-end: -0.5rem;
+}
+
+.upload-toggle-spacer {
+  inline-size: calc(var(--toggle-size) / 2);
+  flex: 0 0 auto;
+}
+
+.upload-more {
+  @include ghost-icon-button(var(--toggle-size));
+  margin-inline-start: auto;
+  margin-inline-end: 0.25rem;
+}
+
+// Items projected into the tree's menu shell (rendered in the overlay)
+.upload-menu-item {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+  text-align: start;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--mat-sys-surface-container-highest);
+  }
+}
+
+.upload-icon {
+  flex: 0 0 auto;
+  font-size: 20px;
+  inline-size: 20px;
+  block-size: 20px;
+  color: var(--mat-sys-primary);
+
+  &--file {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  &--chosen {
+    color: var(--mat-sys-tertiary);
+  }
+}
+
+.upload-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &--file {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  &--chosen {
+    color: var(--mat-sys-tertiary);
+    font-weight: 500;
+  }
+}
+
+.upload-destination {
+  margin-inline-end: auto;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

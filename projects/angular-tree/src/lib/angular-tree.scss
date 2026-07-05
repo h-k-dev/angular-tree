@@ -1,0 +1,158 @@
+/*
+ * Token chain (ROADMAP Phase 5): --tree-* → --mat-sys-* → hardcoded hex.
+ * Chains live at POINT OF USE, never as :host declarations — a :host
+ * custom-property declaration would defeat consumer overrides set on any
+ * ancestor (element-level beats inherited). Full table: docs/THEMING.md.
+ */
+:host {
+  display: block;
+  position: relative; /* anchors the drop-indicator overlay */
+  height: 100%;
+  background: var(--tree-bg, var(--mat-sys-surface, #ffffff));
+  color: var(--tree-text, var(--mat-sys-on-surface, #1d1b20));
+  font: var(--tree-font, var(--mat-sys-body-medium, 400 0.875rem / 1.25rem Roboto, sans-serif));
+}
+
+.tree-drop-indicator {
+  position: absolute;
+  pointer-events: none;
+  /* Logical properties: indent + insets mirror correctly in RTL (ROADMAP) */
+  inset-inline-start: calc(var(--tree-level) * var(--tree-indent, 1.5rem));
+  inset-inline-end: 0.5rem;
+  background: var(--tree-drop-indicator, var(--mat-sys-primary, #6750a4));
+  border-radius: 1px;
+}
+
+.tree-drop-indicator--inside {
+  background: transparent;
+  border: 2px solid var(--tree-drop-indicator, var(--mat-sys-primary, #6750a4));
+  border-radius: 4px;
+}
+
+/* Empty / loading state slot — fills the host, content is the consumer's. */
+.tree-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+  color: var(--tree-text, var(--mat-sys-on-surface-variant, #49454f));
+  pointer-events: none; /* let clicks fall through to the empty viewport */
+}
+
+/* Consumer content (buttons, retry links) opts back into pointer events. */
+.tree-state > * {
+  pointer-events: auto;
+}
+
+/* Shell only — items and their styling are the consumer's (ROADMAP). */
+.tree-menu {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 10rem;
+  padding: 0.25rem;
+  border-radius: var(--tree-menu-radius, 8px);
+  background: var(--tree-menu-bg, var(--mat-sys-surface-container, #f3edf7));
+  color: var(--tree-text, var(--mat-sys-on-surface, #1d1b20));
+  box-shadow: var(--tree-menu-shadow, var(--mat-sys-level2, 0 2px 8px rgb(0 0 0 / 0.25)));
+}
+
+.tree-drag-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  background: var(--tree-bg, var(--mat-sys-surface, #ffffff));
+  color: var(--tree-text, var(--mat-sys-on-surface, #1d1b20));
+  font: var(--tree-font, var(--mat-sys-body-medium, 400 0.875rem / 1.25rem Roboto, sans-serif));
+  box-shadow: var(
+    --tree-drag-shadow,
+    var(--mat-sys-level3, 0 2px 8px rgb(0 0 0 / 0.3))
+  );
+}
+
+.tree-drag-preview-badge {
+  min-inline-size: 1.25rem;
+  padding: 0 0.25rem;
+  border-radius: 0.75rem;
+  background: var(--tree-drop-indicator, var(--mat-sys-primary, #6750a4));
+  color: var(--tree-badge-text, var(--mat-sys-on-primary, #ffffff));
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+}
+
+.tree-node.cdk-drag-placeholder {
+  opacity: 0.4;
+}
+
+/* Ctrl+X marked, awaiting keyboard drop — classic cut affordance */
+.tree-node[data-move-source] {
+  opacity: 0.55;
+}
+
+/* The consumer applies the move — a return animation to the old spot lies. */
+.tree-node.cdk-drag-animating {
+  transition: none;
+}
+
+.tree-viewport {
+  height: 100%;
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-sizing: border-box;
+  padding-inline-start: calc(var(--tree-level) * var(--tree-indent, 1.5rem));
+  cursor: default;
+  user-select: none;
+}
+
+/* One continuous div per expanded group — segments per row would reveal
+   themselves through seams (subpixel rounding) and per-row hover. Absolute
+   against the CDK content wrapper (positioned + transformed), so guides
+   scroll natively with the rows; top/height are bound inline. */
+.tree-guide {
+  position: absolute;
+  /* Hit target = the FULL indent column (Reddit-style generosity) — it can
+     afford to be this wide because it only ever overlays row *padding*:
+     any descendant row is indented at least one level deeper. Scales with
+     --tree-indent. Logical properties → RTL-correct. */
+  inset-inline-start: calc(var(--tree-level) * var(--tree-indent, 1.5rem));
+  inline-size: var(--tree-indent, 1.5rem);
+  cursor: pointer;
+}
+
+/* The visible 1px line, centered under the ancestor's toggle column —
+   derived from the indent so it stays centered at any --tree-indent. */
+.tree-guide::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: calc(var(--tree-indent, 1.5rem) / 2);
+  border-inline-start: 1px solid
+    var(--tree-guide, var(--mat-sys-outline-variant, #cac4d0));
+}
+
+.tree-guide:hover::before {
+  border-inline-start-width: 2px;
+  border-inline-start-color: var(--tree-focus-ring, var(--mat-sys-primary, #6750a4));
+}
+
+.tree-node:hover {
+  background: var(--tree-node-hover, var(--mat-sys-surface-container-highest, #e6e6e6));
+}
+
+.tree-node[data-selected] {
+  background: var(--tree-node-selected, var(--mat-sys-secondary-container, #e8def8));
+}
+
+.tree-node:focus-visible {
+  outline: 2px solid var(--tree-focus-ring, var(--mat-sys-primary, #6750a4));
+  outline-offset: -2px;
+}
