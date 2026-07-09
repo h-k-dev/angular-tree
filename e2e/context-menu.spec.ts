@@ -5,8 +5,9 @@ import { builtInMenu, focusedNodeId, rowByName, rows, waitForTree } from './help
 /**
  * Phase 8 matrix — built-in `treeContextMenu`: right-click + Shift+F10, at the
  * virtualized top/bottom edges, and the settled close-on-scroll behavior.
- * (`openContextMenu(node)` — the more_vert path — is covered by the unit
- * specs; the dialog spec exercises an external MatMenu trigger instead.)
+ * (`openContextMenu(node)` on a *rendered* row — the more_vert path — is
+ * covered by the unit specs; its scrolled-away-anchor case needs real layout
+ * and lives here; the dialog spec exercises an external MatMenu trigger.)
  */
 test.describe('built-in context menu', () => {
   test.beforeEach(async ({ page }) => {
@@ -65,6 +66,38 @@ test.describe('built-in context menu', () => {
     await expect.poll(() => focusedNodeId(page)).not.toBeNull();
     await page.keyboard.press('Shift+F10');
     await expect(builtInMenu(page)).toBeVisible();
+  });
+
+  test('openContextMenu(node) on a scrolled-away node anchors at its row, not (0,0)', async ({ page }) => {
+    // Drive the public API against the last visible node — outside the
+    // rendered range, so its row has no DOM until the tree scrolls it in.
+    // Regression: the anchor rect query missed and the menu opened at (0,0).
+    const targetKey = await page.evaluate(() => {
+      const ng = (window as unknown as { ng: { getComponent(el: Element): unknown } }).ng;
+      const tree = ng.getComponent(document.querySelector('angular-tree')!) as {
+        visibleRows(): readonly { key: string; node: unknown }[];
+        openContextMenu(node: unknown): void;
+      };
+      const all = tree.visibleRows();
+      const target = all[all.length - 1];
+      tree.openContextMenu(target.node);
+      return target.key;
+    });
+
+    const menu = builtInMenu(page);
+    await expect(menu).toBeVisible();
+
+    // The tree scrolled the target into the rendered range…
+    const row = page.locator(`[data-node-id="${targetKey}"]`);
+    await expect(row).toBeVisible();
+
+    // …and anchored the menu at the row (CDK may flip it above the anchor
+    // near the viewport edge), never in the page corner.
+    const rowBox = (await row.boundingBox())!;
+    const menuBox = (await menu.boundingBox())!;
+    expect(menuBox.y).toBeGreaterThan(50);
+    const anchorDistance = Math.abs(menuBox.y - (rowBox.y + rowBox.height));
+    expect(anchorDistance).toBeLessThan(menuBox.height + 2 * rowBox.height);
   });
 
   test('scrolling the viewport closes the menu (settled close-on-scroll)', async ({ page }) => {

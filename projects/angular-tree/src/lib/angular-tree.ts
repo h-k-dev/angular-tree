@@ -842,9 +842,8 @@ export class AngularTree<T> {
     switch (key) {
       case 'ArrowDown':
       case 'ArrowUp': {
-        const next = key === 'ArrowDown' ? index + 1 : index - 1;
-        this.#focusIndex(next);
-        const focused = rows[Math.max(0, Math.min(rows.length - 1, next))];
+        const focused = this.#focusIndex(key === 'ArrowDown' ? index + 1 : index - 1);
+        if (!focused) break;
         // APG: Shift+Arrow extends the selection to the newly focused node.
         if (event.shiftKey && this.multi()) this.#extendSelection(focused);
         else if (this.selectionMode() === 'follow') this.#followFocus(focused);
@@ -1135,10 +1134,13 @@ export class AngularTree<T> {
     }
   }
 
-  #focusIndex(index: number) {
+  /** Focuses the row at `index` (clamped) and returns it — callers must not re-clamp. */
+  #focusIndex(index: number): FlatRow<T> | null {
     const rows = this.visibleRows();
-    if (rows.length === 0) return;
-    this.#focusKey(rows[Math.max(0, Math.min(rows.length - 1, index))].key);
+    if (rows.length === 0) return null;
+    const row = rows[Math.max(0, Math.min(rows.length - 1, index))];
+    this.#focusKey(row.key);
+    return row;
   }
 
   /**
@@ -1214,12 +1216,17 @@ export class AngularTree<T> {
     );
   }
 
+  /** The row's rendered DOM element, or `null` outside the rendered range. */
+  #rowElement(key: string): HTMLElement | null {
+    return this.#host.querySelector<HTMLElement>(`[data-node-id="${escapeAttributeValue(key)}"]`);
+  }
+
   /** The focus target currently being chased across virtual re-renders. */
   #focusAttempt: string | null = null;
 
   #attemptFocus(key: string, retries: number) {
     if (this.#focusAttempt !== key) return; // superseded
-    const row = this.#host.querySelector<HTMLElement>(`[data-node-id="${escapeAttributeValue(key)}"]`);
+    const row = this.#rowElement(key);
     if (row) {
       row.focus();
       this.#focusAttempt = null;
@@ -1247,7 +1254,7 @@ export class AngularTree<T> {
     const model = this.selection();
     const selected = [...(model ? model.selected : this.#controller.selectedIds())];
     const ids = selected.length > 0 ? selected : [row.key];
-    const rect = this.#host.querySelector(`[data-node-id="${escapeAttributeValue(row.key)}"]`)?.getBoundingClientRect();
+    const rect = this.#rowElement(row.key)?.getBoundingClientRect();
     const at = position ?? { x: rect?.left ?? 0, y: rect?.bottom ?? 0 };
 
     this.contextRequested.emit({ ids, node: row.node, position: at });
@@ -1265,8 +1272,44 @@ export class AngularTree<T> {
 
   /** Keyboard / programmatic open — no pointer event to thread (and none to self-close). */
   #openContextMenuAt(row: FlatRow<T>, position?: { x: number; y: number }) {
+    // Without a caller position the anchor comes from the row's rect — but a
+    // row outside the rendered range has no DOM (activedescendant keyboard
+    // opens, openContextMenu() on a scrolled-away node), and a missed query
+    // would anchor the menu — and the contextRequested position — at (0,0).
+    // Same race as #focusKey: scroll it into the window, then retry
+    // frame-aligned until its DOM exists.
+    if (position == null && this.#rowElement(row.key) == null) {
+      const index = this.visibleRows().findIndex((candidate) => candidate.key === row.key);
+      if (index < 0) return;
+      this.viewport().scrollToIndex(index);
+      this.#menuAttempt = row.key;
+      afterNextRender(() => this.#attemptOpenMenu(row.key, 16), { injector: this.#injector });
+      return;
+    }
     const at = this.#prepareContext(row, position);
     if (at != null) this.#openMenu(null, at);
+  }
+
+  /** The menu-anchor target being chased across virtual re-renders. */
+  #menuAttempt: string | null = null;
+
+  #attemptOpenMenu(key: string, retries: number) {
+    if (this.#menuAttempt !== key) return; // superseded
+    if (this.#rowElement(key)) {
+      this.#menuAttempt = null;
+      // Re-resolve by key: the FlatRow from the initiating call may be stale
+      // if the data changed while the scroll materialized the row.
+      const row = this.visibleRows().find((candidate) => candidate.key === key);
+      if (!row) return;
+      const at = this.#prepareContext(row);
+      if (at != null) this.#openMenu(null, at);
+      return;
+    }
+    if (retries === 0) {
+      this.#menuAttempt = null; // row left the visible set (collapse/filter) — give up quietly
+      return;
+    }
+    requestAnimationFrame(() => this.#attemptOpenMenu(key, retries - 1));
   }
 
   /**
@@ -1286,8 +1329,14 @@ export class AngularTree<T> {
       _open(event: MouseEvent | null, coordinates: { x: number; y: number }): void;
     };
     this.#menuTrigger.disabled = false;
-    trigger._open(userEvent, at);
-    this.#menuTrigger.disabled = true; // re-arm the gate; never closes an open menu
+    try {
+      trigger._open(userEvent, at);
+    } finally {
+      // finally: a throw out of the CDK-internal _open (a version bump away)
+      // must not leave the trigger armed — its own contextmenu listener would
+      // then open stale menus on empty-space clicks. Never closes an open menu.
+      this.#menuTrigger.disabled = true;
+    }
 
     // CDK's context trigger leaves focus on the row — in a real browser the
     // menu then ignores Escape and arrow keys until clicked (Phase 8 matrix
