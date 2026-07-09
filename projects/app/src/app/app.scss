@@ -137,7 +137,7 @@
   display: none !important;
 }
 
-.demo-card--tokens {
+.demo-card--doc {
   padding: 1rem 1.25rem 1.25rem;
 }
 
@@ -186,5 +186,11 @@
     font-size: 0.75rem;
     white-space: nowrap;
   }
+}
+
+// Event payload signatures are long — let them wrap instead of forcing the
+// whole table into horizontal scroll.
+.token-table--events td:nth-child(2) code {
+  white-space: normal;
 }
 

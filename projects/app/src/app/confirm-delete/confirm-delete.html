@@ -1,0 +1,10 @@
+<h2 mat-dialog-title>Delete {{ data.count === 1 ? 'this item' : data.count + ' items' }}?</h2>
+
+<mat-dialog-content class="confirm-delete-body">
+  The intent has not been applied yet &mdash; cancel and the tree stays exactly as it is.
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button matButton [mat-dialog-close]="false">Cancel</button>
+  <button matButton="filled" cdkFocusInitial [mat-dialog-close]="true">Delete</button>
+</mat-dialog-actions>

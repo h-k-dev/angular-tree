@@ -80,7 +80,7 @@
   </section>
 
   <!-- Card 2: every CSS custom property that themes the tree (docs/THEMING.md) -->
-  <section class="demo-card demo-card--tokens" aria-label="Theming tokens">
+  <section class="demo-card demo-card--doc" aria-label="Theming tokens">
     <h2 class="demo-card-title">Theming tokens</h2>
     <p class="demo-card-hint">
       Every visual aspect resolves through a three-step chain, at point of use:
@@ -125,5 +125,40 @@
       pins it at 32px inside 40px rows; keep it &le; the row height &mdash; a control taller than
       its row clips and misaligns. Full recipes: docs/THEMING.md.
     </p>
+  </section>
+
+  <!-- Card 3: every intent the tree emits (the controlled contract) -->
+  <section class="demo-card demo-card--doc" aria-label="Events">
+    <h2 class="demo-card-title">Events</h2>
+    <p class="demo-card-hint">
+      The tree never mutates your data. Every mutation is an <em>intent</em>: the tree emits, you
+      apply it to your own state, the tree re-renders &mdash; state stays yours. Applying is
+      <em>your</em> call and <em>your</em> timing: await a confirmation dialog and apply on
+      confirm, or decline and simply don't &mdash; nothing to roll back (docs/RECIPES.md). All
+      seven fire live in this playground: watch the toolbar's intent readout while you click,
+      drag, rename, or right-click.
+    </p>
+    <div class="token-table-scroll">
+      <table class="token-table token-table--events">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Payload</th>
+            <th>Fires on</th>
+            <th>Your job</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (event of treeEvents; track event.name) {
+            <tr>
+              <td><code>{{ event.name }}</code></td>
+              <td><code>{{ event.payload }}</code></td>
+              <td>{{ event.fires }}</td>
+              <td>{{ event.job }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   </section>
 </main>

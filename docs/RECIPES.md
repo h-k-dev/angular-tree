@@ -3,6 +3,62 @@
 Consumer-side patterns the headless design expects you to own. Each is a few
 lines of template — deliberately not library API (ships-no-UI rule).
 
+## Double-click
+
+The tree never claims double-click for itself — that's a design guarantee (it's
+why rename ships no pointer gesture). Two ways to use it, chosen by `clickAction`:
+
+**Default (`clickAction="activate"`)** — single click emits `(activated)`;
+double-click is entirely yours, on any element of your node template:
+
+```html
+<span class="node-name" (dblclick)="openFile(node)">{{ node.name }}</span>
+```
+
+Caveat: a double-click is also two single clicks, so `(activated)` fires twice
+before your `(dblclick)` handler runs. Keep the activate handler cheap (set a
+signal, highlight a row) or use the second mode.
+
+**File-manager mode (`clickAction="select"`)** — plain click replaces the
+selection and the *tree* emits `(activated)` on double-click. No `(dblclick)`
+wiring needed; the two gestures arrive pre-separated:
+
+```html
+<angular-tree clickAction="select" (activated)="open($event)" …>
+```
+
+## Confirm before applying an intent
+
+Intents are *proposals*, not notifications of applied changes — the tree never
+mutates your data, so "insert a confirmation dialog" is just an `await` in your
+handler. Decline = don't apply = nothing happened; there is no rollback API
+because there is nothing to roll back.
+
+```ts
+// Delete isn't even a tree event (deletion is an app concept) — your menu
+// item is already your own callback:
+async menuDelete(ids: readonly string[]) {
+  const confirmed = await firstValueFrom(
+    this.#dialog.open(ConfirmDelete, { data: { count: ids.length } }).afterClosed(),
+  );
+  if (confirmed) this.roots.update((roots) => applyDelete(roots, ids));
+}
+
+// Tree-emitted intents (moved, renamed) work the same — the event fires after
+// the gesture, before any mutation. Park the payload, confirm, then apply:
+async onMove(event: MoveEvent<DocNode>) {
+  const confirmed = await firstValueFrom(this.#dialog.open(ConfirmMove).afterClosed());
+  if (confirmed)
+    this.roots.update((r) => applyMove(r, event.dragIds, event.parentId, event.index));
+}
+```
+
+If a confirmed delete removes the focused row, focus retention moves focus to
+the nearest visible survivor — no consumer bookkeeping.
+
+Live in the demo: context menu → Delete opens `ConfirmDelete` (lazy-imported
+MatDialog); see `tree-example.ts` in the playground's TS tab.
+
 ## `mat-checkbox` as the row checkbox
 
 `treeNodeCheckbox` writes native `checked`/`indeterminate` element properties —

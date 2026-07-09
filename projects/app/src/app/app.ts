@@ -141,6 +141,21 @@ export class App {
       );
   }
 
+  /**
+   * Every intent the tree emits (the controlled contract: tree emits, the
+   * consumer applies, the tree re-renders). Each fires live in this demo —
+   * watch the toolbar's `lastIntent` while interacting.
+   */
+  readonly treeEvents = [
+    { name: '(activated)', payload: 'T — your node', fires: 'Plain row click (default) · double-click under clickAction="select" · Enter', job: 'Open / navigate. Never mutates selection (Gmail semantics)' },
+    { name: '(moved)', payload: 'MoveEvent<T> { dragIds, dragNodes, parentId (null = root), index, dropEffect }', fires: 'Drop completed — pointer drag or keyboard Ctrl/Cmd+X/C → V', job: 'Apply the move/copy to your data; index counts children with the dragged nodes still present' },
+    { name: '(renamed)', payload: 'RenameEvent<T> { id, node, name }', fires: 'Inline edit committed (treeNodeEditInput Enter/blur)', job: 'Write the new name into your data' },
+    { name: '(selectionChange)', payload: 'SelectEvent<T> { ids, nodes }', fires: 'Any selection interaction: click modifiers, Space, Ctrl/Cmd+A, checkbox cascade, Escape / outside-click clear', job: 'Sync app state — your SelectionModel already holds the keys' },
+    { name: '(toggled)', payload: 'ToggleEvent<T> { id, node, expanded }', fires: 'Node expanded or collapsed', job: 'Optional: persist expansion (pair with expandedKeys() / defaultExpandedKeys)' },
+    { name: '(childrenLoaded)', payload: "LoadChildrenEvent<T> { id, node, status: 'loaded' | 'error', error? }", fires: 'Async childrenAccessor resolved or failed', job: 'Surface errors — a retry button can call tree.retryChildren(node)' },
+    { name: '(contextRequested)', payload: 'ContextRequestedEvent<T> { ids, node, position }', fires: 'Right-click · Shift+F10 · ContextMenu key (after selection reconciliation)', job: 'Host an external menu (MatMenu, …) — not needed with the built-in treeContextMenu' },
+  ];
+
   /** Mirrors docs/THEMING.md § Tokens — the theming card renders it verbatim. */
   readonly themingTokens = [
     { name: '--tree-row-height', system: null, fallback: '32px (this demo: 40px)', alters: 'Read-only — the [itemSize] input republished on the host; root of the sizing chain' },

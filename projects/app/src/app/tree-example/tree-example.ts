@@ -1,8 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, input, linkedSignal, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
 import { CdkMenuItem } from '@angular/cdk/menu';
 import { SelectionModel } from '@angular/cdk/collections';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { firstValueFrom } from 'rxjs';
 
 import {
   AngularTree,
@@ -61,6 +63,8 @@ import {
   changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class TreeExample {
+  readonly #dialog = inject(MatDialog);
+
   /** `xl` ≈ 110k nodes — virtualization smoke run (ROADMAP Phase 2). */
   readonly scale = input<ExampleScale>('standard');
   /** Matching child keeps its ancestor chain visible. */
@@ -167,7 +171,18 @@ export class TreeExample {
     this.lastIntent.set(`starred toggled: ${node.id}`);
   }
 
-  menuDelete(ids: readonly string[]) {
+  /**
+   * Confirm-before-apply (docs/RECIPES.md): the intent is a PROPOSAL — nothing
+   * is applied until we write to `roots`, so a declined dialog means nothing
+   * happened and there is nothing to roll back.
+   */
+  async menuDelete(ids: readonly string[]) {
+    const { ConfirmDelete } = await import('../confirm-delete/confirm-delete');
+    const confirmed = await firstValueFrom(
+      this.#dialog.open(ConfirmDelete, { data: { count: ids.length } }).afterClosed(),
+    );
+    if (!confirmed) return;
+
     this.roots.update((roots) => applyDelete(roots, ids));
     this.lastIntent.set(`deleted ${ids.length} node(s)`);
   }
