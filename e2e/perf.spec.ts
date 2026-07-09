@@ -25,7 +25,7 @@ test.describe('100k-node perf', () => {
     const scrollHeight = await page
       .locator('.tree-viewport')
       .evaluate((viewport) => viewport.scrollHeight);
-    expect(scrollHeight).toBeGreaterThan(1_000_000); // ~110k × 32px — virtualization is real
+    expect(scrollHeight).toBeGreaterThan(1_000_000); // ~110k × 40px — virtualization is real
 
     const scrollStart = Date.now();
     for (const fraction of [0.25, 0.5, 0.75, 1]) {

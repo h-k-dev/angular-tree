@@ -42,3 +42,22 @@ body {
   height: 100%;
 }
 /* You can add global styles to this file, and also import other style files */
+
+// Shiki code panes (demo "HTML/TS/SCSS" tabs). Global on purpose: the panes
+// arrive via [innerHTML], so they carry no _ngcontent attribute and component-
+// scoped styles cannot reach them. Dual-theme output: light colors are inline,
+// dark colors ride the --shiki-dark variables under the app's .dark-mode class.
+.demo-code pre.shiki {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  min-inline-size: fit-content;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.dark-mode .demo-code pre.shiki,
+.dark-mode .demo-code pre.shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+}

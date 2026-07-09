@@ -301,5 +301,10 @@ export function generateExampleTree(scale: ExampleScale = 'standard'): {
     children: files('remote', 12),
   });
 
+  // Root-level files: leaves are legal at any depth including the root — no
+  // enclosing folder required (`MoveEvent.parentId === null` drops land here).
+  // The demo keeps two around so the case stays visible.
+  roots.push(...files('root', 2));
+
   return { roots, folderIds, nodeCount };
 }

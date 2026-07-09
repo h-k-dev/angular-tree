@@ -8,6 +8,7 @@
   display: block;
   position: relative; /* anchors the drop-indicator overlay */
   height: 100%;
+
   background: var(--tree-bg, var(--mat-sys-surface, #ffffff));
   color: var(--tree-text, var(--mat-sys-on-surface, #1d1b20));
   font: var(--tree-font, var(--mat-sys-body-medium, 400 0.875rem / 1.25rem Roboto, sans-serif));

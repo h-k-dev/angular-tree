@@ -1,10 +1,10 @@
 <mat-toolbar class="app-toolbar">
   <span class="app-title">angular-tree</span>
 
-  @if (activeNode(); as node) {
+  @if (example()?.activeNode(); as node) {
     <span class="app-active-node">{{ node.name }}</span>
   }
-  @if (lastIntent(); as intent) {
+  @if (example()?.lastIntent(); as intent) {
     <span class="app-last-intent">{{ intent }}</span>
   }
 
@@ -20,7 +20,7 @@
 
   <button matButton (click)="toggleScale()" [attr.aria-pressed]="scale() === 'xl'">
     <mat-icon>speed</mat-icon>
-    {{ scale() === 'xl' ? (nodeCount() | number) + ' nodes' : '100k mode' }}
+    {{ scale() === 'xl' ? (example()?.nodeCount() | number) + ' nodes' : '100k mode' }}
   </button>
 
   <button matButton (click)="simulateLoad()" [disabled]="rootLoading()">
@@ -43,178 +43,87 @@
 </mat-toolbar>
 
 <main class="app-main">
-  <angular-tree
-    #tree="angularTree"
-    aria-label="Documents"
-    [dataSource]="roots()"
-    [childrenAccessor]="getChildren"
-    [expansionKey]="getKey"
-    [defaultExpandedKeys]="defaultExpandedKeys()"
-    [itemSize]="32"
-    [selection]="selectionModel"
-    [multi]="true"
-    [checkboxSelection]="true"
-    [searchTerm]="search()"
-    [searchMatch]="matchesNode"
-    [typeaheadText]="nodeName"
-    [indentGuides]="true"
-    [loading]="rootLoading()"
-    [disableDrop]="dropForbidden"
-    [disableDrag]="dragForbidden"
-    [disableEdit]="editForbidden"
-    [isSelectable]="selectable"
-    (activated)="activate($event)"
-    (moved)="onMove($event)"
-    (renamed)="onRename($event)"
-    (selectionChange)="onSelection($event)"
-    (toggled)="onToggle($event)"
-    (contextRequested)="onContextRequested($event)"
-  >
-    <!-- Smart-folder def — third union member, third def: saved search with
-         accent styling; not selectable, not draggable (predicates) -->
-    <ng-container *treeNodeDef="let node; when: isSmart; let isExpanded = isExpanded">
-      <button treeNodeToggle class="node-toggle" [attr.aria-label]="'Toggle ' + node.name">
-        <mat-icon>{{ isExpanded ? 'expand_more' : 'chevron_right' }}</mat-icon>
-      </button>
-      <mat-icon class="node-icon node-icon--smart">{{ node.icon }}</mat-icon>
-      <span class="node-name node-name--smart">{{ node.name }}</span>
-      <span class="node-chip node-chip--smart">saved search</span>
-      <span class="node-meta">{{ node.children.length }}</span>
-    </ng-container>
-
-    <!-- Folder def — canonical structural syntax; `when` type-guard narrows node to FolderNode -->
-    <ng-container
-      *treeNodeDef="
-        let node;
-        when: isFolder;
-        let level = level;
-        let isExpanded = isExpanded;
-        let isLoading = isLoading;
-        let hasError = hasError;
-        let checkState = checkState
-      "
-    >
-      <button treeNodeToggle class="node-toggle" [attr.aria-label]="'Toggle ' + node.name">
-        <mat-icon>{{ isExpanded ? 'expand_more' : 'chevron_right' }}</mat-icon>
-      </button>
-      <!-- Icon-as-checkbox: the folder icon IS the checkbox — icon while
-           unchecked, checkbox visual once checked/indeterminate. Custom icons
-           per folder type (areas themed, clients 'domain', plain otherwise). -->
-      <button treeNodeCheckbox class="node-check" [attr.aria-label]="'Select ' + node.name">
-        @switch (checkState) {
-          @case ('checked') {
-            <mat-icon class="node-icon node-icon--selected">check_box</mat-icon>
-          }
-          @case ('indeterminate') {
-            <mat-icon class="node-icon node-icon--selected">indeterminate_check_box</mat-icon>
-          }
-          @default {
-            <mat-icon class="node-icon node-icon--folder">{{
-              node.icon ?? (isExpanded ? 'folder_open' : 'folder')
-            }}</mat-icon>
-          }
+  <!-- Card 1: the living example — contained so the viewport frames it and
+       the theming card is discoverable right below. -->
+  <section class="demo-card demo-card--tree" aria-label="Tree example">
+    <!-- View switcher (PrimeNG-style): the code tabs render the example
+         component's REAL source files, fetched as assets and highlighted with
+         Shiki (angular.dev's highlighter) — zero drift. -->
+    <header class="demo-card-bar">
+      <nav class="demo-tabs" aria-label="Example view">
+        @for (tab of viewTabs; track tab.id) {
+          <button
+            class="demo-tab"
+            [attr.aria-selected]="view() === tab.id"
+            (click)="showView(tab.id)"
+          >
+            {{ tab.label }}
+          </button>
         }
-      </button>
-      <span class="node-name" [class.node-name--area]="level === 0">{{ node.name }}</span>
-      @if (isLoading) {
-        <mat-icon class="node-icon node-icon--spin">progress_activity</mat-icon>
-      } @else if (hasError) {
-        <button matButton class="node-retry" (click)="tree.retryChildren(node)">
-          <mat-icon>error</mat-icon>
-          Retry
-        </button>
+      </nav>
+    </header>
+
+    <!-- Kept alive while a code tab is open — expansion/selection survive. -->
+    <app-tree-example
+      [class.demo-hidden]="view() !== 'preview'"
+      [scale]="scale()"
+      [searchTerm]="search()"
+      [loading]="rootLoading()"
+    />
+    @if (view() !== 'preview') {
+      @if (exampleSource()[view()]; as code) {
+        <div class="demo-code" [innerHTML]="code"></div>
       } @else {
-        <span class="node-count">{{ node.children.length }}</span>
+        <div class="demo-code demo-code--loading">Loading…</div>
       }
-    </ng-container>
+    }
+  </section>
 
-    <!-- File fallback — explicit ng-template syntax (also supported; structural desugars to it) -->
-    <ng-template treeNodeDef let-node let-isEditing="isEditing" let-checkState="checkState">
-      <span class="node-toggle-spacer"></span>
-      <!-- Same icon-as-checkbox pattern; selection via the icon (Gmail semantics).
-           Unchecked shows the per-extension type icon. -->
-      <button treeNodeCheckbox class="node-check" [attr.aria-label]="'Select ' + node.name">
-        @if (checkState === 'checked') {
-          <mat-icon class="node-icon node-icon--selected">check_box</mat-icon>
-        } @else {
-          <mat-icon class="node-icon" [class]="'node-icon--' + node.ext">{{
-            fileIcon(node.ext)
-          }}</mat-icon>
-        }
-      </button>
-      @if (isEditing) {
-        <input treeNodeEditInput class="node-rename" [value]="node.name" />
-      } @else {
-        <!-- Rename ships no gesture — the context menu's Rename item wires
-             tree.edit(node). Double-click stays the consumer's own action. -->
-        <span class="node-name" (dblclick)="openFile(node)">
-          {{ node.name }}
-        </span>
-        @if (node.starred) {
-          <mat-icon class="node-star" aria-label="Starred">star</mat-icon>
-        }
-        @if (node.status; as status) {
-          <span class="node-chip" [class]="'node-chip--' + status">{{ status }}</span>
-        }
-      }
-      <span class="node-meta">{{ formatSize(node.size) }}</span>
-    </ng-template>
-
-    <!-- Built-in context menu (treeContextMenu): the tree owns trigger,
-         positioning, keyboard access and close-on-scroll — these are only the
-         ITEMS, branching on our own node type. `ids` is the reconciled
-         selection the menu should act on. -->
-    <ng-template treeContextMenu let-node let-ids="ids">
-      @switch (node.kind) {
-        @case ('folder') {
-          <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.expandDescendants(node)">
-            Expand subtree
-          </button>
-          <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.collapse(node)">
-            Collapse
-          </button>
-          <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="menuDelete(ids)">
-            Delete{{ ids.length > 1 ? ' (' + ids.length + ')' : '' }}
-          </button>
-        }
-        @case ('smart') {
-          <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.expandDescendants(node)">
-            Expand subtree
-          </button>
-          <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.collapse(node)">
-            Collapse
-          </button>
-        }
-        @default {
-          <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.edit(node)">
-            Rename
-          </button>
-          <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="menuToggleStar(node)">
-            {{ node.starred ? 'Unstar' : 'Star' }}
-          </button>
-          <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="menuDelete(ids)">
-            Delete{{ ids.length > 1 ? ' (' + ids.length + ')' : '' }}
-          </button>
-        }
-      }
-    </ng-template>
-
-    <!-- Empty state: the template reads our own search() signal directly (it
-         lives in this component), so it differentiates "no results" from
-         "nothing here" with no tree-provided context. -->
-    <ng-template treeEmptyDef>
-      <div class="tree-empty">
-        <mat-icon>{{ search() ? 'search_off' : 'folder_off' }}</mat-icon>
-        <p>{{ search() ? 'No matches for “' + search() + '”' : 'No documents yet.' }}</p>
-      </div>
-    </ng-template>
-
-    <!-- Root-loading state (driven by the toolbar's "Simulate load" button). -->
-    <ng-template treeLoadingDef>
-      <div class="tree-empty">
-        <mat-icon class="node-icon--spin">progress_activity</mat-icon>
-        <p>Loading documents…</p>
-      </div>
-    </ng-template>
-  </angular-tree>
+  <!-- Card 2: every CSS custom property that themes the tree (docs/THEMING.md) -->
+  <section class="demo-card demo-card--tokens" aria-label="Theming tokens">
+    <h2 class="demo-card-title">Theming tokens</h2>
+    <p class="demo-card-hint">
+      Every visual aspect resolves through a three-step chain, at point of use:
+      <code>--tree-*</code> &rarr; <code>--mat-sys-*</code> &rarr; hardcoded fallback. Set any
+      token on <code>:root</code>, a layout container, or the element itself &mdash; with a
+      Material M3 theme present (like this demo), dark mode is automatic.
+    </p>
+    <div class="token-table-scroll">
+      <table class="token-table">
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>M3 system fallback</th>
+            <th>Final fallback</th>
+            <th>Alters</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (token of themingTokens; track token.name) {
+            <tr>
+              <td><code>{{ token.name }}</code></td>
+              <td>
+                @if (token.system) {
+                  <code>{{ token.system }}</code>
+                } @else {
+                  &mdash;
+                }
+              </td>
+              <td><code>{{ token.fallback }}</code></td>
+              <td>{{ token.alters }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="demo-card-hint">
+      Read-only variables the tree <em>publishes</em>: <code>--tree-level</code> (per row) and
+      <code>--tree-row-height</code> (the <code>[itemSize]</code> input). Sizing chain in this
+      demo: <code>--tree-toggle-size</code> is the master control size &mdash; toggle and checkbox
+      targets, the thread-line column, and the leaf spacer
+      (<code>&times; --tree-toggle-spacing-factor</code>, 0.25 here) all derive from it. This demo
+      pins it at 32px inside 40px rows; keep it &le; the row height &mdash; a control taller than
+      its row clips and misaligns. Full recipes: docs/THEMING.md.
+    </p>
+  </section>
 </main>

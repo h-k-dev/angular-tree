@@ -4,6 +4,8 @@ How `angular-tree` renders 100k+ nodes without breaking a sweat, what `itemSize`
 
 ## The model
 
+**Virtualization is always on — there is no opt-out.** It isn't a feature flag layered over a plain renderer; it *is* the renderer: focus retention, guide overlays, drop-zone math, and the ARIA position attributes are all built on the flat model + fixed-row geometry. A hypothetical non-virtualized mode would be a second rendering path to keep correct forever, for the sole benefit of trees small enough that virtualization costs nothing anyway.
+
 The tree never renders your nested data directly. `TreeController` flattens it into a single ordered array (`visibleNodes`), skipping children of collapsed nodes, and a `<cdk-virtual-scroll-viewport>` renders only the rows that intersect the viewport (plus a small buffer). Indentation is a CSS variable (`--tree-level`) on each row — there is no nested DOM, so depth costs nothing.
 
 Two consequences worth internalizing:
@@ -20,6 +22,17 @@ Two consequences worth internalizing:
 `itemSize` is the fixed row height in pixels and drives `FixedSizeVirtualScrollStrategy`. Fixed height is what makes the fast path fast: scroll offset → row index is a division, `aria-setsize` positions and scroll-to-node offsets are exact, and no measurement pass ever runs.
 
 Design your node templates to a fixed height. Truncate long names (`text-overflow: ellipsis`) instead of wrapping. If you need visual breathing room, adjust `itemSize` — not per-row padding.
+
+The tree republishes the value as a **read-only CSS variable `--tree-row-height`** on its host, so row-content sizing derives from the same source instead of repeating the number in CSS:
+
+```css
+angular-tree {
+  --tree-toggle-size: var(--tree-row-height, 32px); /* toggle target = row height (its ceiling) */
+  --tree-indent: var(--tree-toggle-size); /* indent step = toggle column */
+}
+```
+
+Change `[itemSize]` and the scroll strategy, toggle targets, spacers, and indent geometry all follow — one knob. (Set row height via the input, never by styling `.tree-node` — the scroll strategy must know the number.)
 
 ## Dynamic heights — the escape hatch
 

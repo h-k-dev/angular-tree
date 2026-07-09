@@ -18,24 +18,26 @@ mat-dialog-content {
   block-size: min(24rem, 55vh);
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 8px;
-  // Same knob as the main tree: toggle target = indent step = 32px rows.
-  --toggle-size: 32px;
-  --tree-indent: var(--toggle-size);
+  // Same knob as the main tree: toggle target = indent step = row height,
+  // sourced from the tree's republished [itemSize].
+  --tree-toggle-size: var(--tree-row-height, 32px);
+  --tree-toggle-spacing-factor: 0.5;
+  --tree-indent: var(--tree-toggle-size);
 }
 
 .upload-toggle {
-  @include ghost-icon-button(var(--toggle-size));
+  @include ghost-icon-button(var(--tree-toggle-size));
   // The chevron's inner air is the spacing — cancel the tree's row gap.
   margin-inline-end: -0.5rem;
 }
 
 .upload-toggle-spacer {
-  inline-size: calc(var(--toggle-size) / 2);
+  inline-size: calc(var(--tree-toggle-size) * var(--tree-toggle-spacing-factor, 0.5));
   flex: 0 0 auto;
 }
 
 .upload-more {
-  @include ghost-icon-button(var(--toggle-size));
+  @include ghost-icon-button(var(--tree-toggle-size));
   margin-inline-start: auto;
   margin-inline-end: 0.25rem;
 }

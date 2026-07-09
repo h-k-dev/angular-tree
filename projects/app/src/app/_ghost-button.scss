@@ -1,6 +1,6 @@
 // Shadcn-style ghost icon button: transparent at rest, subtle state layer on
 // hover, inset focus ring. $size is the square touch/state target — pass a
-// CSS custom property (e.g. var(--toggle-size)) to keep it themable.
+// CSS custom property (e.g. var(--tree-toggle-size)) to keep it themable.
 @mixin ghost-icon-button($size: 32px) {
   display: inline-flex;
   flex: 0 0 auto;

@@ -120,6 +120,12 @@ interface DropIndicator {
   // self-close); the trigger stays disabled at rest so its own contextmenu
   // listener never opens a stale menu. Inert without a projected treeContextMenu.
   hostDirectives: [CdkContextMenuTrigger],
+  host: {
+    // Row height, republished as a read-only CSS variable: consumer templates
+    // size their row content (toggle targets, spacers) from the SAME source
+    // as the scroll strategy instead of repeating the number in CSS.
+    '[style.--tree-row-height]': 'itemSize() + "px"',
+  },
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './angular-tree.html',
   styleUrl: './angular-tree.scss',

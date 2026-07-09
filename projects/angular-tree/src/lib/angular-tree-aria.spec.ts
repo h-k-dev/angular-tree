@@ -115,6 +115,11 @@ describe('AngularTree ARIA', () => {
     expect(viewportEl().getAttribute('aria-multiselectable')).toBe('true');
   });
 
+  it('republishes [itemSize] as the read-only --tree-row-height host variable', () => {
+    const host: HTMLElement = fixture.nativeElement.querySelector('angular-tree');
+    expect(host.style.getPropertyValue('--tree-row-height')).toBe('32px');
+  });
+
   it('forwards the accessible name to the role="tree" element (APG: trees MUST be labelled)', () => {
     // The role sits on the internal viewport, not the host — the alias inputs
     // exist precisely so `aria-label` on <angular-tree> reaches AT.

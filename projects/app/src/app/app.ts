@@ -1,68 +1,28 @@
 import {
+  ChangeDetectionStrategy,
   Component,
   computed,
   DOCUMENT,
   inject,
-  linkedSignal,
   signal,
-  ChangeDetectionStrategy,
+  viewChild,
 } from '@angular/core';
-import { CdkMenuItem } from '@angular/cdk/menu';
 import { DecimalPipe } from '@angular/common';
-import { SelectionModel } from '@angular/cdk/collections';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 
-import {
-  AngularTree,
-  ContextRequestedEvent,
-  MoveEvent,
-  RenameEvent,
-  SelectEvent,
-  ToggleEvent,
-  TreeContextMenu,
-  TreeDropContext,
-  TreeEmptyDef,
-  TreeLoadingDef,
-  TreeNodeCheckbox,
-  TreeNodeDef,
-  TreeNodeEditInput,
-  TreeNodeToggle,
-} from 'angular-tree';
+import { ExampleScale, FolderNode } from './example-data';
+import { TreeExample } from './tree-example/tree-example';
 
-import {
-  applyCopy,
-  applyDelete,
-  applyMove,
-  DocNode,
-  ExampleScale,
-  FileExtension,
-  FolderNode,
-  generateExampleTree,
-  isFile,
-  isFolder,
-  isSmart,
-} from './example-data';
+/** Card-1 views: the live example or one of its source files. */
+type ExampleView = 'preview' | 'html' | 'ts' | 'scss';
 
 @Component({
   selector: '[app-root]',
-  imports: [
-    DecimalPipe,
-    MatToolbarModule,
-    MatButtonModule,
-    MatIconModule,
-    AngularTree,
-    TreeContextMenu,
-    TreeEmptyDef,
-    TreeLoadingDef,
-    TreeNodeCheckbox,
-    TreeNodeDef,
-    TreeNodeEditInput,
-    TreeNodeToggle,
-    CdkMenuItem,
-  ],
+  imports: [DecimalPipe, MatToolbarModule, MatButtonModule, MatIconModule, TreeExample],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -73,6 +33,25 @@ import {
 export class App {
   readonly #document = inject(DOCUMENT);
   readonly #dialog = inject(MatDialog);
+
+  /** The living example — toolbar surface (active node, intents) reads through it. */
+  readonly example = viewChild(TreeExample);
+
+  /**
+   * Upload dialog — app-level plumbing kept OUT of the example component so
+   * its code tabs stay tree-only. The dialog itself is its own ts/html/scss
+   * split (`upload-dialog/`), the Phase 8 stacking/focus-trap testbed.
+   */
+  openUpload() {
+    import('./upload-dialog/upload-dialog').then(({ UploadDialog }) => {
+      this.#dialog
+        .open<InstanceType<typeof UploadDialog>, undefined, FolderNode>(UploadDialog)
+        .afterClosed()
+        .subscribe((folder) => {
+          if (folder) this.example()?.lastIntent.set(`upload → "${folder.name}"`);
+        });
+    });
+  }
 
   // ---------------------------------------------------------------------------
   // Theme
@@ -93,52 +72,22 @@ export class App {
   }
 
   // ---------------------------------------------------------------------------
-  // Upload dialog — MatDialog-hosted tree + MatMenu context menu, the
-  // stacking/focus-trap testbed of the ROADMAP Phase 8 integration matrix
-  // ---------------------------------------------------------------------------
-  openUpload() {
-    import('./upload-dialog/upload-dialog').then(({ UploadDialog }) => {
-      this.#dialog
-        .open<InstanceType<typeof UploadDialog>, undefined, FolderNode>(UploadDialog)
-        .afterClosed()
-        .subscribe((folder) => {
-          if (folder) this.lastIntent.set(`upload → "${folder.name}"`);
-        });
-    });
-  }
-
-  // ---------------------------------------------------------------------------
-  // Tree
+  // Toolbar state driving the example
   // ---------------------------------------------------------------------------
   /** `xl` ≈ 110k nodes — virtualization smoke run (ROADMAP Phase 2). */
   scale = signal<ExampleScale>('standard');
-  readonly #example = computed(() => generateExampleTree(this.scale()));
-
-  /** Writable (rename applies here), re-derived when the scale switches. */
-  roots = linkedSignal<DocNode[]>(() => this.#example().roots);
-  /** Everything expanded on load so the viewport scrolls immediately. */
-  defaultExpandedKeys = computed(() => this.#example().folderIds);
-  nodeCount = computed(() => this.#example().nodeCount);
 
   toggleScale() {
     this.scale.update((scale) => (scale === 'standard' ? 'xl' : 'standard'));
   }
 
-  isFolder = isFolder;
-  isSmart = isSmart;
-  /** Lazy folders resolve after a delay — simulates a server fetch (Phase 3). */
-  getChildren = (node: DocNode) =>
-    isFile(node)
-      ? undefined
-      : isFolder(node) && node.lazy
-        ? new Promise<DocNode[]>((resolve) => setTimeout(() => resolve(node.children), 1_200))
-        : node.children;
-  getKey = (node: DocNode) => node.id;
-  nodeName = (node: DocNode) => node.name;
+  search = signal('');
 
-  activeNode = signal<DocNode | null>(null);
+  onSearch(event: Event) {
+    this.search.set((event.target as HTMLInputElement).value);
+  }
 
-  /** Root-level load flag → drives the projected `treeLoadingDef`. */
+  /** Root-level load flag → the example's projected `treeLoadingDef`. */
   rootLoading = signal(false);
 
   /** Demo: flash the loading overlay for a moment (real apps set this around a fetch). */
@@ -147,113 +96,70 @@ export class App {
     setTimeout(() => this.rootLoading.set(false), 1_500);
   }
 
-  /** Consumer-owned selection over node keys (controlled — ROADMAP settled). */
-  selectionModel = new SelectionModel<string>(/* multiple */ true);
-  search = signal('');
+  // ---------------------------------------------------------------------------
+  // Example view tabs (PrimeNG-style): preview ↔ the component's real sources
+  // ---------------------------------------------------------------------------
+  readonly viewTabs = [
+    { id: 'preview' as const, label: 'Preview' },
+    { id: 'html' as const, label: 'HTML' },
+    { id: 'ts' as const, label: 'TS' },
+    { id: 'scss' as const, label: 'SCSS' },
+  ];
 
-  onSearch(event: Event) {
-    this.search.set((event.target as HTMLInputElement).value);
-  }
+  view = signal<ExampleView>('preview');
 
-  matchesNode = (node: DocNode, term: string) =>
-    node.name.toLowerCase().includes(term.toLowerCase());
+  readonly #sanitizer = inject(DomSanitizer);
 
-  /** Only real folders host drops (smart folders are virtual) — per-type predicates. */
-  dropForbidden = (ctx: TreeDropContext<DocNode>) =>
-    ctx.parentNode != null && !isFolder(ctx.parentNode);
-  /** The smart folder is a saved search — moving it makes no sense. */
-  dragForbidden = isSmart;
-  /** …and its virtual entries can't join a selection either. */
-  selectable = (node: DocNode) => !isSmart(node);
-  /** Folder names are fixed in this demo; files rename inline. */
-  editForbidden = (node: DocNode) => !isFile(node);
+  /** Source files, fetched + Shiki-highlighted once on first view (`source/` assets). */
+  exampleSource = signal<Record<string, SafeHtml | null>>({ html: null, ts: null, scss: null });
 
-  /** Last intent, surfaced in the toolbar — the demo's "consumer applied it" proof. */
-  lastIntent = signal<string | null>(null);
+  showView(view: ExampleView) {
+    this.view.set(view);
+    if (view === 'preview' || this.exampleSource()[view] != null) return;
 
-  activate(node: DocNode) {
-    this.activeNode.set(node);
-  }
-
-  /** Double-click is the consumer's — rename is wired via the context menu. */
-  openFile(node: DocNode) {
-    this.lastIntent.set(`opened "${node.name}"`);
-  }
-
-  /** Controlled pattern end-to-end: the consumer owns the mutation. */
-  onMove({ dragIds, parentId, index, dropEffect }: MoveEvent<DocNode>) {
-    // dropEffect (v2): ⌥/Ctrl-drag or Ctrl+C-paste duplicates instead of moving.
-    const apply = dropEffect === 'copy' ? applyCopy : applyMove;
-    this.roots.update((roots) => apply(roots, dragIds, parentId, index));
-    this.lastIntent.set(
-      `${dropEffect === 'copy' ? 'copied' : 'moved'} ${dragIds.length} node(s) → ${parentId ?? 'root'}@${index}`,
-    );
-  }
-
-  /** Controlled pattern end-to-end: apply the rename to our data, tree re-renders. */
-  onRename({ id, name }: RenameEvent<DocNode>) {
-    const rename = (nodes: DocNode[]): DocNode[] =>
-      nodes.map((node) =>
-        node.id === id
-          ? { ...node, name }
-          : isFile(node)
-            ? node
-            : { ...node, children: rename(node.children) },
+    // Shiki (angular.dev's highlighter) loads lazily with the first code tab;
+    // dual themes ride the demo's dark-mode class (see styles.scss).
+    const langs = { html: 'angular-html', ts: 'angular-ts', scss: 'scss' } as const;
+    Promise.all([
+      fetch(`source/tree-example.${view}`).then((response) =>
+        response.ok ? response.text() : `// failed to load (${response.status})`,
+      ),
+      import('shiki'),
+    ])
+      .then(([code, { codeToHtml }]) =>
+        codeToHtml(code, {
+          lang: langs[view],
+          themes: { light: 'github-light', dark: 'github-dark' },
+        }),
+      )
+      .then((html) =>
+        this.exampleSource.update((sources) => ({
+          ...sources,
+          // Trusted: generated locally by Shiki from our own source files.
+          [view]: this.#sanitizer.bypassSecurityTrustHtml(html),
+        })),
       );
-    this.roots.update(rename);
-    this.lastIntent.set(`rename ${id} → "${name}"`);
   }
 
-  onSelection(event: SelectEvent<DocNode>) {
-    this.lastIntent.set(`selection: ${event.ids.length} node(s)`);
-  }
-
-  onToggle(event: ToggleEvent<DocNode>) {
-    this.lastIntent.set(`${event.expanded ? 'expanded' : 'collapsed'} ${event.id}`);
-  }
-
-  /** Menu open/selection intents surface in the toolbar; the tree owns the menu itself. */
-  onContextRequested(event: ContextRequestedEvent<DocNode>) {
-    this.lastIntent.set(`context menu on ${event.ids.length} node(s)`);
-  }
-
-  menuToggleStar(node: DocNode) {
-    if (!isFile(node)) return;
-    const toggle = (nodes: DocNode[]): DocNode[] =>
-      nodes.map((candidate) =>
-        isFile(candidate)
-          ? candidate.id === node.id
-            ? { ...candidate, starred: !candidate.starred }
-            : candidate
-          : { ...candidate, children: toggle(candidate.children) },
-      );
-    this.roots.update(toggle);
-    this.lastIntent.set(`starred toggled: ${node.id}`);
-  }
-
-  menuDelete(ids: readonly string[]) {
-    this.roots.update((roots) => applyDelete(roots, ids));
-    this.lastIntent.set(`deleted ${ids.length} node(s)`);
-  }
-
-  formatSize(bytes: number): string {
-    if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;
-    return `${Math.round(bytes / 1_000)} kB`;
-  }
-
-  /** Per-extension Material icon — file "types" resolved in the consumer template. */
-  fileIcon(ext: FileExtension): string {
-    switch (ext) {
-      case 'pdf':
-        return 'picture_as_pdf';
-      case 'docx':
-        return 'description';
-      case 'xlsx':
-        return 'table_chart';
-      case 'eml':
-        return 'mail';
-      case 'png':
-        return 'image';
-    }
-  }
+  /** Mirrors docs/THEMING.md § Tokens — the theming card renders it verbatim. */
+  readonly themingTokens = [
+    { name: '--tree-row-height', system: null, fallback: '32px (this demo: 40px)', alters: 'Read-only — the [itemSize] input republished on the host; root of the sizing chain' },
+    { name: '--tree-bg', system: '--mat-sys-surface', fallback: '#ffffff', alters: 'Tree background, drag preview' },
+    { name: '--tree-text', system: '--mat-sys-on-surface', fallback: '#1d1b20', alters: 'Row text' },
+    { name: '--tree-font', system: '--mat-sys-body-medium', fallback: '400 0.875rem/1.25rem Roboto, sans-serif', alters: 'Typography (full font shorthand)' },
+    { name: '--tree-node-hover', system: '--mat-sys-surface-container-highest', fallback: '#e6e6e6', alters: 'Row hover' },
+    { name: '--tree-node-selected', system: '--mat-sys-secondary-container', fallback: '#e8def8', alters: 'Selected row ([data-selected])' },
+    { name: '--tree-focus-ring', system: '--mat-sys-primary', fallback: '#6750a4', alters: ':focus-visible outline' },
+    { name: '--tree-drop-indicator', system: '--mat-sys-primary', fallback: '#6750a4', alters: 'Drop line/box, count badge' },
+    { name: '--tree-drag-shadow', system: '--mat-sys-level3', fallback: '0 2px 8px rgb(0 0 0 / 0.3)', alters: 'Drag preview elevation' },
+    { name: '--tree-badge-text', system: '--mat-sys-on-primary', fallback: '#ffffff', alters: 'Multi-drag count badge text' },
+    { name: '--tree-indent', system: null, fallback: '1.5rem', alters: 'Per-level indentation step; guide lines center at half of it' },
+    { name: '--tree-guide', system: '--mat-sys-outline-variant', fallback: '#cac4d0', alters: 'Indent guide lines ([indentGuides]); hover uses --tree-focus-ring' },
+    { name: '--tree-menu-bg', system: '--mat-sys-surface-container', fallback: '#f3edf7', alters: 'Context-menu shell background (treeContextMenu)' },
+    { name: '--tree-menu-radius', system: null, fallback: '8px', alters: 'Context-menu shell corner radius' },
+    { name: '--tree-menu-shadow', system: '--mat-sys-level2', fallback: '0 2px 8px rgb(0 0 0 / 0.25)', alters: 'Context-menu shell elevation' },
+    { name: '--tree-toggle-size', system: null, fallback: 'var(--tree-row-height)', alters: 'Master control size: toggle + checkbox targets, thread-line column (via --tree-indent), leaf spacer base — must never exceed --tree-row-height' },
+    { name: '--tree-toggle-spacing-factor', system: null, fallback: '0.5', alters: 'Leaf spacer = --tree-toggle-size × this factor' },
+    { name: '--tree-checkbox-radius', system: null, fallback: '100vw (circle)', alters: 'Checkbox state-layer radius (consumer-template convention)' },
+  ];
 }
