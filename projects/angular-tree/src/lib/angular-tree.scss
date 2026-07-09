@@ -12,6 +12,8 @@
   background: var(--tree-bg, var(--mat-sys-surface, #ffffff));
   color: var(--tree-text, var(--mat-sys-on-surface, #1d1b20));
   font: var(--tree-font, var(--mat-sys-body-medium, 400 0.875rem / 1.25rem Roboto, sans-serif));
+
+  --_spacing: var(--mat-sys-spacing, 0.25rem);
 }
 
 .tree-drop-indicator {
@@ -19,7 +21,7 @@
   pointer-events: none;
   /* Logical properties: indent + insets mirror correctly in RTL (ROADMAP) */
   inset-inline-start: calc(var(--tree-level) * var(--tree-indent, 1.5rem));
-  inset-inline-end: 0.5rem;
+  inset-inline-end: calc(var(--_spacing) * 2);
   background: var(--tree-drop-indicator, var(--mat-sys-primary, #6750a4));
   border-radius: 1px;
 }
@@ -27,7 +29,7 @@
 .tree-drop-indicator--inside {
   background: transparent;
   border: 2px solid var(--tree-drop-indicator, var(--mat-sys-primary, #6750a4));
-  border-radius: 4px;
+  border-radius: var(--mat-sys-radius-small, 4px);
 }
 
 /* Empty / loading state slot — fills the host, content is the consumer's. */
@@ -37,7 +39,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: calc(var(--_spacing) * 4);
   text-align: center;
   color: var(--tree-text, var(--mat-sys-on-surface-variant, #49454f));
   pointer-events: none; /* let clicks fall through to the empty viewport */
@@ -53,8 +55,9 @@
   display: flex;
   flex-direction: column;
   min-inline-size: 10rem;
-  padding: 0.25rem;
-  border-radius: var(--tree-menu-radius, 8px);
+  padding: var(--_spacing);
+
+  border-radius: var(--tree-menu-radius, var(--mat-sys-radius-medium, 8px));
   background: var(--tree-menu-bg, var(--mat-sys-surface-container, #f3edf7));
   color: var(--tree-text, var(--mat-sys-on-surface, #1d1b20));
   box-shadow: var(--tree-menu-shadow, var(--mat-sys-level2, 0 2px 8px rgb(0 0 0 / 0.25)));
@@ -63,36 +66,32 @@
 .tree-drag-preview {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
+  gap: calc(var(--_spacing) * 2);
+  padding: var(--_spacing) calc(var(--_spacing) * 2);
+  border-radius: var(--mat-sys-radius-small, 4px);
   background: var(--tree-bg, var(--mat-sys-surface, #ffffff));
   color: var(--tree-text, var(--mat-sys-on-surface, #1d1b20));
   font: var(--tree-font, var(--mat-sys-body-medium, 400 0.875rem / 1.25rem Roboto, sans-serif));
-  box-shadow: var(
-    --tree-drag-shadow,
-    var(--mat-sys-level3, 0 2px 8px rgb(0 0 0 / 0.3))
-  );
+  box-shadow: var(--tree-drag-shadow, var(--mat-sys-level3, 0 2px 8px rgb(0 0 0 / 0.3)));
 }
 
 .tree-drag-preview-badge {
   min-inline-size: 1.25rem;
-  padding: 0 0.25rem;
-  border-radius: 0.75rem;
+  padding: 0 var(--_spacing);
+  border-radius: var(--mat-sys-radius-large, 0.625rem);
   background: var(--tree-drop-indicator, var(--mat-sys-primary, #6750a4));
   color: var(--tree-badge-text, var(--mat-sys-on-primary, #ffffff));
   text-align: center;
-  font-size: 0.75rem;
-  line-height: 1.25rem;
+  font: var(--mat-sys-body-small, 400 0.75rem / 1.25rem Roboto, sans-serif);
 }
 
 .tree-node.cdk-drag-placeholder {
-  opacity: 0.4;
+  opacity: 0.2875;
 }
 
 /* Ctrl+X marked, awaiting keyboard drop — classic cut affordance */
 .tree-node[data-move-source] {
-  opacity: 0.55;
+  opacity: 0.5;
 }
 
 /* The consumer applies the move — a return animation to the old spot lies. */
@@ -107,7 +106,7 @@
 .tree-node {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: calc(var(--_spacing) * 2);
   box-sizing: border-box;
   padding-inline-start: calc(var(--tree-level) * var(--tree-indent, 1.5rem));
   cursor: default;
@@ -136,8 +135,7 @@
   position: absolute;
   inset-block: 0;
   inset-inline-start: calc(var(--tree-indent, 1.5rem) / 2);
-  border-inline-start: 1px solid
-    var(--tree-guide, var(--mat-sys-outline-variant, #cac4d0));
+  border-inline-start: 1px solid var(--tree-guide, var(--mat-sys-outline-variant, #cac4d0));
 }
 
 .tree-guide:hover::before {

@@ -1,0 +1,55 @@
+// Readable reference page: comfortable measure, body-medium type throughout.
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-inline: auto;
+  inline-size: 100%;
+  max-inline-size: 72rem;
+}
+
+.demo-card--doc {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+// Table styling lives with the card that owns the tables (not app-level).
+.api-table-scroll {
+  overflow-x: auto;
+}
+
+.api-table {
+  inline-size: 100%;
+  // Below this the columns squeeze into unreadable slivers — keep the layout
+  // and let the scroll container take over instead.
+  min-inline-size: 52rem;
+  border-collapse: collapse;
+  font: var(--mat-sys-body-medium);
+
+  th,
+  td {
+    padding: 0.625rem 0.75rem;
+    border-block-end: 1px solid var(--mat-sys-outline-variant);
+    text-align: start;
+    vertical-align: top;
+  }
+
+  th {
+    font: var(--mat-sys-label-large);
+    color: var(--mat-sys-on-surface-variant);
+    white-space: nowrap;
+  }
+
+  code {
+    padding: 0 0.375rem;
+    border-radius: 4px;
+    background: var(--mat-sys-surface-container);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+}
+
+// Event payload signatures are long — let them wrap instead of forcing the
+// whole table into horizontal scroll.
+.api-table--events td:nth-child(2) code {
+  white-space: normal;
+}

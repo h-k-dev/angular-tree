@@ -60,10 +60,8 @@ describe('AngularTree v2 — clickAction & copy dropEffect', () => {
   let fixture: ComponentFixture<Host>;
   let host: Host;
 
-  const rowEl = (key: string): HTMLElement =>
-    fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
-  const viewport = (): HTMLElement =>
-    fixture.nativeElement.querySelector('cdk-virtual-scroll-viewport');
+  const rowEl = (key: string): HTMLElement => fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
+  const viewport = (): HTMLElement => fixture.nativeElement.querySelector('cdk-virtual-scroll-viewport');
   const keydown = (init: KeyboardEventInit, target?: HTMLElement) =>
     (target ?? viewport()).dispatchEvent(new KeyboardEvent('keydown', { ...init, bubbles: true }));
 

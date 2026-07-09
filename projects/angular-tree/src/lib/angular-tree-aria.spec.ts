@@ -70,9 +70,7 @@ describe('AngularTree ARIA', () => {
 
   /** jsdom has no layout — fake the viewport size so cdkVirtualFor renders rows. */
   async function forceViewportSize() {
-    const element: HTMLElement = fixture.nativeElement.querySelector(
-      'cdk-virtual-scroll-viewport',
-    );
+    const element: HTMLElement = fixture.nativeElement.querySelector('cdk-virtual-scroll-viewport');
     Object.defineProperty(element, 'clientHeight', { value: 400, configurable: true });
     Object.defineProperty(element, 'clientWidth', { value: 400, configurable: true });
     element.getBoundingClientRect = () =>
@@ -85,10 +83,8 @@ describe('AngularTree ARIA', () => {
     await fixture.whenStable();
   }
 
-  const viewportEl = (): HTMLElement =>
-    fixture.nativeElement.querySelector('cdk-virtual-scroll-viewport');
-  const rowEl = (key: string): HTMLElement | null =>
-    fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
+  const viewportEl = (): HTMLElement => fixture.nativeElement.querySelector('cdk-virtual-scroll-viewport');
+  const rowEl = (key: string): HTMLElement | null => fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
   const keydown = (init: KeyboardEventInit) =>
     viewportEl().dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, ...init }));
 
@@ -127,8 +123,7 @@ describe('AngularTree ARIA', () => {
   });
 
   describe('deselectOnOutsideClick', () => {
-    const pointerdown = (target: EventTarget) =>
-      target.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+    const pointerdown = (target: EventTarget) => target.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
 
     beforeEach(async () => {
       fixture.componentInstance.selection.select('a1', 'b');
@@ -212,9 +207,7 @@ describe('AngularTree ARIA', () => {
 
     rowEl('b')!.dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true }));
     // range anchor (a1, last explicit toggle) → b over visible order
-    expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
-      new Set(['a', 'a1', 'a2', 'b']),
-    );
+    expect(new Set(fixture.componentInstance.selection.selected)).toEqual(new Set(['a', 'a1', 'a2', 'b']));
   });
 
   describe('indent guides', () => {
@@ -272,14 +265,10 @@ describe('AngularTree ARIA', () => {
       fixture.componentInstance.tree().contextRequested.subscribe((e) => events.push(e));
       fixture.componentInstance.selection.select('b');
 
-      rowEl('a1')!.dispatchEvent(
-        new MouseEvent('contextmenu', { bubbles: true, clientX: 40, clientY: 60 }),
-      );
+      rowEl('a1')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 40, clientY: 60 }));
 
       expect(fixture.componentInstance.selection.selected).toEqual(['a1']);
-      expect(events).toEqual([
-        expect.objectContaining({ ids: ['a1'], position: { x: 40, y: 60 } }),
-      ]);
+      expect(events).toEqual([expect.objectContaining({ ids: ['a1'], position: { x: 40, y: 60 } })]);
     });
 
     it('right-click inside a multi-selection keeps it intact and reports all ids', () => {

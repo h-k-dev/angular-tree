@@ -16,8 +16,7 @@ test.describe('tree inside MatDialog', () => {
     await expect(page.locator('mat-dialog-container .tree-viewport')).toBeVisible();
   });
 
-  const dialog = (page: import('@playwright/test').Page) =>
-    page.locator('mat-dialog-container');
+  const dialog = (page: import('@playwright/test').Page) => page.locator('mat-dialog-container');
 
   test('focus trap and roving tabindex coexist — arrow keys move row focus', async ({ page }) => {
     const casesRow = rowByName(page, 'Cases', dialog(page));
@@ -31,9 +30,7 @@ test.describe('tree inside MatDialog', () => {
     expect(await focusedNodeId(page)).not.toBeNull();
   });
 
-  test('built-in menu opens above the dialog, restores focus to the row on close', async ({
-    page,
-  }) => {
+  test('built-in menu opens above the dialog, restores focus to the row on close', async ({ page }) => {
     const row = rowByName(page, 'Cases', dialog(page));
     const id = await row.getAttribute('data-node-id');
     await row.click({ button: 'right' });
@@ -44,10 +41,10 @@ test.describe('tree inside MatDialog', () => {
     // Stacking proof: the point at the menu's center hits the menu, not the
     // dialog behind it (z-order is what the user actually sees).
     const box = (await menu.boundingBox())!;
-    const hitsMenu = await page.evaluate(
-      ({ x, y }) => document.elementFromPoint(x, y)?.closest('.tree-menu') != null,
-      { x: box.x + box.width / 2, y: box.y + Math.min(10, box.height / 2) },
-    );
+    const hitsMenu = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('.tree-menu') != null, {
+      x: box.x + box.width / 2,
+      y: box.y + Math.min(10, box.height / 2),
+    });
     expect(hitsMenu).toBe(true);
 
     await page.keyboard.press('Escape');
@@ -57,9 +54,7 @@ test.describe('tree inside MatDialog', () => {
     await expect(dialog(page)).toBeVisible();
   });
 
-  test('external MatMenu on the row more_vert coexists with the built-in menu', async ({
-    page,
-  }) => {
+  test('external MatMenu on the row more_vert coexists with the built-in menu', async ({ page }) => {
     await dialog(page)
       .locator('.tree-node')
       .filter({ hasText: 'Cases' })

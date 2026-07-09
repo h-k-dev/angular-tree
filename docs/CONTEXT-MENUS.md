@@ -1,6 +1,6 @@
 # Context Menus
 
-The tree ships a **built-in context-menu host** (settled 2026-07-06): you project the menu *items*, the tree owns every mechanic around them — trigger, positioning, keyboard access, close-on-scroll, and the overlay shell. The tree still ships no item UI and no item styling.
+The tree ships a **built-in context-menu host** (settled 2026-07-06): you project the menu _items_, the tree owns every mechanic around them — trigger, positioning, keyboard access, close-on-scroll, and the overlay shell. The tree still ships no item UI and no item styling.
 
 ## The built-in host: `treeContextMenu`
 
@@ -9,14 +9,11 @@ The tree ships a **built-in context-menu host** (settled 2026-07-06): you projec
   <ng-template treeNodeDef let-node>{{ node.name }}</ng-template>
 
   <ng-template treeContextMenu let-node let-ids="ids">
-    @switch (node.kind) {
-      @case ('folder') {
-        <button cdkMenuItem (cdkMenuItemTriggered)="tree.expandDescendants(node)">Expand subtree</button>
-      }
-      @default {
-        <button cdkMenuItem (cdkMenuItemTriggered)="remove(ids)">Delete ({{ ids.length }})</button>
-      }
-    }
+    @switch (node.kind) { @case ('folder') {
+    <button cdkMenuItem (cdkMenuItemTriggered)="tree.expandDescendants(node)">Expand subtree</button>
+    } @default {
+    <button cdkMenuItem (cdkMenuItemTriggered)="remove(ids)">Delete ({{ ids.length }})</button>
+    } }
   </ng-template>
 </angular-tree>
 ```
@@ -31,22 +28,22 @@ What the tree does when the def is present:
 
 ### Template context
 
-| Binding | Type | Meaning |
-|---|---|---|
-| `$implicit` / `node` | `T` | The clicked / focused node — branch your items on its type |
-| `nodes` | `readonly T[]` | Post-reconciliation selection as nodes |
-| `ids` | `readonly string[]` | …the same selection as keys — what the menu should act on |
-| `position` | `{ x, y }` | Where the menu opened |
+| Binding              | Type                | Meaning                                                    |
+| -------------------- | ------------------- | ---------------------------------------------------------- |
+| `$implicit` / `node` | `T`                 | The clicked / focused node — branch your items on its type |
+| `nodes`              | `readonly T[]`      | Post-reconciliation selection as nodes                     |
+| `ids`                | `readonly string[]` | …the same selection as keys — what the menu should act on  |
+| `position`           | `{ x, y }`          | Where the menu opened                                      |
 
-Selection reconciliation happens *before* the context is built (OS convention): right-clicking an unselected row selects it (replace); a row inside a multi-selection keeps the selection intact — so `ids`/`nodes` are always the set the user expects the action to hit.
+Selection reconciliation happens _before_ the context is built (OS convention): right-clicking an unselected row selects it (replace); a row inside a multi-selection keeps the selection intact — so `ids`/`nodes` are always the set the user expects the action to hit.
 
 ### Shell tokens
 
-| Token | Fallback | Used for |
-|---|---|---|
-| `--tree-menu-bg` | `--mat-sys-surface-container` → `#f3edf7` | Shell background |
-| `--tree-menu-radius` | `8px` | Shell corner radius |
-| `--tree-menu-shadow` | `--mat-sys-level2` → soft shadow | Shell elevation |
+| Token                | Fallback                                  | Used for            |
+| -------------------- | ----------------------------------------- | ------------------- |
+| `--tree-menu-bg`     | `--mat-sys-surface-container` → `#f3edf7` | Shell background    |
+| `--tree-menu-radius` | `8px`                                     | Shell corner radius |
+| `--tree-menu-shadow` | `--mat-sys-level2` → soft shadow          | Shell elevation     |
 
 Item styling is entirely yours (the demo styles `.doc-menu-item` in its own stylesheet).
 

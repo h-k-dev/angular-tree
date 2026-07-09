@@ -4,7 +4,7 @@ How `angular-tree` renders 100k+ nodes without breaking a sweat, what `itemSize`
 
 ## The model
 
-**Virtualization is always on — there is no opt-out.** It isn't a feature flag layered over a plain renderer; it *is* the renderer: focus retention, guide overlays, drop-zone math, and the ARIA position attributes are all built on the flat model + fixed-row geometry. A hypothetical non-virtualized mode would be a second rendering path to keep correct forever, for the sole benefit of trees small enough that virtualization costs nothing anyway.
+**Virtualization is always on — there is no opt-out.** It isn't a feature flag layered over a plain renderer; it _is_ the renderer: focus retention, guide overlays, drop-zone math, and the ARIA position attributes are all built on the flat model + fixed-row geometry. A hypothetical non-virtualized mode would be a second rendering path to keep correct forever, for the sole benefit of trees small enough that virtualization costs nothing anyway.
 
 The tree never renders your nested data directly. `TreeController` flattens it into a single ordered array (`visibleNodes`), skipping children of collapsed nodes, and a `<cdk-virtual-scroll-viewport>` renders only the rows that intersect the viewport (plus a small buffer). Indentation is a CSS variable (`--tree-level`) on each row — there is no nested DOM, so depth costs nothing.
 
@@ -16,7 +16,7 @@ Two consequences worth internalizing:
 ## `itemSize` — fixed row height
 
 ```html
-<angular-tree [itemSize]="32" …>
+<angular-tree [itemSize]="32" …></angular-tree>
 ```
 
 `itemSize` is the fixed row height in pixels and drives `FixedSizeVirtualScrollStrategy`. Fixed height is what makes the fast path fast: scroll offset → row index is a division, `aria-setsize` positions and scroll-to-node offsets are exact, and no measurement pass ever runs.
@@ -39,12 +39,12 @@ Change `[itemSize]` and the scroll strategy, toggle targets, spacers, and indent
 If your rows genuinely cannot share one height (multi-line descriptions, inline previews), the escape hatch is the CDK **autosize** strategy from `@angular/cdk-experimental/scrolling`:
 
 ```html
-<cdk-virtual-scroll-viewport autosize>
+<cdk-virtual-scroll-viewport autosize></cdk-virtual-scroll-viewport>
 ```
 
 We deliberately do not wrap or re-export it. It estimates row heights while scrolling and corrects as it measures, which brings real trade-offs — it's experimental, scrollbar position can jitter during fast scrolls as estimates correct, `scrollToIndex`/`scrollTo(node)` become approximate (the strategy can't know exact offsets it hasn't measured), and `aria-setsize`/`aria-posinset` stay correct (they come from the flat model, not from geometry) but assistive-tech scroll targeting inherits the same approximation.
 
-Practical guidance: keep the tree itself fixed-height and put variable-height content elsewhere (a detail panel, an expandable row *below* the tree, a tooltip). Reach for autosize only when the product requirement is truly per-row variable height, and accept the trade-offs above knowingly.
+Practical guidance: keep the tree itself fixed-height and put variable-height content elsewhere (a detail panel, an expandable row _below_ the tree, a tooltip). Reach for autosize only when the product requirement is truly per-row variable height, and accept the trade-offs above knowingly.
 
 ## Interaction with lazy loading
 

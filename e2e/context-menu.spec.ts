@@ -21,9 +21,7 @@ test.describe('built-in context menu', () => {
     const menu = builtInMenu(page);
     await expect(menu).toBeVisible();
     // Menu receives focus (keyboard-operable immediately — APG menu pattern).
-    await expect
-      .poll(() => page.evaluate(() => document.activeElement?.closest('.tree-menu') != null))
-      .toBe(true);
+    await expect.poll(() => page.evaluate(() => document.activeElement?.closest('.tree-menu') != null)).toBe(true);
 
     await menu.getByRole('menuitem', { name: 'Collapse' }).click();
     await expect(menu).toBeHidden();
@@ -73,9 +71,7 @@ test.describe('built-in context menu', () => {
     await rowByName(page, 'Cases').click({ button: 'right' });
     await expect(builtInMenu(page)).toBeVisible();
 
-    await page
-      .locator('.tree-viewport')
-      .evaluate((viewport) => viewport.scrollBy({ top: 200 }));
+    await page.locator('.tree-viewport').evaluate((viewport) => viewport.scrollBy({ top: 200 }));
     await expect(builtInMenu(page)).toBeHidden();
   });
 });

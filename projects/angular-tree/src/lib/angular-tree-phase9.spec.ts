@@ -63,8 +63,7 @@ const flushMicrotasks = () => new Promise((resolve) => setTimeout(resolve));
 })
 class Host {
   data = DATA;
-  children = (node: DemoNode) =>
-    node.lazy ? Promise.resolve(LAZY_CHILDREN[node.id] ?? []) : node.children;
+  children = (node: DemoNode) => (node.lazy ? Promise.resolve(LAZY_CHILDREN[node.id] ?? []) : node.children);
   key = (node: DemoNode) => node.id;
   selection = new SelectionModel<string>(true);
   term = signal('');
@@ -79,8 +78,7 @@ describe('AngularTree v2 — Phase 9 sweep', () => {
   let host: Host;
   let tree: AngularTree<DemoNode>;
 
-  const rowEl = (key: string): HTMLElement =>
-    fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
+  const rowEl = (key: string): HTMLElement => fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
   const checkboxOf = (key: string): HTMLElement => rowEl(key).querySelector('.check')!;
   const keydown = (init: KeyboardEventInit, target: HTMLElement) =>
     target.dispatchEvent(new KeyboardEvent('keydown', { ...init, bubbles: true }));

@@ -98,12 +98,10 @@ export class TreeExample {
         : node.children;
   getKey = (node: DocNode) => node.id;
   nodeName = (node: DocNode) => node.name;
-  matchesNode = (node: DocNode, term: string) =>
-    node.name.toLowerCase().includes(term.toLowerCase());
+  matchesNode = (node: DocNode, term: string) => node.name.toLowerCase().includes(term.toLowerCase());
 
   /** Only real folders host drops (smart folders are virtual) — per-type predicates. */
-  dropForbidden = (ctx: TreeDropContext<DocNode>) =>
-    ctx.parentNode != null && !isFolder(ctx.parentNode);
+  dropForbidden = (ctx: TreeDropContext<DocNode>) => ctx.parentNode != null && !isFolder(ctx.parentNode);
   /** The smart folder is a saved search — moving it makes no sense. */
   dragForbidden = isSmart;
   /** …and its virtual entries can't join a selection either. */
@@ -134,11 +132,7 @@ export class TreeExample {
   onRename({ id, name }: RenameEvent<DocNode>) {
     const rename = (nodes: DocNode[]): DocNode[] =>
       nodes.map((node) =>
-        node.id === id
-          ? { ...node, name }
-          : isFile(node)
-            ? node
-            : { ...node, children: rename(node.children) },
+        node.id === id ? { ...node, name } : isFile(node) ? node : { ...node, children: rename(node.children) },
       );
     this.roots.update(rename);
     this.lastIntent.set(`rename ${id} → "${name}"`);

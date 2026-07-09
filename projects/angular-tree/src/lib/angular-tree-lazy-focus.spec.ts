@@ -66,8 +66,7 @@ describe('AngularTree v2 — lazy invalidation & focus', () => {
   let host: Host;
   let tree: AngularTree<DemoNode>;
 
-  const rowEl = (key: string): HTMLElement | null =>
-    fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
+  const rowEl = (key: string): HTMLElement | null => fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
 
   const settle = async () => {
     await fixture.whenStable();
@@ -146,9 +145,7 @@ describe('AngularTree v2 — lazy invalidation & focus', () => {
     await flushMicrotasks();
 
     expect(
-      (document.activeElement as HTMLElement | null)?.closest('[data-node-id]')?.getAttribute(
-        'data-node-id',
-      ),
+      (document.activeElement as HTMLElement | null)?.closest('[data-node-id]')?.getAttribute('data-node-id'),
     ).toBe('a1');
   });
 
@@ -167,9 +164,7 @@ describe('AngularTree v2 — lazy invalidation & focus', () => {
     await settle();
 
     expect(
-      (document.activeElement as HTMLElement | null)?.closest('[data-node-id]')?.getAttribute(
-        'data-node-id',
-      ),
+      (document.activeElement as HTMLElement | null)?.closest('[data-node-id]')?.getAttribute('data-node-id'),
     ).toBe('a2');
   });
 

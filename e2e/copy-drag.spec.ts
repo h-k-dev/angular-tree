@@ -14,11 +14,7 @@ test.describe('copy-on-drag', () => {
     await waitForTree(page);
   });
 
-  const dragRowOnto = async (
-    page: import('@playwright/test').Page,
-    sourceText: string,
-    targetText: string,
-  ) => {
+  const dragRowOnto = async (page: import('@playwright/test').Page, sourceText: string, targetText: string) => {
     const source = rows(page).filter({ hasText: sourceText }).first();
     const target = rowByName(page, targetText);
     const from = (await source.boundingBox())!;

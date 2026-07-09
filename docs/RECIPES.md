@@ -20,16 +20,16 @@ before your `(dblclick)` handler runs. Keep the activate handler cheap (set a
 signal, highlight a row) or use the second mode.
 
 **File-manager mode (`clickAction="select"`)** — plain click replaces the
-selection and the *tree* emits `(activated)` on double-click. No `(dblclick)`
+selection and the _tree_ emits `(activated)` on double-click. No `(dblclick)`
 wiring needed; the two gestures arrive pre-separated:
 
 ```html
-<angular-tree clickAction="select" (activated)="open($event)" …>
+<angular-tree clickAction="select" (activated)="open($event)" …></angular-tree>
 ```
 
 ## Confirm before applying an intent
 
-Intents are *proposals*, not notifications of applied changes — the tree never
+Intents are _proposals_, not notifications of applied changes — the tree never
 mutates your data, so "insert a confirmation dialog" is just an `await` in your
 handler. Decline = don't apply = nothing happened; there is no rollback API
 because there is nothing to roll back.
@@ -100,7 +100,7 @@ toggle either way.
 
 ## Loading mask over existing content
 
-`treeLoadingDef` covers the *initial* load. For PrimeNG-style
+`treeLoadingDef` covers the _initial_ load. For PrimeNG-style
 `loadingMode="mask"` during operations (refresh, bulk actions), overlay the
 tree yourself — the tree deliberately ships no mask:
 
@@ -108,15 +108,20 @@ tree yourself — the tree deliberately ships no mask:
 <div class="tree-frame">
   <angular-tree … />
   @if (refreshing()) {
-    <div class="tree-mask" aria-hidden="true"><mat-spinner diameter="32" /></div>
+  <div class="tree-mask" aria-hidden="true"><mat-spinner diameter="32" /></div>
   }
 </div>
 ```
 
 ```css
-.tree-frame { position: relative; }
+.tree-frame {
+  position: relative;
+}
 .tree-mask {
-  position: absolute; inset: 0; display: grid; place-items: center;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
   background: color-mix(in srgb, var(--mat-sys-surface) 60%, transparent);
 }
 ```
@@ -129,10 +134,13 @@ for per-subtree refreshes, which shows the per-row `isLoading` spinner instead.
 Dialogs that mutate tree data destroy the trigger row's DOM, so Material's
 element-based focus restore lands on `body`. The tree's focus retention (v2)
 repairs this automatically. If you need an explicit target after `afterClosed`
-(e.g. focus the *new* row after a create dialog):
+(e.g. focus the _new_ row after a create dialog):
 
 ```ts
-this.dialog.open(CreateFolder).afterClosed().subscribe((created) => {
-  if (created) this.tree().focus(created);
-});
+this.dialog
+  .open(CreateFolder)
+  .afterClosed()
+  .subscribe((created) => {
+    if (created) this.tree().focus(created);
+  });
 ```

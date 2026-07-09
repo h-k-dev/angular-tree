@@ -8,19 +8,19 @@ Conventions are inherited from ROADMAP.md: locked decisions are not silently ren
 
 ## Guiding priorities for v2
 
-| Priority | Rationale |
-|---|---|
-| Fix known v1 paper cuts first | Cheapest wins; several are one-liners against existing architecture |
-| SSR before new features | It was a v1 cross-cutting concern that never landed — closest thing to debt |
-| Performance work stays invisible | Same rule as v1: internals may change radically, the public API may not |
-| Every new capability keeps the "tree ships no UI it doesn't own" rule | Adapters and handles, never built-in widgets |
+| Priority                                                              | Rationale                                                                   |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Fix known v1 paper cuts first                                         | Cheapest wins; several are one-liners against existing architecture         |
+| SSR before new features                                               | It was a v1 cross-cutting concern that never landed — closest thing to debt |
+| Performance work stays invisible                                      | Same rule as v1: internals may change radically, the public API may not     |
+| Every new capability keeps the "tree ships no UI it doesn't own" rule | Adapters and handles, never built-in widgets                                |
 
 ## Phase 9 — v1 Paper Cuts & Known Gaps ✅ COMPLETE 2026-07-07
 
 Small items discovered during v1 implementation. **All shipped 2026-07-07** (139 specs total: 116 lib + 5 app + 18 e2e):
 
 - ~~**Shift+checkbox range selection**~~ ✅ — `TreeNodeHandle.toggleSelection(range?: boolean)`; `treeNodeCheckbox` passes `shiftKey`. Additive range from the anchor over visible order; the anchor survives so further shift-clicks re-range from the same spot
-- ~~**`expandAll()` over lazy subtrees**~~ ✅ — `expandAll({ loadLazy: true })` (settled: opt-in, decision 4): batched `ensureChildren` frontier waves, each wave expands and is re-scanned; stops on frontier exhaustion *or* a wave with zero progress (all errors — `retryChildren` stays the recovery path). Default unchanged: skip
+- ~~**`expandAll()` over lazy subtrees**~~ ✅ — `expandAll({ loadLazy: true })` (settled: opt-in, decision 4): batched `ensureChildren` frontier waves, each wave expands and is re-scanned; stops on frontier exhaustion _or_ a wave with zero progress (all errors — `retryChildren` stays the recovery path). Default unchanged: skip
 - ~~**Escape cancels an in-flight pointer drag**~~ ✅ — document-level keydown during drag: drop flagged dead, CDK sequence ended via synthetic mouseup (no public cancel exists); `stopPropagation` so a hosting dialog doesn't close on the same press. Mouse drags only — a fabricated TouchEvent can't carry the coordinates DragRef reads; touch cancels by lifting. e2e-verified incl. the trailing physical mouseup
 - ~~**Wheel-scroll mid-drag**~~ ✅ — the existing `elementScrolled` subscription re-runs drop targeting from the last pointer position while a drag is live
 - ~~**Touch drag via opt-in handle**~~ ✅ — `treeNodeDragHandle` (hosts CDK's `CdkDragHandle`): row drags only from the handle, start delay drops to 0 including touch — a dedicated handle makes long-press unambiguous, so the context-menu conflict the delay guarded is gone
@@ -56,11 +56,11 @@ v1 is O(n)-per-change over 100k nodes with per-row reactive reads — already fa
 
 Each was an explicit v1 non-goal with a contract designed not to preclude it:
 
-- **Sparse selection over unloaded subtrees** — "selected-roots + exclusions" model so checking a lazy parent means *everything under it, loaded or not*; `checkboxSelection` semantics were chosen to allow this. Needs: wire-format for persistence, `SelectEvent` extension (additive), cascade rules on later load
+- **Sparse selection over unloaded subtrees** — "selected-roots + exclusions" model so checking a lazy parent means _everything under it, loaded or not_; `checkboxSelection` semantics were chosen to allow this. Needs: wire-format for persistence, `SelectEvent` extension (additive), cascade rules on later load
 - **Cross-tree & external drag and drop** — drag between two `angular-tree` instances (shared drag registry service) and OS file drops (`DataTransfer` → a new `externalDropped` intent). `MoveEvent` contract already plural and doesn't preclude it
 - **Flat input data (`levelAccessor`)** — accept pre-flattened arrays (the other modern `CdkTree` pattern); internal model is already flat, so this is mostly an ingestion adapter + expansion semantics for unknown parents
 - ~~**Lazy invalidation**~~ ✅ **2026-07-07** — `TreeApi.invalidateChildren(node?)`: drops the keyed overlay + accessor memo, aborts in flight, bumps the stale-result generation; expanded nodes re-run the accessor immediately (per-row `isLoading`), collapsed ones on next expand; no argument = tree-wide (single overlay write for the batch). `collapseBehavior: 'keep' | 'invalidate'` input shipped (default `keep`). The headless line held: the tree never fetches or caches — refresh policy, batching, and stale-while-revalidate stay consumer-side behind the accessor (TanStack Query's invalidate-vs-fetch split). Overlays survive `dataSource` replacement (settled 2026-07-06; immutable-update consumers replace array identity constantly — clearing would refetch the world per rename); nothing re-fires implicitly
-- **Server-driven search & reveal (design open)** — v1 search (`searchMatch`/`searchTerm`) is client-side over the loaded flat model; a lazy tree can't match what isn't loaded. Headless split: the *consumer* resolves the term server-side into matched keys + ancestor paths (the tree never queries); the *tree* owns reveal — load/expand ancestor chains via `ensureChildren`, highlight matches, next/prev navigation, `scrollTo` first hit — and announces result counts through the Phase 9 `aria-live` region. Candidate surface: `reveal(paths): Promise<void>` + a match-set input composing with client `searchMatch`. No settled design yet — open question below, spike before committing
+- **Server-driven search & reveal (design open)** — v1 search (`searchMatch`/`searchTerm`) is client-side over the loaded flat model; a lazy tree can't match what isn't loaded. Headless split: the _consumer_ resolves the term server-side into matched keys + ancestor paths (the tree never queries); the _tree_ owns reveal — load/expand ancestor chains via `ensureChildren`, highlight matches, next/prev navigation, `scrollTo` first hit — and announces result counts through the Phase 9 `aria-live` region. Candidate surface: `reveal(paths): Promise<void>` + a match-set input composing with client `searchMatch`. No settled design yet — open question below, spike before committing
 
 ## Phase 14 — `iusta-core` migration (PrimeNG `p-tree` + jsTree parity)
 
@@ -71,7 +71,7 @@ The concrete driver for this library: replace **two** engines in `iusta-core-fro
 - ~~**Copy-on-drag**~~ ✅ **implemented 2026-07-07** (settled 2026-07-06) — **`MoveEvent.dropEffect: 'move' | 'copy'`** (native DnD vocabulary, extensible — not a closed boolean); modifier sampled continuously mid-drag and read at drop time, **platform-native: ⌥ on macOS, Ctrl elsewhere** (touch has no modifiers → always move). Keyboard path: `Ctrl/Cmd+C` arms copy-paste vs `Ctrl/Cmd+X` move-paste, same guards and validation. Demo ships `applyCopy` (fresh ids per clone); pointer path e2e-verified with a real held modifier (jsdom can't produce one)
 - ~~**`key` in the template context**~~ ✅ **2026-07-07** — `key: string` on `TreeNodeContext`, template parity with PrimeNG/jsTree node templates
 - **Empty & loading templates** — already promoted to v1 Phase 8 (`treeEmptyDef`/`treeLoadingDef`); listed here only as the migration dependency it is
-- **General capabilities this migration depends on, tracked in their own phases** — lazy invalidation (Phase 12); accessor `AbortSignal`, focus retention across data replacement, `defaultFocusedKey` (Phase 9). `document-tree` is the motivating *example* (sync-refresh menu item, per-node `AbortController`s, dialog-driven immutable rebuilds that drop focus), not the design target — each lands as a general, decoupled capability or not at all
+- **General capabilities this migration depends on, tracked in their own phases** — lazy invalidation (Phase 12); accessor `AbortSignal`, focus retention across data replacement, `defaultFocusedKey` (Phase 9). `document-tree` is the motivating _example_ (sync-refresh menu item, per-node `AbortController`s, dialog-driven immutable rebuilds that drop focus), not the design target — each lands as a general, decoupled capability or not at all
 
 **Interaction decision (v1 lock explicitly reopened and settled 2026-07-06 — see decisions table):**
 
@@ -167,14 +167,14 @@ interface TreeAnnouncements<T> {
 
 ## Settled decisions (v2)
 
-| # | Decision | Outcome | Date |
-|---|---|---|---|
-| 1 | Plain-click selection (reopened the v1 `rowClickSelects` lock, explicitly) | `clickAction: 'activate' \| 'select'` input, default `'activate'` — v1 unchanged; click-select is the file-manager norm and belongs in a general-purpose tree as an opt-in | 2026-07-06 |
-| 2 | Copy-on-drag surface & modifier | `MoveEvent.dropEffect: 'move' \| 'copy'` (native DnD vocabulary, extensible); modifier platform-native: ⌥ macOS / Ctrl elsewhere; keyboard via `Ctrl/Cmd+C`/`X` + paste | 2026-07-06 |
-| 3 | Lazy overlays across `dataSource` replacement | Overlays survive, keyed (like expansion/selection); nothing re-fires implicitly — refresh only via explicit `invalidateChildren(key?)` or `collapseBehavior: 'invalidate'` | 2026-07-06 |
-| 4 | `expandAll` over lazy subtrees | Opt-in `expandAll({ loadLazy: true })`: batched `ensureChildren`, expanding batches as they resolve; default stays skip — a 100k lazy tree must never fetch-storm by accident | 2026-07-07 |
-| 5 | `mat-checkbox` with `treeNodeCheckbox` | Documented binding pattern (`[checked]`/`[indeterminate]` from `checkState`, `toggleSelection()` on change) — no Material coupling in the lib; the JSDoc "Phase 5 adapter" promise is amended | 2026-07-07 |
-| 6 | Row-internal interactive elements (a11y) | Tree-shipped row directives leave the tab order (`tabindex="-1"` — keyboard equivalents exist: arrows, Space, F2, menu); arbitrary consumer buttons follow the same documented rule. No template-walking enforcement | 2026-07-07 |
+| #   | Decision                                                                   | Outcome                                                                                                                                                                                                              | Date       |
+| --- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| 1   | Plain-click selection (reopened the v1 `rowClickSelects` lock, explicitly) | `clickAction: 'activate' \| 'select'` input, default `'activate'` — v1 unchanged; click-select is the file-manager norm and belongs in a general-purpose tree as an opt-in                                           | 2026-07-06 |
+| 2   | Copy-on-drag surface & modifier                                            | `MoveEvent.dropEffect: 'move' \| 'copy'` (native DnD vocabulary, extensible); modifier platform-native: ⌥ macOS / Ctrl elsewhere; keyboard via `Ctrl/Cmd+C`/`X` + paste                                              | 2026-07-06 |
+| 3   | Lazy overlays across `dataSource` replacement                              | Overlays survive, keyed (like expansion/selection); nothing re-fires implicitly — refresh only via explicit `invalidateChildren(key?)` or `collapseBehavior: 'invalidate'`                                           | 2026-07-06 |
+| 4   | `expandAll` over lazy subtrees                                             | Opt-in `expandAll({ loadLazy: true })`: batched `ensureChildren`, expanding batches as they resolve; default stays skip — a 100k lazy tree must never fetch-storm by accident                                        | 2026-07-07 |
+| 5   | `mat-checkbox` with `treeNodeCheckbox`                                     | Documented binding pattern (`[checked]`/`[indeterminate]` from `checkState`, `toggleSelection()` on change) — no Material coupling in the lib; the JSDoc "Phase 5 adapter" promise is amended                        | 2026-07-07 |
+| 6   | Row-internal interactive elements (a11y)                                   | Tree-shipped row directives leave the tab order (`tabindex="-1"` — keyboard equivalents exist: arrows, Space, F2, menu); arbitrary consumer buttons follow the same documented rule. No template-walking enforcement | 2026-07-07 |
 
 ## Open questions (v2)
 
@@ -182,7 +182,7 @@ interface TreeAnnouncements<T> {
 2. Sparse selection wire format: expose `{ roots, exclusions }` publicly or keep it internal behind `expandedKeys()`-style snapshots?
 3. External drops: one generic `externalDropped` intent vs typed adapters (files, text, custom)?
 4. Docs site framework: analog, ng-doc, or hand-rolled? (Phase 13)
-5. **Server-side search surface (Phase 12):** what's the minimal tree-side API — imperative `reveal(paths)` + a match-set input, or a pluggable async search resolver the tree drives? Does reveal auto-`ensureChildren` down ancestor paths (and what does progress/cancel look like)? How do matches in *unloaded* subtrees interact with sparse selection and `aria-live` result counts? Unsolved — design spike required before anything lands
+5. **Server-side search surface (Phase 12):** what's the minimal tree-side API — imperative `reveal(paths)` + a match-set input, or a pluggable async search resolver the tree drives? Does reveal auto-`ensureChildren` down ancestor paths (and what does progress/cancel look like)? How do matches in _unloaded_ subtrees interact with sparse selection and `aria-live` result counts? Unsolved — design spike required before anything lands
 
 ## Non-goals (v2)
 

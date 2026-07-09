@@ -57,25 +57,11 @@ export class TreeNodeHarness extends ComponentHarness {
 
   static with(options: TreeNodeHarnessFilters = {}): HarnessPredicate<TreeNodeHarness> {
     return new HarnessPredicate(TreeNodeHarness, options)
-      .addOption('text', options.text, (harness, text) =>
-        HarnessPredicate.stringMatches(harness.getText(), text),
-      )
+      .addOption('text', options.text, (harness, text) => HarnessPredicate.stringMatches(harness.getText(), text))
       .addOption('key', options.key, async (harness, key) => (await harness.getKey()) === key)
-      .addOption(
-        'level',
-        options.level,
-        async (harness, level) => (await harness.getLevel()) === level,
-      )
-      .addOption(
-        'expanded',
-        options.expanded,
-        async (harness, expanded) => (await harness.isExpanded()) === expanded,
-      )
-      .addOption(
-        'selected',
-        options.selected,
-        async (harness, selected) => (await harness.isSelected()) === selected,
-      );
+      .addOption('level', options.level, async (harness, level) => (await harness.getLevel()) === level)
+      .addOption('expanded', options.expanded, async (harness, expanded) => (await harness.isExpanded()) === expanded)
+      .addOption('selected', options.selected, async (harness, selected) => (await harness.isSelected()) === selected);
   }
 
   /** Trimmed, whitespace-collapsed text of the whole row template. */
@@ -251,10 +237,7 @@ export class TreeHarness extends ComponentHarness {
    * index × itemSize), assuming scroll offset 0 — which layoutless
    * environments cannot scroll away from anyway.
    */
-  async #dropPoint(
-    node: TreeNodeHarness,
-    zone: TreeDropZone,
-  ): Promise<{ x: number; y: number }> {
+  async #dropPoint(node: TreeNodeHarness, zone: TreeDropZone): Promise<{ x: number; y: number }> {
     const rect = await node._rect();
     if (rect.height > 0) {
       return { x: rect.left + 8, y: rect.top + rect.height * ZONE_RATIO[zone] };

@@ -1,0 +1,67 @@
+<!-- Example controls — page concerns, not app chrome. Wraps on narrow screens. -->
+<div class="playground-controls">
+  <input class="app-search" type="search" placeholder="Search…" [value]="search()" (input)="onSearch($event)" />
+
+  <button matButton (click)="toggleScale()" [attr.aria-pressed]="scale() === 'xl'">
+    <mat-icon>speed</mat-icon>
+    {{ scale() === 'xl' ? (example()?.nodeCount() | number) + ' nodes' : '100k mode' }}
+  </button>
+
+  <button matButton (click)="simulateLoad()" [disabled]="rootLoading()">
+    <mat-icon>sync</mat-icon>
+    Simulate load
+  </button>
+
+  <button matButton (click)="openUpload()">
+    <mat-icon>cloud_upload</mat-icon>
+    Upload
+  </button>
+
+  <span class="playground-intents">
+    @if (example()?.activeNode(); as node) {
+      <span class="app-active-node">{{ node.name }}</span>
+    }
+    @if (example()?.lastIntent(); as intent) {
+      <span class="app-last-intent">{{ intent }}</span>
+    }
+  </span>
+</div>
+
+<!-- The living example — contained so the viewport frames it. -->
+<section class="demo-card demo-card--tree" aria-label="Tree example">
+  <!-- View switcher (PrimeNG-style): the code tabs render the example
+       component's REAL source files, fetched as assets and highlighted with
+       Shiki (angular.dev's highlighter) — zero drift. -->
+  <header class="demo-card-bar">
+    <nav class="demo-tabs" aria-label="Example view">
+      @for (tab of viewTabs; track tab.id) {
+        <button class="demo-tab" [attr.aria-selected]="view() === tab.id" (click)="showView(tab.id)">
+          {{ tab.label }}
+        </button>
+      }
+    </nav>
+  </header>
+
+  <!-- @defer splits the tree + example data out of the initial bundle;
+       `on immediate` fetches the chunk right after bootstrap, so there is
+       no interaction delay — only a smaller first payload. Kept alive while
+       a code tab is open: expansion/selection survive. -->
+  @defer (on immediate) {
+    <app-tree-example
+      #example
+      [class.demo-hidden]="view() !== 'preview'"
+      [scale]="scale()"
+      [searchTerm]="search()"
+      [loading]="rootLoading()"
+    />
+  } @placeholder {
+    <div class="demo-code--loading">Loading example…</div>
+  }
+  @if (view() !== 'preview') {
+    @if (exampleSource()[view()]; as code) {
+      <div class="demo-code" [innerHTML]="code"></div>
+    } @else {
+      <div class="demo-code demo-code--loading">Loading…</div>
+    }
+  }
+</section>

@@ -1,0 +1,16 @@
+# Normalize line endings across platforms.
+# Git stores LF in the repo and checks out LF on every OS,
+# overriding each developer's core.autocrlf setting.
+* text=auto eol=lf
+
+# Binary files: never touch their bytes.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary

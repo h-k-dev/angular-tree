@@ -8,5 +8,4 @@ import { App } from './app/app';
 const dir = new URLSearchParams(location.search).get('dir');
 if (dir === 'rtl' || dir === 'ltr') document.documentElement.dir = dir;
 
-bootstrapApplication(App, appConfig)
-  .catch((err) => console.error(err));
+bootstrapApplication(App, appConfig).catch((err) => console.error(err));

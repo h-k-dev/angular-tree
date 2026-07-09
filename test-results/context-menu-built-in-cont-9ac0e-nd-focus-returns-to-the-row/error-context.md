@@ -29,18 +29,18 @@ Call log:
 
 ```yaml
 - menu:
-  - menuitem "Expand subtree"
-  - menuitem "Collapse"
-  - menuitem "Delete"
+    - menuitem "Expand subtree"
+    - menuitem "Collapse"
+    - menuitem "Delete"
 ```
 
 # Test source
 
 ```ts
   1  | import { expect, test } from '@playwright/test';
-  2  | 
+  2  |
   3  | import { builtInMenu, focusedNodeId, rowByName, rows, waitForTree } from './helpers';
-  4  | 
+  4  |
   5  | /**
   6  |  * Phase 8 matrix — built-in `treeContextMenu`: right-click + Shift+F10, at the
   7  |  * virtualized top/bottom edges, and the settled close-on-scroll behavior.
@@ -52,68 +52,68 @@ Call log:
   13 |     await page.goto('/');
   14 |     await waitForTree(page);
   15 |   });
-  16 | 
+  16 |
   17 |   test('right-click on a row opens the menu; item acts on the node', async ({ page }) => {
   18 |     const folder = rowByName(page, 'Cases');
   19 |     await folder.click({ button: 'right' });
-  20 | 
+  20 |
   21 |     const menu = builtInMenu(page);
   22 |     await expect(menu).toBeVisible();
   23 |     // Menu receives focus (keyboard-operable immediately — APG menu pattern).
   24 |     await expect
   25 |       .poll(() => page.evaluate(() => document.activeElement?.closest('.tree-menu') != null))
   26 |       .toBe(true);
-  27 | 
+  27 |
   28 |     await menu.getByRole('menuitem', { name: 'Collapse' }).click();
   29 |     await expect(menu).toBeHidden();
   30 |     // The intent reached the consumer (toolbar echoes it).
   31 |     await expect(page.locator('.app-last-intent')).toContainText('collapsed');
   32 |   });
-  33 | 
+  33 |
   34 |   test('Escape closes the menu and focus returns to the row', async ({ page }) => {
   35 |     const folder = rowByName(page, 'Cases');
   36 |     const id = await folder.getAttribute('data-node-id');
   37 |     await folder.click({ button: 'right' });
   38 |     await expect(builtInMenu(page)).toBeVisible();
-  39 | 
+  39 |
   40 |     await page.keyboard.press('Escape');
 > 41 |     await expect(builtInMenu(page)).toBeHidden();
      |                                     ^ Error: expect(locator).toBeHidden() failed
   42 |     await expect.poll(() => focusedNodeId(page)).toBe(id);
   43 |   });
-  44 | 
+  44 |
   45 |   test('Shift+F10 opens the menu on the focused row', async ({ page }) => {
   46 |     const folder = rowByName(page, 'Cases');
   47 |     await folder.click();
   48 |     await page.keyboard.press('Shift+F10');
   49 |     await expect(builtInMenu(page)).toBeVisible();
   50 |   });
-  51 | 
+  51 |
   52 |   test('menu opens at both virtualized edges (Home / End targets)', async ({ page }) => {
   53 |     const first = rows(page).first();
   54 |     await first.click();
-  55 | 
+  55 |
   56 |     // Bottom edge: End scrolls the virtual viewport and focuses the last row.
   57 |     await page.keyboard.press('End');
   58 |     await page.keyboard.press('Shift+F10');
   59 |     await expect(builtInMenu(page)).toBeVisible();
   60 |     await page.keyboard.press('Escape');
-  61 | 
+  61 |
   62 |     // Top edge again — the row DOM at the far end was recycled in between.
   63 |     await page.keyboard.press('Home');
   64 |     await page.keyboard.press('Shift+F10');
   65 |     await expect(builtInMenu(page)).toBeVisible();
   66 |   });
-  67 | 
+  67 |
   68 |   test('scrolling the viewport closes the menu (settled close-on-scroll)', async ({ page }) => {
   69 |     await rowByName(page, 'Cases').click({ button: 'right' });
   70 |     await expect(builtInMenu(page)).toBeVisible();
-  71 | 
+  71 |
   72 |     await page
   73 |       .locator('.tree-viewport')
   74 |       .evaluate((viewport) => viewport.scrollBy({ top: 200 }));
   75 |     await expect(builtInMenu(page)).toBeHidden();
   76 |   });
   77 | });
-  78 | 
+  78 |
 ```

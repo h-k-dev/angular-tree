@@ -4,10 +4,7 @@ import { firstValueFrom, Observable } from 'rxjs';
 import { CheckState, TreeChildrenAccessor, TreeExpansionKey } from './types';
 
 /** Outcome of `ensureChildren` — the component maps this to `childrenLoaded`. */
-export type LoadResult =
-  | { status: 'noop' }
-  | { status: 'loaded' }
-  | { status: 'error'; error: unknown };
+export type LoadResult = { status: 'noop' } | { status: 'loaded' } | { status: 'error'; error: unknown };
 
 /** Where in the hovered row the pointer sits (ROADMAP Phase 4 three-zone). */
 export type DropZone = 'before' | 'inside' | 'after';
@@ -80,16 +77,12 @@ export class TreeController<T> {
   // ---------------------------------------------------------------------------
 
   /** Derived from `defaultExpandedKeys` until the first expand/collapse write. */
-  readonly expandedIds = linkedSignal<ReadonlySet<string>>(
-    () => new Set(this.#inputs.defaultExpandedKeys()),
-  );
+  readonly expandedIds = linkedSignal<ReadonlySet<string>>(() => new Set(this.#inputs.defaultExpandedKeys()));
   /** Mirror of the consumer's `SelectionModel` (bridged by the component). */
   readonly selectedIds = signal<ReadonlySet<string>>(new Set());
   readonly editingId = signal<string | null>(null);
   /** Derived from `defaultFocusedKey` until the first focus write (v2). */
-  readonly focusedId = linkedSignal<string | null>(
-    () => this.#inputs.defaultFocusedKey() ?? null,
-  );
+  readonly focusedId = linkedSignal<string | null>(() => this.#inputs.defaultFocusedKey() ?? null);
 
   // ---------------------------------------------------------------------------
   // Lazy loading (virtualization-proof by design: everything lives here,
@@ -181,9 +174,7 @@ export class TreeController<T> {
     const isCurrent = () => (this.#loadGeneration.get(key) ?? 0) === generation;
 
     this.#setLoadState(key, 'loading');
-    const task: Promise<LoadResult> = (
-      async instanceof Observable ? firstValueFrom(async) : async
-    ).then(
+    const task: Promise<LoadResult> = (async instanceof Observable ? firstValueFrom(async) : async).then(
       (children: readonly T[]): LoadResult => {
         if (!isCurrent()) return { status: 'noop' };
         this.#loadedChildren.update((current) => new Map(current).set(key, children));
@@ -217,13 +208,7 @@ export class TreeController<T> {
     const keys =
       key != null
         ? [key]
-        : [
-            ...new Set([
-              ...this.#loadedChildren().keys(),
-              ...this.#inflight.keys(),
-              ...this.#loadStates().keys(),
-            ]),
-          ];
+        : [...new Set([...this.#loadedChildren().keys(), ...this.#inflight.keys(), ...this.#loadStates().keys()])];
 
     for (const invalidKey of keys) {
       this.#loadGeneration.set(invalidKey, (this.#loadGeneration.get(invalidKey) ?? 0) + 1);
@@ -305,11 +290,7 @@ export class TreeController<T> {
           // Pre-order invariant: children append *after* their parent, so a
           // reverse pass sees children first (checkStates depends on this).
           // Single mutation before the entry is published anywhere.
-          (entry as { childKeys: readonly string[] }).childKeys = visit(
-            childNodes,
-            nodeKey,
-            level + 1,
-          );
+          (entry as { childKeys: readonly string[] }).childKeys = visit(childNodes, nodeKey, level + 1);
         }
         return nodeKey;
       });
@@ -436,7 +417,11 @@ export class TreeController<T> {
 
   expandAll() {
     this.expandedIds.set(
-      new Set(this.flat().list.filter((entry) => entry.loaded).map((entry) => entry.key)),
+      new Set(
+        this.flat()
+          .list.filter((entry) => entry.loaded)
+          .map((entry) => entry.key),
+      ),
     );
   }
 
@@ -517,11 +502,7 @@ export class TreeController<T> {
    * dragged subtree (every dragged id is checked — multi-drag contract).
    * `inside` on a non-expandable row degrades to `after` (react-arborist).
    */
-  dropTargetFor(
-    dragKeys: readonly string[],
-    targetKey: string,
-    zone: DropZone,
-  ): DropTarget<T> | null {
+  dropTargetFor(dragKeys: readonly string[], targetKey: string, zone: DropZone): DropTarget<T> | null {
     const { map } = this.flat();
     const target = map.get(targetKey);
     if (!target) return null;

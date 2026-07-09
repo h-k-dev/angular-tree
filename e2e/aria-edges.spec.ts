@@ -25,9 +25,7 @@ test.describe('ARIA at virtualized edges', () => {
 
     // Virtualization is actually on: far fewer rows rendered than exist.
     const rendered = await rows(page).count();
-    const total = await page.evaluate(
-      () => document.querySelectorAll('.tree-viewport [data-node-id]').length,
-    );
+    const total = await page.evaluate(() => document.querySelectorAll('.tree-viewport [data-node-id]').length);
     expect(total).toBe(rendered); // recycled DOM, not a hidden full render
   });
 

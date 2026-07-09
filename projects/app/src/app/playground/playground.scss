@@ -1,0 +1,115 @@
+// Page container — the shell's <main> scrolls; this page stacks its content.
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+// Example controls: one wrapping row — search, scale, load, upload, intents.
+.playground-controls {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+}
+
+.app-search {
+  flex: 1 1 12rem;
+  max-inline-size: 20rem;
+  min-inline-size: 8rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--mat-sys-outline);
+  border-radius: 1rem;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+}
+
+.playground-intents {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin-inline-start: auto;
+  font: var(--mat-sys-body-small);
+}
+
+.app-active-node {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.app-last-intent {
+  color: var(--mat-sys-primary);
+}
+
+// Controls (~2.5rem) + toolbar (64px) + paddings; the card fills the rest of
+// the first viewport. Bounded below so tiny screens still get a usable tree.
+.demo-card--tree {
+  display: flex;
+  flex-direction: column;
+  block-size: calc(100dvh - 64px - 9.5rem);
+  min-block-size: 18rem;
+
+  app-tree-example {
+    flex: 1 1 auto;
+    min-block-size: 0;
+  }
+}
+
+// Header row of the tree card: the view tabs.
+.demo-card-bar {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem 1rem;
+  border-block-end: 1px solid var(--mat-sys-outline-variant);
+  padding: 0.25rem 0.5rem;
+}
+
+// PrimeNG-style view switcher: Preview / HTML / TS / SCSS.
+.demo-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.demo-tab {
+  padding: 0.25rem 0.75rem;
+  border: none;
+  border-radius: 100vw;
+  background: transparent;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-medium);
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 8%, transparent);
+  }
+
+  &[aria-selected='true'] {
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+  }
+}
+
+// Code panes show the example component's REAL source files (fetched as
+// assets, Shiki-highlighted) — they cannot drift from the live preview.
+// The pre/span styling lives in styles.scss: innerHTML content carries no
+// _ngcontent attribute, so scoped rules can't reach it.
+.demo-code {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow: auto;
+}
+
+.demo-code--loading {
+  padding: 1rem 1.25rem;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.demo-hidden {
+  display: none !important;
+}

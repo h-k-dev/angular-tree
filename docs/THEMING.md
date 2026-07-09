@@ -12,26 +12,26 @@ Because the chains sit at point of use rather than being declared on the host el
 
 ## Tokens
 
-| Token | M3 system fallback | Final fallback | Used for |
-|---|---|---|---|
-| `--tree-bg` | `--mat-sys-surface` | `#ffffff` | Tree background, drag preview |
-| `--tree-text` | `--mat-sys-on-surface` | `#1d1b20` | Row text |
-| `--tree-font` | `--mat-sys-body-medium` | `400 0.875rem/1.25rem Roboto, sans-serif` | Typography (full `font` shorthand) |
-| `--tree-node-hover` | `--mat-sys-surface-container-highest` | `#e6e6e6` | Row hover |
-| `--tree-node-selected` | `--mat-sys-secondary-container` | `#e8def8` | Selected row (`[data-selected]`) |
-| `--tree-focus-ring` | `--mat-sys-primary` | `#6750a4` | `:focus-visible` outline |
-| `--tree-drop-indicator` | `--mat-sys-primary` | `#6750a4` | Drop line/box, count badge |
-| `--tree-drag-shadow` | `--mat-sys-level3` | `0 2px 8px rgb(0 0 0 / 0.3)` | Drag preview elevation |
-| `--tree-badge-text` | `--mat-sys-on-primary` | `#ffffff` | Multi-drag count badge text |
-| `--tree-indent` | — | `1.5rem` | Per-level indentation step |
-| `--tree-guide` | `--mat-sys-outline-variant` | `#cac4d0` | Indent guide lines (`[indentGuides]`); hover uses `--tree-focus-ring` |
-| `--tree-menu-bg` | `--mat-sys-surface-container` | `#f3edf7` | Built-in context-menu shell background (`treeContextMenu`) |
-| `--tree-menu-radius` | — | `8px` | Context-menu shell corner radius |
-| `--tree-menu-shadow` | `--mat-sys-level2` | `0 2px 8px rgb(0 0 0 / 0.25)` | Context-menu shell elevation |
+| Token                   | M3 system fallback                    | Final fallback                            | Used for                                                              |
+| ----------------------- | ------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------- |
+| `--tree-bg`             | `--mat-sys-surface`                   | `#ffffff`                                 | Tree background, drag preview                                         |
+| `--tree-text`           | `--mat-sys-on-surface`                | `#1d1b20`                                 | Row text                                                              |
+| `--tree-font`           | `--mat-sys-body-medium`               | `400 0.875rem/1.25rem Roboto, sans-serif` | Typography (full `font` shorthand)                                    |
+| `--tree-node-hover`     | `--mat-sys-surface-container-highest` | `#e6e6e6`                                 | Row hover                                                             |
+| `--tree-node-selected`  | `--mat-sys-secondary-container`       | `#e8def8`                                 | Selected row (`[data-selected]`)                                      |
+| `--tree-focus-ring`     | `--mat-sys-primary`                   | `#6750a4`                                 | `:focus-visible` outline                                              |
+| `--tree-drop-indicator` | `--mat-sys-primary`                   | `#6750a4`                                 | Drop line/box, count badge                                            |
+| `--tree-drag-shadow`    | `--mat-sys-level3`                    | `0 2px 8px rgb(0 0 0 / 0.3)`              | Drag preview elevation                                                |
+| `--tree-badge-text`     | `--mat-sys-on-primary`                | `#ffffff`                                 | Multi-drag count badge text                                           |
+| `--tree-indent`         | —                                     | `1.5rem`                                  | Per-level indentation step                                            |
+| `--tree-guide`          | `--mat-sys-outline-variant`           | `#cac4d0`                                 | Indent guide lines (`[indentGuides]`); hover uses `--tree-focus-ring` |
+| `--tree-menu-bg`        | `--mat-sys-surface-container`         | `#f3edf7`                                 | Built-in context-menu shell background (`treeContextMenu`)            |
+| `--tree-menu-radius`    | —                                     | `8px`                                     | Context-menu shell corner radius                                      |
+| `--tree-menu-shadow`    | `--mat-sys-level2`                    | `0 2px 8px rgb(0 0 0 / 0.25)`             | Context-menu shell elevation                                          |
 
 Indentation is applied as `padding-inline-start: calc(var(--tree-level) * var(--tree-indent, 1.5rem))` — logical properties, so RTL mirrors for free. `--tree-level` is set per row by the tree; treat it as read-only.
 
-Two more read-only variables the tree *publishes* (outputs, not inputs): `--tree-level` (above) and `--tree-row-height` on the host — the `[itemSize]` input republished so your row-content CSS (toggle targets, spacers, indent) can derive from the same number the scroll strategy uses. Row height itself is controlled ONLY via `[itemSize]`; see docs/VIRTUALIZATION.md.
+Two more read-only variables the tree _publishes_ (outputs, not inputs): `--tree-level` (above) and `--tree-row-height` on the host — the `[itemSize]` input republished so your row-content CSS (toggle targets, spacers, indent) can derive from the same number the scroll strategy uses. Row height itself is controlled ONLY via `[itemSize]`; see docs/VIRTUALIZATION.md.
 
 Indent guide lines are drawn at `calc(var(--tree-indent) / 2)` within the indent column, so they stay centered under the toggle column at any indent — set `--tree-indent` to your toggle's width (e.g. `32px`) for exact alignment.
 
@@ -62,7 +62,7 @@ With Material, dark mode is automatic (the `--mat-sys-*` values flip). Without i
 
 ### Row state hooks
 
-Rows expose state as data attributes, so consumer stylesheets can restyle states without fighting the defaults: `[data-selected]` (in the selection), `[data-move-source]` (marked by Ctrl+X, awaiting keyboard drop), and `[data-node-id]` (stable per-node key). For *depth*-based styling no extra attribute exists by design — `aria-level` is the industry-standard marker and is always set (root rows are `[aria-level='1']`); the template context additionally exposes `level` for structural decisions (e.g. the demo skips the leaf spacer at root so parentless files sit flush left). Example:
+Rows expose state as data attributes, so consumer stylesheets can restyle states without fighting the defaults: `[data-selected]` (in the selection), `[data-move-source]` (marked by Ctrl+X, awaiting keyboard drop), and `[data-node-id]` (stable per-node key). For _depth_-based styling no extra attribute exists by design — `aria-level` is the industry-standard marker and is always set (root rows are `[aria-level='1']`); the template context additionally exposes `level` for structural decisions (e.g. the demo skips the leaf spacer at root so parentless files sit flush left). Example:
 
 ```css
 angular-tree .tree-node[data-move-source] {
@@ -72,14 +72,14 @@ angular-tree .tree-node[data-move-source] {
 
 ## Consumer-template tokens (convention)
 
-The tree ships no toggle or checkbox UI, so it never *applies* these — but consumer templates should consume them, keeping row-content geometry configurable through the same `--tree-*` vocabulary as everything else. Three sizes rule everything, in a strict derivation chain:
+The tree ships no toggle or checkbox UI, so it never _applies_ these — but consumer templates should consume them, keeping row-content geometry configurable through the same `--tree-*` vocabulary as everything else. Three sizes rule everything, in a strict derivation chain:
 
-| Token | Default | Used for |
-|---|---|---|
-| `--tree-row-height` | *(published by the tree — read-only)* | The `[itemSize]` input as a CSS variable; root of the chain |
-| `--tree-toggle-size` | `var(--tree-row-height)` | **The master size for row controls** — see below |
-| `--tree-toggle-spacing-factor` | `0.5` | Unitless; derives the leaf spacer from the toggle size |
-| `--tree-checkbox-radius` | `100vw` (circle) | Corner radius of the checkbox state layer |
+| Token                          | Default                               | Used for                                                    |
+| ------------------------------ | ------------------------------------- | ----------------------------------------------------------- |
+| `--tree-row-height`            | _(published by the tree — read-only)_ | The `[itemSize]` input as a CSS variable; root of the chain |
+| `--tree-toggle-size`           | `var(--tree-row-height)`              | **The master size for row controls** — see below            |
+| `--tree-toggle-spacing-factor` | `0.5`                                 | Unitless; derives the leaf spacer from the toggle size      |
+| `--tree-checkbox-radius`       | `100vw` (circle)                      | Corner radius of the checkbox state layer                   |
 
 ### `--tree-toggle-size` — the master control size
 
@@ -110,6 +110,6 @@ angular-tree {
 
 **Invariant: `--tree-toggle-size` must never exceed `--tree-row-height`.** Rows are fixed-height boxes (that's what virtualization is built on — docs/VIRTUALIZATION.md); a control taller than its row breaks the UI: state layers clip against row bounds, hover circles overlap adjacent rows' hit targets, and the thread line no longer centers on what you see. Equal to the row height is the ceiling (the demo runs there — adjacent state layers just touch); strictly smaller buys the hover circles breathing room. If you need a bigger control, raise `[itemSize]` — never the toggle alone.
 
-## What the tree does *not* style
+## What the tree does _not_ style
 
 By design (the tree ships no UI it doesn't own): toggle buttons, icons, checkboxes, rename inputs, context menus, and the empty/loading states (`treeEmptyDef` / `treeLoadingDef`) are consumer templates — style them in your own stylesheet. The tree owns only the centered slot each renders in (`.tree-state`, overlaying the host). The demo app (`projects/app`) shows a complete Material-flavored example.

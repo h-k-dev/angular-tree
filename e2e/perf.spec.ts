@@ -22,9 +22,7 @@ test.describe('100k-node perf', () => {
     const renderMs = Date.now() - renderStart;
 
     // --- Scroll: jump through the whole list in big strides -----------------
-    const scrollHeight = await page
-      .locator('.tree-viewport')
-      .evaluate((viewport) => viewport.scrollHeight);
+    const scrollHeight = await page.locator('.tree-viewport').evaluate((viewport) => viewport.scrollHeight);
     expect(scrollHeight).toBeGreaterThan(1_000_000); // ~110k × 40px — virtualization is real
 
     const scrollStart = Date.now();
@@ -43,9 +41,7 @@ test.describe('100k-node perf', () => {
     await page.locator('.app-search').fill('');
     await expect(rows(page).first()).toBeVisible();
 
-    console.log(
-      `[perf 110k] render ${renderMs}ms · 4-stop scroll ${scrollMs}ms · search ${searchMs}ms`,
-    );
+    console.log(`[perf 110k] render ${renderMs}ms · 4-stop scroll ${scrollMs}ms · search ${searchMs}ms`);
     expect(renderMs).toBeLessThan(15_000);
     expect(scrollMs).toBeLessThan(5_000);
     expect(searchMs).toBeLessThan(5_000);

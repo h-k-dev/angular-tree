@@ -84,13 +84,7 @@
   </ng-container>
 
   <!-- File fallback — explicit ng-template syntax (also supported; structural desugars to it) -->
-  <ng-template
-    treeNodeDef
-    let-node
-    let-level="level"
-    let-isEditing="isEditing"
-    let-checkState="checkState"
-  >
+  <ng-template treeNodeDef let-node let-level="level" let-isEditing="isEditing" let-checkState="checkState">
     <!-- Parentless files sit flush left — the toggle stand-in spacer only
          makes sense under an expanded ancestor (level from the context;
          CSS alternative: [aria-level='1']). -->
@@ -103,9 +97,7 @@
       @if (checkState === 'checked') {
         <mat-icon class="node-icon node-icon--selected">check_box</mat-icon>
       } @else {
-        <mat-icon class="node-icon" [class]="'node-icon--' + node.ext">{{
-          fileIcon(node.ext)
-        }}</mat-icon>
+        <mat-icon class="node-icon" [class]="'node-icon--' + node.ext">{{ fileIcon(node.ext) }}</mat-icon>
       }
     </button>
     @if (isEditing) {
@@ -136,9 +128,7 @@
         <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.expandDescendants(node)">
           Expand subtree
         </button>
-        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.collapse(node)">
-          Collapse
-        </button>
+        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.collapse(node)">Collapse</button>
         <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="menuDelete(ids)">
           Delete{{ ids.length > 1 ? ' (' + ids.length + ')' : '' }}
         </button>
@@ -147,14 +137,10 @@
         <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.expandDescendants(node)">
           Expand subtree
         </button>
-        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.collapse(node)">
-          Collapse
-        </button>
+        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.collapse(node)">Collapse</button>
       }
       @default {
-        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.edit(node)">
-          Rename
-        </button>
+        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.edit(node)">Rename</button>
         <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="menuToggleStar(node)">
           {{ node.starred ? 'Unstar' : 'Star' }}
         </button>

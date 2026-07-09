@@ -15,7 +15,7 @@ High-performance standalone Angular tree component (react-arborist internals, An
 - DX and Material familiarity outrank micro-optimization at the API boundary; performance work stays internal (flat model, virtualization).
 - The tree ships no UI it doesn't own: no built-in menu, editor, or checkbox — directives + template contracts instead.
 - **Scaffold with the Angular CLI** (`ng generate service|directive|component …`), never by hand — current Angular defaults apply (no `.service.ts`/`.directive.ts` file suffixes).
-- **Modern Angular naming: no `Service`/`Directive`/`Component` class suffixes.** Names describe what the thing *does* (`TreeController`, `TreeNodeToggle`, `AngularTree`) — see STYLE.md § Naming.
+- **Modern Angular naming: no `Service`/`Directive`/`Component` class suffixes.** Names describe what the thing _does_ (`TreeController`, `TreeNodeToggle`, `AngularTree`) — see STYLE.md § Naming.
 
 ## Status
 

@@ -1,0 +1,32 @@
+{
+  // Enable format on save for all files
+  "editor.formatOnSave": true,
+  // Use ESLint to fix TypeScript and JavaScript files on save
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  // Set Prettier as the default formatter for HTML files
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  // Set Prettier as the default formatter for TypeScript files
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  // Set Prettier as the default formatter for JavaScript files
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  // Set Prettier as the default formatter for JSON files
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  // Set Prettier as the default formatter for SCSS files
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  // Angular Language Service settings
+  "angular.enable-strict-mode-prompt": false,
+  "cSpell.words": ["bpmnlint", "editables", "flaticon", "Preselection"]
+}

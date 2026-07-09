@@ -23,7 +23,7 @@ readonly #generatedId = `table-${Table.nextId++}`;
 _id = computed(() => this.tableId() || this.#generatedId);
 ```
 
-- `linkedSignal()` only when the value is genuinely *writable but derived-by-default*. If nothing ever writes it, it's a `computed()` — downgrade it.
+- `linkedSignal()` only when the value is genuinely _writable but derived-by-default_. If nothing ever writes it, it's a `computed()` — downgrade it.
 - Guard-style helpers (`hasData`, `isCaseReferred`) are standalone pure functions or arrow fields; they take values, not `this` state, so they're testable in isolation.
 
 ## Dependency Injection
@@ -44,8 +44,10 @@ _id = computed(() => this.tableId() || this.#generatedId);
 ```ts
 selections = computed(() =>
   this.displayType() === 'table'
-    ? this.matTable()?.selectionColumn()?.selected() ?? []
-    : this.tree()?.selection().map((n) => n.data) ?? [],
+    ? (this.matTable()?.selectionColumn()?.selected() ?? [])
+    : (this.tree()
+        ?.selection()
+        .map((n) => n.data) ?? []),
 );
 ```
 
@@ -65,7 +67,7 @@ selections = computed(() =>
 import('./delete/delete').then(({ Delete }) => this.#dialog.open(Delete, { data }));
 ```
 
-- **Bridge callback APIs to promises before branching on their results.** Callback-style APIs (`FileSystemFileEntry.file(cb)`) complete *after* your synchronous code:
+- **Bridge callback APIs to promises before branching on their results.** Callback-style APIs (`FileSystemFileEntry.file(cb)`) complete _after_ your synchronous code:
 
 ```ts
 // ❌ race: files is still empty at the check
@@ -94,18 +96,18 @@ cpVisibleClause = signal<any>(undefined);
 ```
 
 - Better: alias it once (`type Lb3Clause = unknown`) and narrow at the seam — `unknown` forces the guard, `any` merely hopes for it. New code uses the alias; `any` is grandfathered, not grown.
-- Defensive comments state *consequences*, not mechanics: `// Backend crashes if the filter is invalid` is good; `// check the filter` is noise.
+- Defensive comments state _consequences_, not mechanics: `// Backend crashes if the filter is invalid` is good; `// check the filter` is noise.
 
 ## Naming
 
-| Pattern | Meaning |
-|---|---|
-| `bulk*` | Operates on the current multi-selection |
-| `is*` / `has*` | Boolean signal, computed, or guard |
-| `*Clause` | One fragment of a backend filter, composed by `and()`/`where` |
-| `#name` | Injected service or true private |
-| `_name` | Internal-but-bindable (template needs it, consumers don't) |
-| `smart*` | Heuristic dispatch — tries strategies in priority order |
+| Pattern        | Meaning                                                       |
+| -------------- | ------------------------------------------------------------- |
+| `bulk*`        | Operates on the current multi-selection                       |
+| `is*` / `has*` | Boolean signal, computed, or guard                            |
+| `*Clause`      | One fragment of a backend filter, composed by `and()`/`where` |
+| `#name`        | Injected service or true private                              |
+| `_name`        | Internal-but-bindable (template needs it, consumers don't)    |
+| `smart*`       | Heuristic dispatch — tries strategies in priority order       |
 
 - **No `Service`/`Directive`/`Component`/`Pipe` class suffixes** (modern Angular style guide). The name says what it does: `TreeController`, not `TreeControllerService`; `TreeNodeToggle`, not `TreeNodeToggleDirective`. File names match, without type suffixes (`tree-controller.ts`, not `tree-controller.service.ts`).
 - **Scaffold via `ng generate`**, never by hand — keeps file layout, tsconfig references, and naming aligned with current CLI defaults.

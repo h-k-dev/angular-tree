@@ -63,22 +63,18 @@
                 "glob": "tree-example.*",
                 "input": "projects/app/src/app/tree-example",
                 "output": "source",
-                "ignore": [
-                  "*.spec.ts"
-                ]
+                "ignore": ["*.spec.ts"]
               }
             ],
-            "styles": [
-              "projects/app/src/styles.scss"
-            ]
+            "styles": ["projects/app/src/styles.scss"]
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "2MB",
-                  "maximumError": "5MB"
+                  "maximumWarning": "600kB",
+                  "maximumError": "1MB"
                 },
                 {
                   "type": "anyComponentStyle",

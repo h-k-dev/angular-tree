@@ -23,7 +23,6 @@ body.dark-mode {
   color-scheme: dark;
 }
 
-
 body {
   // Default the application to a light color theme. This can be changed to
   // `dark` to enable the dark color theme, or to `light dark` to defer to the
@@ -42,6 +41,34 @@ body {
   height: 100%;
 }
 /* You can add global styles to this file, and also import other style files */
+
+// Shared demo-card chrome — used by both pages (playground + API reference).
+.demo-card {
+  flex: 0 0 auto;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+  background: var(--mat-sys-surface);
+  overflow: hidden;
+}
+
+.demo-card code {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.demo-card-title {
+  margin: 0 0 0.25rem;
+  font: var(--mat-sys-title-medium);
+}
+
+.demo-card-hint {
+  margin: 0.25rem 0 0.75rem;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+
+  code {
+    font-size: 0.8125rem;
+  }
+}
 
 // Shiki code panes (demo "HTML/TS/SCSS" tabs). Global on purpose: the panes
 // arrive via [innerHTML], so they carry no _ngcontent attribute and component-

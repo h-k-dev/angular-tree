@@ -71,12 +71,7 @@ class MenuHost {
 @Component({
   imports: [AngularTree, TreeNodeDef],
   template: `
-    <angular-tree
-      style="height: 400px"
-      [dataSource]="data"
-      [childrenAccessor]="children"
-      [expansionKey]="key"
-    >
+    <angular-tree style="height: 400px" [dataSource]="data" [childrenAccessor]="children" [expansionKey]="key">
       <ng-template treeNodeDef let-node>{{ node.name }}</ng-template>
     </angular-tree>
   `,
@@ -105,13 +100,10 @@ describe('AngularTree built-in context menu', () => {
     await hostFixture.whenStable();
   }
 
-  const rowEl = (key: string): HTMLElement =>
-    fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
+  const rowEl = (key: string): HTMLElement => fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
   const menuEl = (): HTMLElement | null => document.querySelector('.tree-menu');
   const rightClick = (element: HTMLElement) =>
-    element.dispatchEvent(
-      new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 10, clientY: 40 }),
-    );
+    element.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 10, clientY: 40 }));
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({ imports: [MenuHost, BareHost] }).compileComponents();
@@ -151,9 +143,7 @@ describe('AngularTree built-in context menu', () => {
   it('Shift+F10 opens the menu for the focused row (keyboard parity)', async () => {
     fixture.nativeElement
       .querySelector('cdk-virtual-scroll-viewport')!
-      .dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'F10', shiftKey: true, bubbles: true, cancelable: true }),
-      );
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'F10', shiftKey: true, bubbles: true, cancelable: true }));
     await fixture.whenStable();
 
     expect(menuEl()).toBeTruthy();
@@ -173,9 +163,7 @@ describe('AngularTree built-in context menu', () => {
     await fixture.whenStable();
     expect(menuEl()).toBeTruthy();
 
-    fixture.nativeElement
-      .querySelector('cdk-virtual-scroll-viewport')!
-      .dispatchEvent(new Event('scroll'));
+    fixture.nativeElement.querySelector('cdk-virtual-scroll-viewport')!.dispatchEvent(new Event('scroll'));
     await fixture.whenStable();
     expect(menuEl()).toBeNull();
   });
@@ -186,9 +174,7 @@ describe('AngularTree built-in context menu', () => {
     await forceViewportSize(bare);
 
     const row: HTMLElement = bare.nativeElement.querySelector('[data-node-id="a"]');
-    const allowed = row.dispatchEvent(
-      new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
-    );
+    const allowed = row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
     await bare.whenStable();
 
     expect(allowed).toBe(true); // browser menu untouched — consumer trigger's job

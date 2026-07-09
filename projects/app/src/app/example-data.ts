@@ -78,8 +78,7 @@ export function applyMove(
   };
 
   const targetChildren = parentId == null ? roots : (findFolder(roots, parentId)?.children ?? []);
-  const adjustedIndex =
-    index - targetChildren.slice(0, index).filter((child) => dragSet.has(child.id)).length;
+  const adjustedIndex = index - targetChildren.slice(0, index).filter((child) => dragSet.has(child.id)).length;
 
   const removed: DocNode[] = [];
   const prune = (nodes: DocNode[]): DocNode[] =>
@@ -187,14 +186,7 @@ const BASENAMES = [
   'Due Diligence',
   'Settlement Offer',
 ];
-const STATUSES: readonly (FileStatus | undefined)[] = [
-  undefined,
-  undefined,
-  undefined,
-  'draft',
-  'signed',
-  'final',
-];
+const STATUSES: readonly (FileStatus | undefined)[] = [undefined, undefined, undefined, 'draft', 'signed', 'final'];
 
 /** Deterministic pseudo-random — stable tree across reloads, no Math.random. */
 const seeded = (seed: number) => () => {

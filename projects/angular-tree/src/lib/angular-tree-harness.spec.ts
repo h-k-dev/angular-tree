@@ -80,9 +80,7 @@ describe('TreeHarness', () => {
 
   /** jsdom has no layout — fake the viewport size so cdkVirtualFor renders rows. */
   async function forceViewportSize() {
-    const element: HTMLElement = fixture.nativeElement.querySelector(
-      'cdk-virtual-scroll-viewport',
-    );
+    const element: HTMLElement = fixture.nativeElement.querySelector('cdk-virtual-scroll-viewport');
     Object.defineProperty(element, 'clientHeight', { value: 400, configurable: true });
     Object.defineProperty(element, 'clientWidth', { value: 400, configurable: true });
     element.getBoundingClientRect = () =>
@@ -111,13 +109,7 @@ describe('TreeHarness', () => {
 
   it('expandNode reveals children; collapseNode hides them again', async () => {
     await tree.expandNode({ text: 'Alpha' });
-    expect(await tree.getVisibleTexts()).toEqual([
-      'Alpha',
-      'Alpha One',
-      'Alpha Two',
-      'Beta',
-      'Gamma',
-    ]);
+    expect(await tree.getVisibleTexts()).toEqual(['Alpha', 'Alpha One', 'Alpha Two', 'Beta', 'Gamma']);
 
     await tree.collapseNode({ text: 'Alpha' });
     expect(await tree.getVisibleTexts()).toEqual(['Alpha', 'Beta', 'Gamma']);
