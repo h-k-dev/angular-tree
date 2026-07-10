@@ -9,7 +9,7 @@ import { SelectionModel } from '@angular/cdk/collections';
 import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { HarnessLoader } from '@angular/cdk/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { TreeHarness } from 'angular-tree/testing';
+import { TreeHarness } from '@h-k-dev/angular-tree/testing';
 
 import { AngularTree } from './angular-tree';
 import { TreeNodeCheckbox } from './tree-node-checkbox';

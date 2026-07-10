@@ -6,7 +6,7 @@ import {
   type ElementDimensions,
   type TestElement,
 } from '@angular/cdk/testing';
-import type { CheckState } from 'angular-tree';
+import type { CheckState } from '@h-k-dev/angular-tree';
 
 /** Criteria to filter `TreeHarness` instances. */
 export interface TreeHarnessFilters extends BaseHarnessFilters {}

@@ -4,8 +4,8 @@
   "compileOnSave": false,
   "compilerOptions": {
     "paths": {
-      "angular-tree": ["./projects/angular-tree/src/public-api.ts", "./dist/angular-tree"],
-      "angular-tree/testing": ["./projects/angular-tree/testing/public-api.ts", "./dist/angular-tree/testing"]
+      "@h-k-dev/angular-tree": ["./projects/angular-tree/src/public-api.ts", "./dist/angular-tree"],
+      "@h-k-dev/angular-tree/testing": ["./projects/angular-tree/testing/public-api.ts", "./dist/angular-tree/testing"]
     },
     "strict": true,
     "noImplicitOverride": true,

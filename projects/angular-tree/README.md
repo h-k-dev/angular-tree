@@ -10,7 +10,7 @@ High-performance, headless Angular tree component: react-arborist internals, Ang
 ## Install
 
 ```bash
-npm install angular-tree
+npm install @h-k-dev/angular-tree
 ```
 
 Peer dependencies: `@angular/core|common|cdk` ≥ 21.2, `rxjs` ≥ 7.8.
@@ -49,7 +49,7 @@ All mutations are **intents**: the tree emits `moved` / `renamed` / `selectionCh
 
 ## Testing
 
-`angular-tree/testing` ships a CDK test harness (`TreeHarness`, `TreeNodeHarness`) including a real drag-gesture simulation (`dragTo`).
+`@h-k-dev/angular-tree/testing` ships a CDK test harness (`TreeHarness`, `TreeNodeHarness`) including a real drag-gesture simulation (`dragTo`).
 
 ## Docs
 

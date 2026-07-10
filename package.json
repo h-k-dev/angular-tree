@@ -8,6 +8,7 @@
     "build": "ng build angular-tree",
     "watch": "ng build angular-tree --watch --configuration development",
     "test": "ng test angular-tree && ng test app",
+    "test:ci": "ng test angular-tree --watch=false && ng test app --watch=false",
     "e2e": "playwright test"
   },
   "private": true,
@@ -29,6 +30,7 @@
     "@angular/cli": "^22.0.5",
     "@angular/compiler-cli": "^22.0.5",
     "@playwright/test": "^1.61.1",
+    "@semantic-release/exec": "^7.1.0",
     "@typescript-eslint/parser": "^8.62.0",
     "angular-eslint": "^22.0.0",
     "axe-core": "^4.12.1",
@@ -40,6 +42,7 @@
     "ng-packagr": "^22.0.1",
     "prettier": "^3.8.4",
     "prettier-eslint": "^17.1.1",
+    "semantic-release": "^25.0.5",
     "shiki": "^4.3.1",
     "typescript": "~6.0.3",
     "vitest": "^4.0.8"

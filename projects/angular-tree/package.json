@@ -1,7 +1,16 @@
 {
-  "name": "angular-tree",
-  "version": "0.0.1",
+  "name": "@h-k-dev/angular-tree",
+  "version": "0.0.0-development",
   "description": "High-performance headless Angular tree: virtualized (100k+ nodes), accessor-based, signals-only, zoneless. react-arborist internals with Angular Material DX.",
+  "author": "h-k-dev",
+  "homepage": "https://github.com/h-k-dev/angular-tree#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/h-k-dev/angular-tree.git"
+  },
+  "bugs": {
+    "url": "https://github.com/h-k-dev/angular-tree/issues"
+  },
   "keywords": [
     "angular",
     "tree",

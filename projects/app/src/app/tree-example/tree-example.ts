@@ -21,7 +21,7 @@ import {
   TreeNodeDef,
   TreeNodeEditInput,
   TreeNodeToggle,
-} from 'angular-tree';
+} from '@h-k-dev/angular-tree';
 
 import {
   applyCopy,

@@ -1,0 +1,119 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - development
+      - beta
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ─── Setup Bun instead of Node ───
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest # Or pin to a specific version like '1.1.0'
+
+      # ─── Install dependencies with Bun ───
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # ─── Runs your fast, headless Vitest suite ───
+      - name: Run tests
+        run: bun run test:ci
+
+      # ─── Only builds if tests pass ───
+      - name: Build library
+        run: bun run build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  release:
+    needs: build
+    if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'beta')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ─── Setup Bun for fast installs/builds ───
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # ─── Setup Node specifically for Semantic Release OIDC ───
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          # We omit `cache: 'npm'` here since Bun is doing the actual installing
+
+      # Ensure npm >= 11.5.1, required for OIDC Trusted Publishing via @semantic-release/npm.
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build library
+        run: bun run build
+
+      # Publishes via npm OIDC Trusted Publishing — no NPM_TOKEN required.
+      - name: Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bunx semantic-release@25
+
+  deploy-pages:
+    needs: build
+    if: github.event_name == 'push' && github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # ─── Build the demo app with the correct GitHub Pages base href ───
+      - name: Build demo app
+        run: bunx ng build app --configuration production --base-href /angular-tree/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/app/browser
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

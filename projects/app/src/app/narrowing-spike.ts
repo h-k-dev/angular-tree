@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
-import { AngularTree, TreeNodeDef } from 'angular-tree';
+import { AngularTree, TreeNodeDef } from '@h-k-dev/angular-tree';
 
 import { DocNode, isFolder } from './example-data';
 

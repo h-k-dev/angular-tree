@@ -5,7 +5,7 @@ import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 
-import { AngularTree, TreeContextMenu, TreeNodeDef, TreeNodeToggle } from 'angular-tree';
+import { AngularTree, TreeContextMenu, TreeNodeDef, TreeNodeToggle } from '@h-k-dev/angular-tree';
 
 import { DocNode, FolderNode, generateExampleTree, isFile, isFolder } from '../example-data';
 
