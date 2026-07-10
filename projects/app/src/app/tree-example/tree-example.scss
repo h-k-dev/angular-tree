@@ -112,6 +112,28 @@ angular-tree {
     color: var(--mat-sys-on-tertiary-container);
     text-transform: none;
   }
+
+  // DnD-rules showcase: what a bin accepts / which tag a file carries
+  &--bin {
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+    text-transform: none;
+  }
+
+  &--dnd {
+    background: var(--mat-sys-surface-container-highest);
+    color: var(--mat-sys-on-surface-variant);
+    text-transform: none;
+  }
+}
+
+// DnD-rules showcase: `locked` = disableDrag, not a security affordance
+.node-lock {
+  flex: 0 0 auto;
+  font-size: 16px;
+  inline-size: 16px;
+  block-size: 16px;
+  color: var(--mat-sys-on-surface-variant);
 }
 
 // Folder child-count pill

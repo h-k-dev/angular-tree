@@ -50,7 +50,12 @@ const flushMicrotasks = () => new Promise((resolve) => setTimeout(resolve));
       [searchMatch]="match"
       [typeaheadText]="text"
     >
-      <ng-template treeNodeDef let-node>{{ node.name }}</ng-template>
+      <ng-template treeNodeDef let-node let-hasError="hasError">
+        {{ node.name }}
+        @if (hasError) {
+          <button class="retry-probe"></button>
+        }
+      </ng-template>
     </angular-tree>
   `,
 })
@@ -402,6 +407,32 @@ describe('AngularTree', () => {
       await flushMicrotasks();
       expect(failTree.visibleRows().map((r) => r.key)).toContain('c1');
       expect(failTree.visibleRows().find((r) => r.key === 'c')!.context.hasError).toBe(false);
+    });
+
+    it('load state reaches the row DOM with no other interaction (zoneless CD)', async () => {
+      // Regression (found via the demo's flaky-folder showcase): loading/error
+      // change no signal any TEMPLATE tracks — successful loads repaint via
+      // visibleRows(), but a pending/failed load left the DOM stale, so the
+      // consumer's spinner/Retry UI never appeared until unrelated CD ran.
+      // The row's data-loading/data-error bindings are what track the state.
+      const failFixture = TestBed.createComponent(Host);
+      const host = failFixture.componentInstance;
+      let rejectLoad!: (error: unknown) => void;
+      host.lazyResolver = () => new Promise((_, reject) => (rejectLoad = reject));
+      await failFixture.whenStable();
+
+      failFixture.componentInstance.tree().expand(DATA[2]);
+      await failFixture.whenStable();
+      const row = () => failFixture.nativeElement.querySelector('[data-node-id="c"]') as HTMLElement;
+      expect(row().getAttribute('data-loading')).toBe('true');
+
+      rejectLoad(new Error('offline'));
+      await flushMicrotasks();
+      await failFixture.whenStable();
+      expect(row().getAttribute('data-loading')).toBeNull();
+      expect(row().getAttribute('data-error')).toBe('true');
+      // The projected def refreshed along with the row: error branch rendered.
+      expect(row().querySelector('.retry-probe')).not.toBeNull();
     });
   });
 });

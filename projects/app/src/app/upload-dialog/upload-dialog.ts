@@ -36,9 +36,12 @@ import { DocNode, FolderNode, generateExampleTree, isFile, isFolder } from '../e
 export class UploadDialog {
   readonly #dialogRef = inject<MatDialogRef<UploadDialog, FolderNode>>(MatDialogRef);
 
-  /** Real folders only — a smart folder can't receive uploads. */
-  readonly roots = generateExampleTree('standard').roots.filter(isFolder);
-  /** First area open so the dialog shows depth immediately. */
+  /** Real folders only — a smart folder can't receive uploads, and the
+   *  DnD-rules showcase is main-example furniture, not a destination. */
+  readonly roots = generateExampleTree('standard')
+    .roots.filter(isFolder)
+    .filter((node) => node.id !== 'dnd');
+  /** Cases opens first so the dialog shows depth immediately. */
   readonly expandedKeys = [this.roots[0].id];
 
   isFolder = isFolder;

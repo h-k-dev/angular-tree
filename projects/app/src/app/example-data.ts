@@ -7,6 +7,9 @@
 export type FileExtension = 'pdf' | 'docx' | 'xlsx' | 'eml' | 'png';
 export type FileStatus = 'draft' | 'signed' | 'final';
 
+/** File tag consumed by the demo's typed-drop rules ("Drag & drop rules" folder). */
+export type DndTag = 'A' | 'B' | 'C';
+
 export interface FolderNode {
   kind: 'folder';
   id: string;
@@ -16,6 +19,15 @@ export interface FolderNode {
   icon?: string;
   /** Children served async by the accessor (Phase 3 lazy-loading demo). */
   lazy?: boolean;
+  /** First load rejects (tree-example's accessor) — the `hasError` → Retry demo. */
+  flaky?: boolean;
+  /**
+   * Drop bin (`disableDrop` demo): only files whose `dnd` tag is listed may
+   * drop inside; `[]` accepts nothing. Absent = ordinary folder.
+   */
+  accepts?: readonly DndTag[];
+  /** Drag disabled (`disableDrag` demo) — drops inside are unaffected. */
+  locked?: boolean;
 }
 
 /** Virtual folder (saved search) — same shape, different def in the demo. */
@@ -36,6 +48,10 @@ export interface FileNode {
   size: number;
   status?: FileStatus;
   starred?: boolean;
+  /** Typed-drop tag (`disableDrop` demo): only bins accepting it take this file. */
+  dnd?: DndTag;
+  /** Drag disabled (`disableDrag` demo). */
+  locked?: boolean;
 }
 
 export type DocNode = FolderNode | SmartFolderNode | FileNode;
@@ -155,21 +171,23 @@ export function applyCopy(
   return graft(roots);
 }
 
-const AREAS = ['Cases', 'Contracts', 'Invoices', 'HR', 'Marketing', 'Litigation', 'Compliance', 'Archive'];
-
-/** Top-level areas carry themed icons — the "folder styles via types" demo. */
-const AREA_ICONS: Record<string, string> = {
-  Cases: 'gavel',
-  Contracts: 'history_edu',
-  Invoices: 'receipt_long',
-  HR: 'diversity_3',
-  Marketing: 'campaign',
-  Litigation: 'balance',
-  Compliance: 'verified_user',
-  Archive: 'inventory_2',
-};
-
+// "Cases" level pools — client → matter → phase → workstream (6 levels deep
+// with the Cases root above and the files below).
 const TOPICS = ['Acme Corp', 'Globex', 'Initech', 'Umbrella', 'Stark Industries', 'Wayne Enterprises'];
+// 'Contract Renewal' stays first: the perf e2e searches "contract" and must hit.
+const MATTERS = [
+  'Contract Renewal',
+  'Patent Dispute',
+  'Series B Financing',
+  'Data Breach',
+  'Acquisition',
+  'IPO Readiness',
+  'Tax Audit',
+  'Employment Claim',
+  'License Negotiation',
+  'Antitrust Review',
+];
+const PHASES = ['Intake', 'Discovery', 'Negotiation', 'Filing', 'Hearing', 'Closing', 'Post-Closing', 'Appeal'];
 const SUBJECTS = ['Drafts', 'Signed', 'Correspondence', 'Evidence', 'Internal'];
 const EXTENSIONS: readonly FileExtension[] = ['pdf', 'docx', 'xlsx', 'eml', 'png'];
 const BASENAMES = [
@@ -197,9 +215,9 @@ const seeded = (seed: number) => () => {
 export type ExampleScale = 'standard' | 'xl';
 
 /** `xl` ≈ 100k nodes — the ROADMAP Phase 2/8 virtualization smoke target. */
-const SCALES: Record<ExampleScale, { areas: number; topics: number; subjects: number; files: number }> = {
-  standard: { areas: 8, topics: 6, subjects: 5, files: 6 },
-  xl: { areas: 25, topics: 25, subjects: 10, files: 12 }, // ≈110k nodes (avg 16.5 files/subject)
+const SCALES: Record<ExampleScale, { clients: number; matters: number; phases: number; workstreams: number; files: number }> = {
+  standard: { clients: 6, matters: 4, phases: 3, workstreams: 3, files: 6 },
+  xl: { clients: 12, matters: 10, phases: 8, workstreams: 6, files: 12 }, // ≈100k nodes (avg 16.5 files/workstream)
 };
 
 export function generateExampleTree(scale: ExampleScale = 'standard'): {
@@ -239,28 +257,24 @@ export function generateExampleTree(scale: ExampleScale = 'standard'): {
     return { kind: 'folder', id, name, children, ...(icon ? { icon } : {}) };
   };
 
-  const roots: DocNode[] = Array.from({ length: counts.areas }, (_, a) => {
-    const areaName = label(AREAS, a);
-    return folder(
-      `${a}`,
-      areaName,
-      Array.from({ length: counts.topics }, (_, t) =>
-        folder(
-          `${a}/${t}`,
-          label(TOPICS, t),
-          Array.from({ length: counts.subjects }, (_, s) =>
-            folder(
-              `${a}/${t}/${s}`,
-              label(SUBJECTS, s),
-              files(`${a}/${t}/${s}`, counts.files + Math.floor(random() * 10)),
-            ),
-          ),
-          'domain',
-        ),
-      ),
-      AREA_ICONS[areaName.split(' ')[0]],
+  // "Cases" — the ONE deep hierarchy: it alone carries the node volume that
+  // makes virtualization visible (and the ~100k of `xl`), plus the search,
+  // checkbox-cascade, and status-chip material. Every other root demos one
+  // specific feature.
+  const LEVELS: { pool: readonly string[]; count: number; icon?: string }[] = [
+    { pool: TOPICS, count: counts.clients, icon: 'domain' },
+    { pool: MATTERS, count: counts.matters },
+    { pool: PHASES, count: counts.phases },
+    { pool: SUBJECTS, count: counts.workstreams },
+  ];
+  const branch = (prefix: string, depth: number): DocNode[] => {
+    const level = LEVELS[depth];
+    if (!level) return files(prefix, counts.files + Math.floor(random() * 10));
+    return Array.from({ length: level.count }, (_, i) =>
+      folder(`${prefix}/${i}`, label(level.pool, i), branch(`${prefix}/${i}`, depth + 1), level.icon),
     );
-  });
+  };
+  const roots: DocNode[] = [folder('cases', 'Cases', branch('cases', 0), 'gavel')];
 
   // Smart folder (saved search): *copies* of starred files — ids must stay
   // unique tree-wide, so the copies get their own. Starts collapsed (not in
@@ -281,6 +295,67 @@ export function generateExampleTree(scale: ExampleScale = 'standard'): {
   nodeCount += 1 + starred.length;
   roots.unshift({ kind: 'smart', id: 'smart-starred', name: 'Starred', icon: 'star', children: starred });
 
+  // Drag & drop rules showcase: every predicate combination under one root,
+  // each node named after the rule it demonstrates (predicates live in
+  // tree-example.ts). The root starts COLLAPSED — e2e row-order assumptions
+  // near the top of the tree (and the first-`.pdf` drag sources) must not
+  // shift — while the bins inside register via `folder()`, so they open
+  // pre-expanded the moment the showcase is.
+  const demoFile = (id: string, name: string, extra: Partial<FileNode> = {}): FileNode => {
+    nodeCount += 1;
+    return { kind: 'file', id: `dnd/${id}`, name, ext: 'pdf', size: 24_000, ...extra };
+  };
+  nodeCount += 1;
+  roots.splice(1, 0, {
+    kind: 'folder',
+    id: 'dnd',
+    name: 'Drag & drop rules',
+    icon: 'drag_indicator',
+    children: [
+      demoFile('free', 'Drag me anywhere.pdf'),
+      demoFile('locked', 'Can’t drag me — locked.docx', { ext: 'docx', locked: true }),
+      demoFile('a', 'Type A — drop me in an A bin.xlsx', { ext: 'xlsx', dnd: 'A' }),
+      demoFile('b', 'Type B — both bins take me.eml', { ext: 'eml', dnd: 'B' }),
+      demoFile('c', 'Type C — no bin wants me.png', { ext: 'png', dnd: 'C' }),
+      {
+        ...folder(
+          'dnd/bin-ab',
+          'Bin — accepts A + B',
+          [demoFile('bin-ab/resident', 'Type A lives here.xlsx', { ext: 'xlsx', dnd: 'A' })],
+          'move_to_inbox',
+        ),
+        accepts: ['A', 'B'],
+      },
+      {
+        ...folder(
+          'dnd/bin-b',
+          'Bin — accepts only B',
+          [demoFile('bin-b/resident', 'Type B lives here.eml', { ext: 'eml', dnd: 'B' })],
+          'move_to_inbox',
+        ),
+        accepts: ['B'],
+      },
+      {
+        ...folder(
+          'dnd/bin-none',
+          'Bin — accepts nothing',
+          [demoFile('bin-none/escapee', 'Drag me out — nothing comes back.pdf')],
+          'block',
+        ),
+        accepts: [],
+      },
+      {
+        ...folder(
+          'dnd/vault',
+          'Locked folder — can’t drag, drops OK',
+          [demoFile('vault/resident', 'The folder is locked, I’m not.pdf')],
+          'lock',
+        ),
+        locked: true,
+      },
+    ],
+  });
+
   // Lazy root: not in folderIds, so it starts collapsed — expanding it is
   // what triggers the (artificially slow) load in the demo accessor.
   nodeCount += 1;
@@ -291,6 +366,19 @@ export function generateExampleTree(scale: ExampleScale = 'standard'): {
     icon: 'cloud',
     lazy: true,
     children: files('remote', 12),
+  });
+
+  // Flaky root: also collapsed; its FIRST load rejects (tree-example's
+  // accessor tracks attempts), so the `hasError` → Retry branch of the folder
+  // template is actually reachable in the demo.
+  nodeCount += 1;
+  roots.push({
+    kind: 'folder',
+    id: 'flaky',
+    name: 'Flaky server (fails once)',
+    icon: 'cloud_off',
+    flaky: true,
+    children: files('flaky', 8),
   });
 
   // Root-level files: leaves are legal at any depth including the root — no

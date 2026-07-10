@@ -13,6 +13,10 @@
   (focusin)="onFocusIn($event)"
   (focusout)="onFocusOut($event)"
 >
+  <!-- data-loading / data-error are styling hooks AND the template's only
+       reads of the load-state computeds: without them a pending/failed load
+       schedules no zoneless CD (loads change visibleRows only on success),
+       leaving the consumer's spinner/Retry def stale. -->
   <div
     (keyup)="$event.stopPropagation()"
     *cdkVirtualFor="let row of visibleRows(); trackBy: trackByKey"
@@ -36,6 +40,8 @@
     [attr.data-node-id]="row.key"
     [attr.data-selected]="row.context.isSelected || null"
     [attr.data-move-source]="row.moveSource() || null"
+    [attr.data-loading]="row.context.isLoading || null"
+    [attr.data-error]="row.context.hasError || null"
     [attr.tabindex]="focusMode() === 'roving' ? row.tabIndex() : -1"
     [style.--tree-level]="row.level"
     [style.height.px]="itemSize()"

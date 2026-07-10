@@ -89,21 +89,46 @@ export class TreeExample {
 
   isFolder = isFolder;
   isSmart = isSmart;
-  /** Lazy folders resolve after a delay — simulates a server fetch (Phase 3). */
-  getChildren = (node: DocNode) =>
-    isFile(node)
-      ? undefined
-      : isFolder(node) && node.lazy
-        ? new Promise<DocNode[]>((resolve) => setTimeout(() => resolve(node.children), 1_200))
-        : node.children;
+  /** Flaky folders already asked once — the next attempt (Retry) succeeds. */
+  readonly #flakyTried = new Set<string>();
+  /**
+   * Lazy folders resolve after a delay — simulates a server fetch (Phase 3).
+   * A flaky folder's FIRST load rejects: the only path in the demo that
+   * reaches the `hasError` → Retry branch of the folder template.
+   */
+  getChildren = (node: DocNode) => {
+    if (isFile(node)) return undefined;
+    if (isFolder(node) && node.flaky && !this.#flakyTried.has(node.id)) {
+      this.#flakyTried.add(node.id);
+      return new Promise<DocNode[]>((_, reject) =>
+        setTimeout(() => reject(new Error('flaky by design — retry succeeds')), 800),
+      );
+    }
+    if (isFolder(node) && (node.lazy || node.flaky)) {
+      return new Promise<DocNode[]>((resolve) => setTimeout(() => resolve(node.children), 1_200));
+    }
+    return node.children;
+  };
   getKey = (node: DocNode) => node.id;
   nodeName = (node: DocNode) => node.name;
   matchesNode = (node: DocNode, term: string) => node.name.toLowerCase().includes(term.toLowerCase());
 
-  /** Only real folders host drops (smart folders are virtual) — per-type predicates. */
-  dropForbidden = (ctx: TreeDropContext<DocNode>) => ctx.parentNode != null && !isFolder(ctx.parentNode);
-  /** The smart folder is a saved search — moving it makes no sense. */
-  dragForbidden = isSmart;
+  /**
+   * Per-type drop rules ("Drag & drop rules" showcase): smart folders are
+   * virtual (never a drop host); bins (`accepts`) take only files whose `dnd`
+   * tag they list; tagged files land ONLY in bins — everything else lands in
+   * ordinary folders and at the root. `some()` over the dragged set means one
+   * unwelcome node vetoes the whole multi-drag.
+   */
+  dropForbidden = (ctx: TreeDropContext<DocNode>) => {
+    const parent = ctx.parentNode;
+    if (parent != null && !isFolder(parent)) return true;
+    return ctx.dragNodes.some((node) =>
+      isFile(node) && node.dnd ? !parent?.accepts?.includes(node.dnd) : parent?.accepts != null,
+    );
+  };
+  /** Saved searches don't move; `locked` nodes demo `disableDrag` (drops unaffected). */
+  dragForbidden = (node: DocNode) => isSmart(node) || node.locked === true;
   /** …and its virtual entries can't join a selection either. */
   selectable = (node: DocNode) => !isSmart(node);
   /** Folder names are fixed in this demo; files rename inline. */

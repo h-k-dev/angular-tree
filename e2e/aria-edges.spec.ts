@@ -17,7 +17,7 @@ test.describe('ARIA at virtualized edges', () => {
 
   test('setsize/posinset are true totals at the top edge', async ({ page }) => {
     const first = rows(page).first();
-    // Roots: Starred (smart) + 8 areas + the lazy archive = 10 siblings.
+    // Roots: Starred + DnD rules + Cases + lazy archive + flaky + 2 loose files = 7 siblings.
     await expect(first).toHaveAttribute('aria-posinset', '1');
     await expect(first).toHaveAttribute('aria-level', '1');
     const setSize = Number(await first.getAttribute('aria-setsize'));
@@ -59,7 +59,7 @@ test.describe('ARIA at virtualized edges', () => {
 
     // Walk up to a folder row and paste *inside* it.
     await page.keyboard.press('Home');
-    await page.keyboard.press('ArrowDown'); // Starred (smart) → first area folder
+    await page.keyboard.press('ArrowDown'); // Starred (smart) → 'Drag & drop rules' (ordinary drop host)
     await page.keyboard.press('ControlOrMeta+v');
 
     await expect(page.locator('.app-last-intent')).toContainText('moved 1 node(s)');

@@ -14,7 +14,7 @@ Because the chains sit at point of use rather than being declared on the host el
 
 | Token                   | M3 system fallback                    | Final fallback                            | Used for                                                              |
 | ----------------------- | ------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------- |
-| `--tree-bg`             | `--mat-sys-surface`                   | `#ffffff`                                 | Tree background, drag preview                                         |
+| `--tree-bg`             | `--mat-sys-surface`                   | `#ffffff`                                 | Tree background                                                       |
 | `--tree-text`           | `--mat-sys-on-surface`                | `#1d1b20`                                 | Row text                                                              |
 | `--tree-font`           | `--mat-sys-body-medium`               | `400 0.875rem/1.25rem Roboto, sans-serif` | Typography (full `font` shorthand)                                    |
 | `--tree-node-hover`     | `--mat-sys-surface-container-highest` | `#e6e6e6`                                 | Row hover                                                             |
@@ -22,6 +22,8 @@ Because the chains sit at point of use rather than being declared on the host el
 | `--tree-focus-ring`     | `--mat-sys-primary`                   | `#6750a4`                                 | `:focus-visible` outline                                              |
 | `--tree-drop-indicator` | `--mat-sys-primary`                   | `#6750a4`                                 | Drop line/box, count badge                                            |
 | `--tree-drag-shadow`    | `--mat-sys-level3`                    | `0 2px 8px rgb(0 0 0 / 0.3)`              | Drag preview elevation                                                |
+| `--tree-drag-preview-bg`   | `--mat-sys-surface` at 85% alpha   | `oklch(from #ffffff l c h / 0.85)`        | Drag preview chip background — the theme surface made translucent      |
+| `--tree-drag-preview-text` | `--mat-sys-on-surface`             | `#1d1b20`                                 | Drag preview text                                                      |
 | `--tree-badge-text`     | `--mat-sys-on-primary`                | `#ffffff`                                 | Multi-drag count badge text                                           |
 | `--tree-indent`         | —                                     | `1.5rem`                                  | Per-level indentation step                                            |
 | `--tree-guide`          | `--mat-sys-outline-variant`           | `#cac4d0`                                 | Indent guide lines (`[indentGuides]`); hover uses `--tree-focus-ring` |
@@ -62,7 +64,7 @@ With Material, dark mode is automatic (the `--mat-sys-*` values flip). Without i
 
 ### Row state hooks
 
-Rows expose state as data attributes, so consumer stylesheets can restyle states without fighting the defaults: `[data-selected]` (in the selection), `[data-move-source]` (marked by Ctrl+X, awaiting keyboard drop), and `[data-node-id]` (stable per-node key). For _depth_-based styling no extra attribute exists by design — `aria-level` is the industry-standard marker and is always set (root rows are `[aria-level='1']`); the template context additionally exposes `level` for structural decisions (e.g. the demo skips the leaf spacer at root so parentless files sit flush left). Example:
+Rows expose state as data attributes, so consumer stylesheets can restyle states without fighting the defaults: `[data-selected]` (in the selection), `[data-move-source]` (marked by Ctrl+X, awaiting keyboard drop), `[data-loading]` / `[data-error]` (async `childrenAccessor` in flight / rejected — the same states the template context exposes as `isLoading`/`hasError`), and `[data-node-id]` (stable per-node key). For _depth_-based styling no extra attribute exists by design — `aria-level` is the industry-standard marker and is always set (root rows are `[aria-level='1']`); the template context additionally exposes `level` for structural decisions (e.g. the demo skips the leaf spacer at root so parentless files sit flush left). Example:
 
 ```css
 angular-tree .tree-node[data-move-source] {

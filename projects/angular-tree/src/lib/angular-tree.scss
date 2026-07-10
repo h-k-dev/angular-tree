@@ -52,6 +52,9 @@
 
 /* Shell only — items and their styling are the consumer's (ROADMAP). */
 .tree-menu {
+  /* Overlay-hosted (body-level container): :host's --_spacing can't inherit
+     across the teleport — re-derive it locally or the padding collapses. */
+  --_spacing: var(--mat-sys-spacing, 0.25rem);
   display: flex;
   flex-direction: column;
   min-inline-size: 10rem;
@@ -64,13 +67,19 @@
 }
 
 .tree-drag-preview {
+  /* Rendered in CDK's body-level drag container — same teleport as .tree-menu,
+     same local re-derivation. */
+  --_spacing: var(--mat-sys-spacing, 0.25rem);
   display: flex;
   align-items: center;
   gap: calc(var(--_spacing) * 2);
-  padding: var(--_spacing) calc(var(--_spacing) * 2);
+  padding: calc(var(--_spacing) * 2);
   border-radius: var(--mat-sys-radius-small, 4px);
-  background: var(--tree-bg, var(--mat-sys-surface, #ffffff));
-  color: var(--tree-text, var(--mat-sys-on-surface, #1d1b20));
+  /* Theme-derived translucency: the theme's surface at 85% alpha — rows shine
+     through the chip in both light and dark. The inner #fff fallback keeps
+     the no-Material chain intact (oklch(from <undefined>) would paint nothing). */
+  background: var(--tree-drag-preview-bg, oklch(from var(--mat-sys-surface, #ffffff) l c h / 0.85));
+  color: var(--tree-drag-preview-text, var(--mat-sys-on-surface, #1d1b20));
   font: var(--tree-font, var(--mat-sys-body-medium, 400 0.875rem / 1.25rem Roboto, sans-serif));
   box-shadow: var(--tree-drag-shadow, var(--mat-sys-level3, 0 2px 8px rgb(0 0 0 / 0.3)));
 }

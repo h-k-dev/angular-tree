@@ -71,6 +71,13 @@
       }
     </button>
     <span class="node-name" [class.node-name--area]="level === 0">{{ node.name }}</span>
+    <!-- DnD-rules showcase: the rule each row enforces, visible on the row -->
+    @if (node.locked) {
+      <mat-icon class="node-lock" aria-label="Drag disabled">lock</mat-icon>
+    }
+    @if (node.accepts; as accepts) {
+      <span class="node-chip node-chip--bin">{{ accepts.length ? 'accepts ' + accepts.join(' + ') : 'no drops' }}</span>
+    }
     @if (isLoading) {
       <mat-icon class="node-icon node-icon--spin">progress_activity</mat-icon>
     } @else if (hasError) {
@@ -113,6 +120,13 @@
       }
       @if (node.status; as status) {
         <span class="node-chip" [class]="'node-chip--' + status">{{ status }}</span>
+      }
+      <!-- DnD-rules showcase: tag / drag-lock, visible on the row -->
+      @if (node.dnd; as tag) {
+        <span class="node-chip node-chip--dnd">type {{ tag }}</span>
+      }
+      @if (node.locked) {
+        <mat-icon class="node-lock" aria-label="Drag disabled">lock</mat-icon>
       }
     }
     <span class="node-meta">{{ formatSize(node.size) }}</span>
