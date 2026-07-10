@@ -1042,7 +1042,14 @@ export class AngularTree<T> {
 
     const row = rows[index];
     const zone = dropZoneAt(contentY - index * size, size);
-    const target = this.#controller.dropTargetFor(drag.keys, row.key, zone);
+    // The 'after' line under an EXPANDED row sits visually between the row and
+    // its first child — resolve to that slot (first child, react-arborist
+    // parity). Sibling-after would land the drop below the row's entire
+    // subtree, far from the line. Keyboard 'after' (Ctrl+Shift+V) keeps
+    // sibling semantics: no indicator justifies the remap there.
+    const insideFirst = zone === 'after' && row.expandable && row.context.isExpanded;
+    const resolved = this.#controller.dropTargetFor(drag.keys, row.key, insideFirst ? 'inside' : zone);
+    const target = insideFirst && resolved ? { ...resolved, index: 0 } : resolved;
     const forbidden =
       target != null &&
       (this.disableDrop()?.({
@@ -1068,7 +1075,9 @@ export class AngularTree<T> {
             top: zone === 'before' ? rowTop - 1 : rowTop + size - 1,
             height: 2,
             inside: false,
-            level: row.level,
+            // First-child remap: the line indents one level deeper so it
+            // reads as "will become a child", not a sibling.
+            level: insideFirst ? row.level + 1 : row.level,
           },
     );
   }
