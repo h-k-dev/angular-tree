@@ -1,7 +1,7 @@
 {
   "name": "@h-k-dev/angular-tree",
   "version": "0.0.0-development",
-  "description": "High-performance headless Angular tree: virtualized (100k+ nodes), accessor-based, signals-only, zoneless. react-arborist internals with Angular Material DX.",
+  "description": "High-performance headless Angular tree: virtualized (100k+ nodes), accessor-based, signals-only, zoneless, drag & drop with per-node rules. @angular/cdk is the only runtime dependency.",
   "author": "h-k-dev",
   "homepage": "https://github.com/h-k-dev/angular-tree#readme",
   "repository": {
