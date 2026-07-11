@@ -21,6 +21,10 @@ export const routes: Routes = [
         path: 'static',
         loadComponent: () => import('./static-example/static-example').then((m) => m.StaticExample),
       },
+      {
+        path: 'vscode',
+        loadComponent: () => import('./vscode-example/vscode-example').then((m) => m.VscodeExample),
+      },
     ],
   },
   {

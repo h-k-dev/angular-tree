@@ -27,6 +27,6 @@ describe('Playground', () => {
     const labels = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.playground-aside-label')].map((el) =>
       el.textContent?.trim(),
     );
-    expect(labels).toEqual(['All-In-1', 'Resource API', 'Static']);
+    expect(labels).toEqual(['All-In-1', 'Resource API', 'Static', 'VS Code']);
   });
 });

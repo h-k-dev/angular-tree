@@ -1,0 +1,237 @@
+// Same definite flex chain as the other example pages (block-size 100%, not
+// min-block-size — indefinite for % resolution) so the window fills the first
+// viewport and the tree fills the window.
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-block-size: 0;
+  block-size: 100%;
+  inline-size: 100%;
+  max-inline-size: 75rem;
+  margin-inline: auto;
+}
+
+// Example view tabs — a toolbar row above the window.
+.demo-card-bar {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.demo-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.demo-tab {
+  padding: 0.25rem 0.75rem;
+  border: none;
+  border-radius: 100vw;
+  background: transparent;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-medium);
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 8%, transparent);
+  }
+
+  &[aria-selected='true'] {
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+  }
+}
+
+// The macOS editor window: the SHAPE is VS Code (title bar, Explorer, status
+// bar); the COLOURS are ours — every surface chains a `--mat-sys-*` token, so
+// the window follows the demo's light/dark theme (docs/THEMING.md).
+.vsc-window {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-block-size: 18rem;
+  overflow: hidden;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0.75rem;
+  background: var(--mat-sys-surface-container-low);
+  box-shadow: var(--mat-sys-level2, 0 2px 8px rgb(0 0 0 / 0.2));
+}
+
+.vsc-titlebar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background: var(--mat-sys-surface-container);
+  border-block-end: 1px solid var(--mat-sys-outline-variant);
+}
+
+.vsc-lights {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+// The ONE literal-colour exception: the macOS traffic lights are an OS control,
+// as recognisable by shape+colour as a logo. Everything else is token-themed.
+.vsc-light {
+  inline-size: 0.72rem;
+  block-size: 0.72rem;
+  border-radius: 50%;
+
+  &--close {
+    background: #ff5f57;
+  }
+  &--min {
+    background: #febc2e;
+  }
+  &--zoom {
+    background: #28c840;
+  }
+}
+
+.vsc-title {
+  margin-inline: auto;
+  padding-inline-end: 2.5rem; // optically centre against the lights' width
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.vsc-section-label {
+  flex: 0 0 auto;
+  padding: 0.4rem 0.75rem 0.2rem;
+  font: var(--mat-sys-label-small);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// The Explorer tree: compact rows, chevron disclosure, indent guides. Tokens
+// tuned so guides centre under the chevron column (indent === twisty width).
+.vsc-tree {
+  flex: 1 1 auto;
+  min-block-size: 0;
+
+  --tree-toggle-size: 16px;
+  --tree-indent: 16px;
+  --tree-bg: var(--mat-sys-surface-container-low);
+  --tree-text: var(--mat-sys-on-surface);
+  --tree-node-hover: var(--mat-sys-surface-container-high);
+  --tree-node-selected: color-mix(in srgb, var(--mat-sys-primary) 16%, transparent);
+  --tree-focus-ring: var(--mat-sys-primary);
+  --tree-guide: var(--mat-sys-outline-variant);
+}
+
+// One flex wrapper per row (see the template comment): its own tight gap owns
+// the twisty→icon→name rhythm, immune to the tree's inter-child row gap.
+.vsc-label {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.25rem;
+  min-inline-size: 0;
+  block-size: 100%;
+}
+
+.vsc-twisty {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 16px;
+  block-size: 16px;
+  font-size: 16px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.vsc-icon {
+  flex: 0 0 auto;
+  font-size: 16px;
+  inline-size: 16px;
+  block-size: 16px;
+  color: var(--mat-sys-on-surface-variant);
+
+  // Seti-style tints from OUR palette — enough to tell types apart at a glance.
+  &--folder {
+    color: var(--mat-sys-primary);
+  }
+  &--ts {
+    color: var(--mat-sys-primary);
+  }
+  &--html {
+    color: var(--mat-sys-tertiary);
+  }
+  &--scss,
+  &--css {
+    color: var(--mat-sys-tertiary);
+  }
+  &--json,
+  &--js {
+    color: var(--mat-sys-secondary);
+  }
+}
+
+.vsc-name {
+  overflow: hidden;
+  font: var(--mat-sys-body-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Inline rename: the input sits flush in the row, ringed like VS Code's editor.
+.vsc-rename {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  padding: 0 0.25rem;
+  border: 1px solid var(--mat-sys-primary);
+  border-radius: 2px;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-small);
+}
+
+// VS Code's accent status bar — the one strong colour, straight from --primary.
+.vsc-statusbar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.75rem;
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+  font: var(--mat-sys-body-small);
+}
+
+.vsc-status-icon {
+  font-size: 14px;
+  inline-size: 14px;
+  block-size: 14px;
+}
+
+.vsc-hint {
+  opacity: 0.85;
+}
+
+// Code panes (fetched source assets, Shiki-highlighted — zero drift). The
+// pre/span styling is global (styles.scss): innerHTML carries no _ngcontent.
+.demo-code {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow: auto;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0.75rem;
+}
+
+.demo-code--loading {
+  padding: 1rem 1.25rem;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.demo-hidden {
+  display: none !important;
+}

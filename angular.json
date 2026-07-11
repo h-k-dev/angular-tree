@@ -86,6 +86,17 @@
                 "glob": "design-data.ts",
                 "input": "projects/app/src/app/static-example",
                 "output": "source"
+              },
+              {
+                "glob": "vscode-example.*",
+                "input": "projects/app/src/app/vscode-example",
+                "output": "source",
+                "ignore": ["*.spec.ts"]
+              },
+              {
+                "glob": "fs-data.ts",
+                "input": "projects/app/src/app/vscode-example",
+                "output": "source"
               }
             ],
             "styles": ["projects/app/src/styles.scss"]

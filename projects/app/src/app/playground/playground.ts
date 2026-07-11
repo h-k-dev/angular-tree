@@ -20,5 +20,6 @@ export class Playground {
     { path: '/', icon: 'folder_managed', label: 'All-In-1' },
     { path: '/resource', icon: 'cloud_download', label: 'Resource API' },
     { path: '/static', icon: 'layers', label: 'Static' },
+    { path: '/vscode', icon: 'code', label: 'VS Code' },
   ];
 }
