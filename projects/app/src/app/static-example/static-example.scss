@@ -4,13 +4,46 @@
 :host {
   display: flex;
   flex-direction: column;
+  gap: 0.75rem;
   min-block-size: 0;
   block-size: 100%;
   inline-size: 100%;
   max-inline-size: 75rem;
   margin-inline: auto;
+}
 
-  --tree-toggle-spacing-factor: 0;
+// Example view tabs (Preview / SCSS / Data) — a toolbar row above the panels.
+.demo-card-bar {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.demo-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.demo-tab {
+  padding: 0.25rem 0.75rem;
+  border: none;
+  border-radius: 100vw;
+  background: transparent;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-medium);
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 8%, transparent);
+  }
+
+  &[aria-selected='true'] {
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+  }
 }
 
 .tool-grid {
@@ -20,8 +53,10 @@
   min-block-size: 0;
 }
 
-// Design tools are dark regardless of the demo theme — each panel retunes
-// the SAME tree via the documented --tree-* tokens (docs/THEMING.md).
+// Layer panels: the SHAPE is Figma/Framer (compact rows, disclosure guides),
+// the COLORS are ours — each panel chains the SAME tree through the app's
+// Material system tokens, so both follow the demo's light/dark theme
+// (docs/THEMING.md). The two tools differ only by accent ROLE.
 .tool-panel {
   display: flex;
   flex: 1 1 0;
@@ -29,52 +64,49 @@
   min-inline-size: 0;
   min-block-size: 18rem;
   overflow: hidden;
+  border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0.75rem;
+  background: var(--mat-sys-surface-container-low);
 
   angular-tree {
     flex: 1 1 auto;
     min-block-size: 0;
     --tree-toggle-size: 20px;
-    --tree-toggle-spacing-factor: 1;
-    --tree-indent: 16px;
+    // Indent === toggle column so every level steps exactly one toggle width:
+    // child toggles start where the parent's ends, and the guide line (centered
+    // at indent/2) runs straight down the parent triangle's center. A smaller
+    // indent than the toggle was the old "dangling guide / random step" bug.
+    --tree-indent: var(--tree-toggle-size);
+    --tree-bg: var(--mat-sys-surface-container-low);
+    --tree-text: var(--mat-sys-on-surface);
+    --tree-node-hover: var(--mat-sys-surface-container-high);
+    --tree-guide: var(--mat-sys-outline-variant);
   }
+}
+
+.tool-panel--figma angular-tree {
+  --tree-node-selected: color-mix(in srgb, var(--mat-sys-primary) 20%, transparent);
+  --tree-focus-ring: var(--mat-sys-primary);
 }
 
 .tool-panel--figma {
-  background: #2c2c2c;
-
-  angular-tree {
-    --tree-bg: #2c2c2c;
-    --tree-text: #ffffff;
-    --tree-node-hover: rgb(255 255 255 / 6%);
-    --tree-node-selected: rgb(12 140 233 / 35%);
-    --tree-focus-ring: #0c8ce9;
-    --tree-guide: rgb(255 255 255 / 14%);
-  }
-
   .layer-icon--component,
   .layer-icon--instance,
   .layer-name--component {
-    color: #9a6ff2; // Figma's component purple
+    color: var(--mat-sys-primary);
   }
 }
 
+.tool-panel--framer angular-tree {
+  --tree-node-selected: color-mix(in srgb, var(--mat-sys-tertiary) 20%, transparent);
+  --tree-focus-ring: var(--mat-sys-tertiary);
+}
+
 .tool-panel--framer {
-  background: #111111;
-
-  angular-tree {
-    --tree-bg: #111111;
-    --tree-text: #eeeeee;
-    --tree-node-hover: rgb(255 255 255 / 7%);
-    --tree-node-selected: rgb(0 153 255 / 35%);
-    --tree-focus-ring: #0099ff;
-    --tree-guide: rgb(255 255 255 / 12%);
-  }
-
   .layer-icon--component,
   .layer-icon--instance,
   .layer-name--component {
-    color: #0099ff; // Framer blue
+    color: var(--mat-sys-tertiary);
   }
 }
 
@@ -84,20 +116,20 @@
   align-items: baseline;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  border-block-end: 1px solid rgb(255 255 255 / 10%);
-  color: #ffffff;
+  border-block-end: 1px solid var(--mat-sys-outline-variant);
+  color: var(--mat-sys-on-surface);
   font: var(--mat-sys-title-small);
 }
 
 .tool-panel-hint {
-  color: rgb(255 255 255 / 55%);
+  color: var(--mat-sys-on-surface-variant);
   font: var(--mat-sys-body-small);
 }
 
 // Compact layer rows.
 .layer-toggle {
   @include ghost-icon-button(var(--tree-toggle-size));
-  color: rgb(255 255 255 / 65%);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .layer-toggle-spacer {
@@ -110,7 +142,7 @@
   font-size: 14px;
   inline-size: 14px;
   block-size: 14px;
-  color: rgb(255 255 255 / 65%);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .layer-name {
@@ -118,6 +150,27 @@
   font: var(--mat-sys-body-small);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+// Code panes (SCSS / Data tabs) show this example's REAL source files, fetched
+// as assets and Shiki-highlighted — zero drift. The pre/span styling is global
+// (styles.scss): innerHTML content carries no _ngcontent attribute.
+.demo-code {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow: auto;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0.75rem;
+}
+
+.demo-code--loading {
+  padding: 1rem 1.25rem;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.demo-hidden {
+  display: none !important;
 }
 
 // Panels stack on narrow screens.

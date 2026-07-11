@@ -4,16 +4,7 @@
  * and a Framer-style page/breakpoint/stack hierarchy.
  */
 
-export type DesignKind =
-  | 'page'
-  | 'frame'
-  | 'group'
-  | 'stack'
-  | 'component'
-  | 'instance'
-  | 'text'
-  | 'vector'
-  | 'image';
+export type DesignKind = 'page' | 'frame' | 'group' | 'stack' | 'component' | 'instance' | 'text' | 'vector' | 'image';
 
 export interface DesignNode {
   readonly id: string;

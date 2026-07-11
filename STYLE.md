@@ -35,7 +35,7 @@ _id = computed(() => this.tableId() || this.#generatedId);
 
 ## Feature Engines (collaborator classes)
 
-- **Functions for derivation, classes only for lifecycle.** Anything that computes a value from values is a standalone pure function or a `computed()` — never a method reading `this`. A class is justified only where a *process* owns timers, listeners, rAF loops, or in-flight state that needs DI-scoped teardown (`DestroyRef`).
+- **Functions for derivation, classes only for lifecycle.** Anything that computes a value from values is a standalone pure function or a `computed()` — never a method reading `this`. A class is justified only where a _process_ owns timers, listeners, rAF loops, or in-flight state that needs DI-scoped teardown (`DestroyRef`).
 - Big components split **by feature, not by code kind** (`TreeFocusEngine`, `TreeDragSession` — never a `helpers.ts` grab bag): bug hunts navigate by feature. Each engine is a `@Service()` provided on the host component (the `TreeController` pattern); component inputs/outputs it needs are handed over once via `connect()`.
 - An engine's pure core is exported standalone functions (testable without TestBed); the class stays a thin shell wiring signals to timers and DOM. A shell outgrowing its pure core is drift toward OOP — review flag.
 - Cross-engine coupling goes through controller signals or explicit `connect()` callbacks — never by reaching into another engine's privates. No `extends`, ever.

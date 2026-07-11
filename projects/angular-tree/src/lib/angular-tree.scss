@@ -144,12 +144,24 @@
   position: absolute;
   inset-block: 0;
   inset-inline-start: calc(var(--tree-indent, 1.5rem) / 2);
+  inline-size: calc(var(--tree-indent, 1.5rem) / 2);
   border-inline-start: 1px solid var(--tree-guide, var(--mat-sys-outline-variant, #cac4d0));
+}
+
+/* Terminal elbow: at the last direct child the line turns toward it (└,
+   rounded — the Reddit-threadline curl). Spans from the line to the child
+   column's start, so the connector lands ON the item it closes at. Absent
+   while the group's real end is scrolled below the rendered window. */
+.tree-guide[data-elbow]::before {
+  border-block-end: 1px solid var(--tree-guide, var(--mat-sys-outline-variant, #cac4d0));
+  border-end-start-radius: min(8px, calc(var(--tree-indent, 1.5rem) / 2));
 }
 
 .tree-guide:hover::before {
   border-inline-start-width: 2px;
   border-inline-start-color: var(--tree-focus-ring, var(--mat-sys-primary, #6750a4));
+  border-block-end-width: 2px;
+  border-block-end-color: var(--tree-focus-ring, var(--mat-sys-primary, #6750a4));
 }
 
 .tree-node:hover {

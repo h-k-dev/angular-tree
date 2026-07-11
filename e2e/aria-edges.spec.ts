@@ -34,8 +34,16 @@ test.describe('ARIA at virtualized edges', () => {
     const firstId = await first.getAttribute('data-node-id');
     await first.click();
     await page.keyboard.press('End');
-    // End's focus chases the row across the virtual re-render — wait for it.
-    await expect.poll(() => focusedNodeId(page)).not.toBe(firstId);
+    // End's focus chases the row across the virtual re-render — wait for it
+    // to LAND: mid-chase the active element can briefly be no row at all
+    // (null), which must keep the poll waiting rather than satisfy a
+    // not-the-first-row check.
+    await expect
+      .poll(async () => {
+        const id = await focusedNodeId(page);
+        return id && id !== firstId ? id : null;
+      })
+      .not.toBeNull();
 
     // The focused row is now the very last visible node; its posinset must
     // equal its setsize (last sibling), which only holds if the values are

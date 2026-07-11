@@ -224,7 +224,10 @@ const seeded = (seed: number) => () => {
 export type ExampleScale = 'standard' | 'xl';
 
 /** `xl` ≈ 100k nodes — the ROADMAP Phase 2/8 virtualization smoke target. */
-const SCALES: Record<ExampleScale, { clients: number; matters: number; phases: number; workstreams: number; files: number }> = {
+const SCALES: Record<
+  ExampleScale,
+  { clients: number; matters: number; phases: number; workstreams: number; files: number }
+> = {
   standard: { clients: 6, matters: 4, phases: 3, workstreams: 3, files: 6 },
   xl: { clients: 12, matters: 10, phases: 8, workstreams: 6, files: 12 }, // ≈100k nodes (avg 16.5 files/workstream)
 };

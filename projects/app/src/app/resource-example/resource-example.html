@@ -18,8 +18,6 @@
     @if (rawData.error(); as error) {
       <mat-icon class="resource-error-icon">cloud_off</mat-icon>
       <span class="resource-error">{{ error.message }}</span>
-    } @else {
-      {{ repo() }}
     }
   </span>
 </div>

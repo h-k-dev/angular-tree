@@ -221,9 +221,12 @@ describe('AngularTree ARIA', () => {
       const guides = guideEls();
       expect(guides.length).toBe(1);
       expect(guides[0].style.getPropertyValue('--tree-level')).toBe('0');
-      // Spans a1..a2 (rows 1–2 at itemSize 32) — drop-indicator arithmetic.
+      // Connector geometry: parent 'a' (row 0) bottom edge → last direct child
+      // a2 (row 2) centre, at itemSize 32. top = 1·32 = 32; height = (2 − 1
+      // + 0.5)·32 = 48. The end is rendered, so the elbow turns toward a2.
       expect(guides[0].style.top).toBe('32px');
-      expect(guides[0].style.height).toBe('64px');
+      expect(guides[0].style.height).toBe('48px');
+      expect(guides[0].getAttribute('data-elbow')).toBe('true');
 
       guides[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
       await fixture.whenStable();

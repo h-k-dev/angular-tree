@@ -1,6 +1,19 @@
+<!-- View switcher (PrimeNG-style): the code tabs render this example's REAL
+     source files (its token theming + constant data), Shiki-highlighted from
+     the copied `source/` assets — zero drift. -->
+<header class="demo-card-bar">
+  <nav class="demo-tabs" aria-label="Example view">
+    @for (tab of viewTabs; track tab.id) {
+      <button class="demo-tab" [attr.aria-selected]="view() === tab.id" (click)="showView(tab.id)">
+        {{ tab.label }}
+      </button>
+    }
+  </nav>
+</header>
+
 <!-- Two layer panels, same component, different token themes. clickAction
      'select' = layer-panel semantics: click selects, double-click activates. -->
-<div class="tool-grid">
+<div class="tool-grid" [class.demo-hidden]="view() !== 'preview'">
   <section class="tool-panel tool-panel--figma" aria-labelledby="figma-title">
     <header class="tool-panel-bar">
       <span class="tool-panel-name" id="figma-title">Figma-style</span>
@@ -65,3 +78,11 @@
     </angular-tree>
   </section>
 </div>
+
+@if (view() !== 'preview') {
+  @if (exampleSource()[view()]; as code) {
+    <div class="demo-code" [innerHTML]="code"></div>
+  } @else {
+    <div class="demo-code demo-code--loading">Loading…</div>
+  }
+}

@@ -1,23 +1,32 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MatIconModule } from '@angular/material/icon';
 
 import { AngularTree, TreeNodeDef, TreeNodeToggle } from '@h-k-dev/angular-tree';
 
-import {
-  containerIds,
-  DESIGN_ICONS,
-  DesignNode,
-  FIGMA_LAYERS,
-  FRAMER_LAYERS,
-} from './design-data';
+import { containerIds, DESIGN_ICONS, DesignNode, FIGMA_LAYERS, FRAMER_LAYERS } from './design-data';
+
+/** Card views: the live panels or one of the example's real source files. */
+type StaticView = 'preview' | 'scss' | 'data';
+
+/**
+ * Source tabs (PrimeNG-style). This example is about THEMING and DATA, so it
+ * shows only those two files — the SCSS that retunes the tree via `--tree-*`
+ * tokens and the constant `design-data.ts`. Each is copied to `source/` by the
+ * build (angular.json assets) and highlighted with Shiki — zero drift.
+ */
+const CODE_TABS = [
+  { id: 'scss', label: 'SCSS', file: 'static-example.scss', lang: 'scss' },
+  { id: 'data', label: 'Data', file: 'design-data.ts', lang: 'angular-ts' },
+] as const;
 
 /**
  * The Static example: two design-tool layer panels (Figma-style and
  * Framer-style) over constant data — no fetching, no mutation, no context
  * menu. What it showcases: `clickAction: 'select'` (layer panels select on
  * click, activate on double-click), compact rows, indent guides, and the
- * `--tree-*` token theming that turns the same component into two different
- * tools (see the panel classes in the SCSS).
+ * `--tree-*` token theming that borrows the tools' SHAPE while owning its
+ * COLORS from the app's Material palette (see the panel classes in the SCSS).
  */
 @Component({
   selector: 'app-static-example',
@@ -27,6 +36,8 @@ import {
   changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class StaticExample {
+  readonly #sanitizer = inject(DomSanitizer);
+
   readonly figma = FIGMA_LAYERS;
   readonly framer = FRAMER_LAYERS;
 
@@ -40,4 +51,42 @@ export class StaticExample {
   children = (node: DesignNode) => node.children;
   key = (node: DesignNode) => node.id;
   nodeName = (node: DesignNode) => node.name;
+
+  // ---------------------------------------------------------------------------
+  // Example view tabs (PrimeNG-style): preview ↔ the example's real sources
+  // ---------------------------------------------------------------------------
+  readonly viewTabs = [{ id: 'preview' as const, label: 'Preview' }, ...CODE_TABS];
+
+  view = signal<StaticView>('preview');
+
+  /** Source files, fetched + Shiki-highlighted once on first view (`source/` assets). */
+  exampleSource = signal<Record<string, SafeHtml | null>>({ scss: null, data: null });
+
+  showView(view: StaticView) {
+    this.view.set(view);
+    if (view === 'preview' || this.exampleSource()[view] != null) return;
+
+    // Shiki (angular.dev's highlighter) loads lazily with the first code tab;
+    // dual themes ride the demo's dark-mode class (see styles.scss).
+    const tab = CODE_TABS.find((candidate) => candidate.id === view)!;
+    Promise.all([
+      fetch(`source/${tab.file}`).then((response) =>
+        response.ok ? response.text() : `// failed to load (${response.status})`,
+      ),
+      import('shiki'),
+    ])
+      .then(([code, { codeToHtml }]) =>
+        codeToHtml(code, {
+          lang: tab.lang,
+          themes: { light: 'github-light', dark: 'github-dark' },
+        }),
+      )
+      .then((html) =>
+        this.exampleSource.update((sources) => ({
+          ...sources,
+          // Trusted: generated locally by Shiki from our own source files.
+          [view]: this.#sanitizer.bypassSecurityTrustHtml(html),
+        })),
+      );
+  }
 }

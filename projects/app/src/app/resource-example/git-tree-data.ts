@@ -66,9 +66,7 @@ export function buildGitTree(entries: readonly GitTreeEntry[]): readonly GitNode
   }
 
   const sortLevel = (nodes: GitNode[]) => {
-    nodes.sort((a, b) =>
-      a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind === 'folder' ? -1 : 1,
-    );
+    nodes.sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind === 'folder' ? -1 : 1));
     for (const node of nodes) if (node.kind === 'folder') sortLevel(node.children);
   };
   sortLevel(roots);

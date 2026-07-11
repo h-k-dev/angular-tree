@@ -68,6 +68,7 @@
       <div
         class="tree-guide"
         aria-hidden="true"
+        [attr.data-elbow]="guide.elbow || null"
         [style.top.px]="guide.top"
         [style.height.px]="guide.height"
         [style.--tree-level]="guide.level"

@@ -12,24 +12,24 @@ Because the chains sit at point of use rather than being declared on the host el
 
 ## Tokens
 
-| Token                   | M3 system fallback                    | Final fallback                            | Used for                                                              |
-| ----------------------- | ------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------- |
-| `--tree-bg`             | `--mat-sys-surface`                   | `#ffffff`                                 | Tree background                                                       |
-| `--tree-text`           | `--mat-sys-on-surface`                | `#1d1b20`                                 | Row text                                                              |
-| `--tree-font`           | `--mat-sys-body-medium`               | `400 0.875rem/1.25rem Roboto, sans-serif` | Typography (full `font` shorthand)                                    |
-| `--tree-node-hover`     | `--mat-sys-surface-container-highest` | `#e6e6e6`                                 | Row hover                                                             |
-| `--tree-node-selected`  | `--mat-sys-secondary-container`       | `#e8def8`                                 | Selected row (`[data-selected]`)                                      |
-| `--tree-focus-ring`     | `--mat-sys-primary`                   | `#6750a4`                                 | `:focus-visible` outline                                              |
-| `--tree-drop-indicator` | `--mat-sys-primary`                   | `#6750a4`                                 | Drop line/box, count badge                                            |
-| `--tree-drag-shadow`    | `--mat-sys-level3`                    | `0 2px 8px rgb(0 0 0 / 0.3)`              | Drag preview elevation                                                |
-| `--tree-drag-preview-bg`   | `--mat-sys-surface` at 85% alpha   | `oklch(from #ffffff l c h / 0.85)`        | Drag preview chip background — the theme surface made translucent      |
-| `--tree-drag-preview-text` | `--mat-sys-on-surface`             | `#1d1b20`                                 | Drag preview text                                                      |
-| `--tree-badge-text`     | `--mat-sys-on-primary`                | `#ffffff`                                 | Multi-drag count badge text                                           |
-| `--tree-indent`         | —                                     | `1.5rem`                                  | Per-level indentation step                                            |
-| `--tree-guide`          | `--mat-sys-outline-variant`           | `#cac4d0`                                 | Indent guide lines (`[indentGuides]`); hover uses `--tree-focus-ring` |
-| `--tree-menu-bg`        | `--mat-sys-surface-container`         | `#f3edf7`                                 | Built-in context-menu shell background (`treeContextMenu`)            |
-| `--tree-menu-radius`    | —                                     | `8px`                                     | Context-menu shell corner radius                                      |
-| `--tree-menu-shadow`    | `--mat-sys-level2`                    | `0 2px 8px rgb(0 0 0 / 0.25)`             | Context-menu shell elevation                                          |
+| Token                      | M3 system fallback                    | Final fallback                            | Used for                                                              |
+| -------------------------- | ------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------- |
+| `--tree-bg`                | `--mat-sys-surface`                   | `#ffffff`                                 | Tree background                                                       |
+| `--tree-text`              | `--mat-sys-on-surface`                | `#1d1b20`                                 | Row text                                                              |
+| `--tree-font`              | `--mat-sys-body-medium`               | `400 0.875rem/1.25rem Roboto, sans-serif` | Typography (full `font` shorthand)                                    |
+| `--tree-node-hover`        | `--mat-sys-surface-container-highest` | `#e6e6e6`                                 | Row hover                                                             |
+| `--tree-node-selected`     | `--mat-sys-secondary-container`       | `#e8def8`                                 | Selected row (`[data-selected]`)                                      |
+| `--tree-focus-ring`        | `--mat-sys-primary`                   | `#6750a4`                                 | `:focus-visible` outline                                              |
+| `--tree-drop-indicator`    | `--mat-sys-primary`                   | `#6750a4`                                 | Drop line/box, count badge                                            |
+| `--tree-drag-shadow`       | `--mat-sys-level3`                    | `0 2px 8px rgb(0 0 0 / 0.3)`              | Drag preview elevation                                                |
+| `--tree-drag-preview-bg`   | `--mat-sys-surface` at 85% alpha      | `oklch(from #ffffff l c h / 0.85)`        | Drag preview chip background — the theme surface made translucent     |
+| `--tree-drag-preview-text` | `--mat-sys-on-surface`                | `#1d1b20`                                 | Drag preview text                                                     |
+| `--tree-badge-text`        | `--mat-sys-on-primary`                | `#ffffff`                                 | Multi-drag count badge text                                           |
+| `--tree-indent`            | —                                     | `1.5rem`                                  | Per-level indentation step                                            |
+| `--tree-guide`             | `--mat-sys-outline-variant`           | `#cac4d0`                                 | Indent guide lines (`[indentGuides]`); hover uses `--tree-focus-ring` |
+| `--tree-menu-bg`           | `--mat-sys-surface-container`         | `#f3edf7`                                 | Built-in context-menu shell background (`treeContextMenu`)            |
+| `--tree-menu-radius`       | —                                     | `8px`                                     | Context-menu shell corner radius                                      |
+| `--tree-menu-shadow`       | `--mat-sys-level2`                    | `0 2px 8px rgb(0 0 0 / 0.25)`             | Context-menu shell elevation                                          |
 
 Indentation is applied as `padding-inline-start: calc(var(--tree-level) * var(--tree-indent, 1.5rem))` — logical properties, so RTL mirrors for free. `--tree-level` is set per row by the tree; treat it as read-only.
 

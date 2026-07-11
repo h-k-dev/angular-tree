@@ -82,22 +82,22 @@ export class Docs {
 
 The most-used surface — the [live demo](https://h-k-dev.github.io/angular-tree/) includes a full API reference page.
 
-| Input                                                     | Purpose                                                                  |
-| --------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `dataSource`, `childrenAccessor`, `expansionKey`           | Your data, described by functions; async children = lazy loading          |
-| `itemSize`                                                 | Fixed row height in px — the virtualization contract                      |
-| `selection`, `multi`, `checkboxSelection`                  | Consumer-owned CDK `SelectionModel`, optional checkbox cascade            |
-| `searchTerm`, `searchMatch`                                | Filtering; matches keep their ancestor chain visible                      |
+| Input                                                       | Purpose                                                                   |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `dataSource`, `childrenAccessor`, `expansionKey`            | Your data, described by functions; async children = lazy loading          |
+| `itemSize`                                                  | Fixed row height in px — the virtualization contract                      |
+| `selection`, `multi`, `checkboxSelection`                   | Consumer-owned CDK `SelectionModel`, optional checkbox cascade            |
+| `searchTerm`, `searchMatch`                                 | Filtering; matches keep their ancestor chain visible                      |
 | `disableDrag`, `disableDrop`, `disableEdit`, `isSelectable` | Per-node behavior predicates — type rules live in your code, not the tree |
-| `defaultExpandedKeys`, `loading`, `indentGuides`           | Initial expansion, root-level loading state, clickable guide lines        |
+| `defaultExpandedKeys`, `loading`, `indentGuides`            | Initial expansion, root-level loading state, clickable guide lines        |
 
-| Output                             | Fires when                                                        |
-| ---------------------------------- | ------------------------------------------------------------------ |
-| `activated`                        | Row clicked / Enter — your "open" action                            |
-| `moved`                            | Drag or keyboard move — `dragIds`, `parentId`, `index`, `dropEffect` |
-| `renamed`, `selectionChange`, `toggled` | Inline rename commit, selection set change, expand/collapse     |
-| `childrenLoaded`                   | Lazy load resolved or errored (pair with `retryChildren`)           |
-| `contextRequested`                 | Right-click / Shift+F10 — feeds the built-in menu host              |
+| Output                                  | Fires when                                                           |
+| --------------------------------------- | -------------------------------------------------------------------- |
+| `activated`                             | Row clicked / Enter — your "open" action                             |
+| `moved`                                 | Drag or keyboard move — `dragIds`, `parentId`, `index`, `dropEffect` |
+| `renamed`, `selectionChange`, `toggled` | Inline rename commit, selection set change, expand/collapse          |
+| `childrenLoaded`                        | Lazy load resolved or errored (pair with `retryChildren`)            |
+| `contextRequested`                      | Right-click / Shift+F10 — feeds the built-in menu host               |
 
 ## Testing
 
