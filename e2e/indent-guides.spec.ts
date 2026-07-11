@@ -38,10 +38,16 @@ function measurePanel(page: Page, names: readonly string[]) {
       // `.at(-1)`: duplicate names ('Card' ×4) resolve to the LAST row —
       // the only duplicate this spec reads is Components' trailing child.
       const row = [...panel.querySelectorAll('.tree-node')]
-        .filter((candidate) => candidate.querySelector('.layer-name')?.textContent?.trim() === name)
+        .filter(
+          (candidate) =>
+            candidate.querySelector('.layer-name')?.textContent?.trim() ===
+            name,
+        )
         .at(-1)!;
       const rect = row.getBoundingClientRect();
-      const col = row.querySelector('.layer-toggle, .layer-toggle-spacer')!.getBoundingClientRect();
+      const col = row
+        .querySelector('.layer-toggle, .layer-toggle-spacer')!
+        .getBoundingClientRect();
       measured[name] = {
         top: rect.top,
         bottom: rect.bottom,
@@ -51,25 +57,32 @@ function measurePanel(page: Page, names: readonly string[]) {
         colBottom: col.bottom,
       };
     }
-    const guides = [...panel.querySelectorAll<HTMLElement>('.tree-guide')].map((guide) => {
-      const rect = guide.getBoundingClientRect();
-      return {
-        level: Number(guide.style.getPropertyValue('--tree-level')),
-        top: rect.top,
-        bottom: rect.bottom,
-        left: rect.left,
-        right: rect.right,
-        elbow: guide.hasAttribute('data-elbow'),
-      };
-    });
+    const guides = [...panel.querySelectorAll<HTMLElement>('.tree-guide')].map(
+      (guide) => {
+        const rect = guide.getBoundingClientRect();
+        return {
+          level: Number(guide.style.getPropertyValue('--tree-level')),
+          top: rect.top,
+          bottom: rect.bottom,
+          left: rect.left,
+          right: rect.right,
+          elbow: guide.hasAttribute('data-elbow'),
+        };
+      },
+    );
     return { rows: measured, guides };
   }, names);
 }
 
 /** The guide whose line starts at this row's bottom seam (its group's guide). */
 function guideOf(guides: readonly GuideBox[], parent: RowBox): GuideBox {
-  const guide = guides.find((candidate) => Math.abs(candidate.top - parent.bottom) <= 1);
-  expect(guide, 'expected a guide starting at the parent row seam').toBeTruthy();
+  const guide = guides.find(
+    (candidate) => Math.abs(candidate.top - parent.bottom) <= 1,
+  );
+  expect(
+    guide,
+    'expected a guide starting at the parent row seam',
+  ).toBeTruthy();
   return guide!;
 }
 
@@ -79,7 +92,9 @@ test.describe('Indent-guide connectors', () => {
     await waitForTree(page);
   });
 
-  test('the line spans parent row seam → last DIRECT child centre', async ({ page }) => {
+  test('the line spans parent row seam → last DIRECT child centre', async ({
+    page,
+  }) => {
     const { rows: row, guides } = await measurePanel(page, [
       'Links',
       'About',
@@ -92,26 +107,42 @@ test.describe('Indent-guide connectors', () => {
     ]);
 
     // Leaf-children group: Links's line ends at About (its last child).
-    expect(Math.abs(guideOf(guides, row['Links']).bottom - row['About'].centre)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(guideOf(guides, row['Links']).bottom - row['About'].centre),
+    ).toBeLessThanOrEqual(1);
 
     // Nested groups end at the last DIRECT child, not the last descendant —
     // a line running past its own children dangles beside a grandchild.
-    expect(Math.abs(guideOf(guides, row['Page 1']).bottom - row['Footer'].centre)).toBeLessThanOrEqual(1);
-    expect(guideOf(guides, row['Page 1']).bottom).toBeLessThan(row['Legal'].top);
-    expect(Math.abs(guideOf(guides, row['Components']).bottom - row['Card'].centre)).toBeLessThanOrEqual(1);
-    expect(guideOf(guides, row['Components']).bottom).toBeLessThan(row['Body'].top);
+    expect(
+      Math.abs(guideOf(guides, row['Page 1']).bottom - row['Footer'].centre),
+    ).toBeLessThanOrEqual(1);
+    expect(guideOf(guides, row['Page 1']).bottom).toBeLessThan(
+      row['Legal'].top,
+    );
+    expect(
+      Math.abs(guideOf(guides, row['Components']).bottom - row['Card'].centre),
+    ).toBeLessThanOrEqual(1);
+    expect(guideOf(guides, row['Components']).bottom).toBeLessThan(
+      row['Body'].top,
+    );
 
     // The seam start clears the toggle glyph (toggle always fits its row).
-    expect(guideOf(guides, row['Links']).top).toBeGreaterThanOrEqual(row['Links'].colBottom);
+    expect(guideOf(guides, row['Links']).top).toBeGreaterThanOrEqual(
+      row['Links'].colBottom,
+    );
   });
 
-  test('the line hangs under the parent toggle and the elbow reaches the child column', async ({ page }) => {
+  test('the line hangs under the parent toggle and the elbow reaches the child column', async ({
+    page,
+  }) => {
     const { rows: row, guides } = await measurePanel(page, ['Links', 'Home']);
     const guide = guideOf(guides, row['Links']);
 
     // Box centre (where ::before draws the line) = parent toggle centre.
     const lineX = (guide.left + guide.right) / 2;
-    expect(Math.abs(lineX - (row['Links'].colLeft + row['Links'].colRight) / 2)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(lineX - (row['Links'].colLeft + row['Links'].colRight) / 2),
+    ).toBeLessThanOrEqual(1);
 
     // Elbow attribute + rendered └: a bottom border curving into the child
     // column — the box's inline end is where the child's content starts.
@@ -122,13 +153,18 @@ test.describe('Indent-guide connectors', () => {
       .first()
       .evaluate((el) => {
         const style = getComputedStyle(el, '::before');
-        return { bottom: style.borderBottomStyle, radius: parseFloat(style.borderEndStartRadius) };
+        return {
+          bottom: style.borderBottomStyle,
+          radius: parseFloat(style.borderEndStartRadius),
+        };
       });
     expect(before.bottom).toBe('solid');
     expect(before.radius).toBeGreaterThan(0);
   });
 
-  test('RTL mirrors the connector to the right of the child column', async ({ page }) => {
+  test('RTL mirrors the connector to the right of the child column', async ({
+    page,
+  }) => {
     await page.goto('/static?dir=rtl');
     await waitForTree(page);
     const { rows: row, guides } = await measurePanel(page, ['Links', 'Home']);
@@ -137,13 +173,17 @@ test.describe('Indent-guide connectors', () => {
     // Same anchors as LTR, mirrored: line under the toggle, elbow toward the
     // child's column — which now extends LEFTWARD from the guide box.
     const lineX = (guide.left + guide.right) / 2;
-    expect(Math.abs(lineX - (row['Links'].colLeft + row['Links'].colRight) / 2)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(lineX - (row['Links'].colLeft + row['Links'].colRight) / 2),
+    ).toBeLessThanOrEqual(1);
     expect(Math.abs(guide.left - row['Home'].colRight)).toBeLessThanOrEqual(1);
   });
 });
 
 test.describe('Indent guides under virtualization', () => {
-  test('a group cut by the render window keeps an open end (no elbow)', async ({ page }) => {
+  test('a group cut by the render window keeps an open end (no elbow)', async ({
+    page,
+  }) => {
     await page.goto('/');
     await waitForTree(page);
     await page.getByRole('button', { name: '100k mode' }).click();
@@ -152,13 +192,19 @@ test.describe('Indent guides under virtualization', () => {
 
     // xl: everything expanded — groups at the top run far past the window.
     const guides = await page.evaluate(() =>
-      [...document.querySelectorAll<HTMLElement>('.tree-guide')].map((guide) => ({
-        bottom: guide.getBoundingClientRect().bottom,
-        elbow: guide.hasAttribute('data-elbow'),
-      })),
+      [...document.querySelectorAll<HTMLElement>('.tree-guide')].map(
+        (guide) => ({
+          bottom: guide.getBoundingClientRect().bottom,
+          elbow: guide.hasAttribute('data-elbow'),
+        }),
+      ),
     );
     const renderEdge = await page.evaluate(() =>
-      Math.max(...[...document.querySelectorAll('.tree-node')].map((row) => row.getBoundingClientRect().bottom)),
+      Math.max(
+        ...[...document.querySelectorAll('.tree-node')].map(
+          (row) => row.getBoundingClientRect().bottom,
+        ),
+      ),
     );
 
     const open = guides.filter((guide) => !guide.elbow);

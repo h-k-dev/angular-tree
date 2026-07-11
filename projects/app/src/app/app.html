@@ -1,6 +1,4 @@
 <mat-toolbar class="app-toolbar">
-  <span class="app-title">angular-tree</span>
-
   <nav class="app-nav" aria-label="Pages">
     <a
       class="app-nav-link"
@@ -9,7 +7,12 @@
       [routerLinkActiveOptions]="{ exact: true }"
       >Playground</a
     >
-    <a class="app-nav-link" routerLink="/api" routerLinkActive="app-nav-link--active">API</a>
+    <a
+      class="app-nav-link"
+      routerLink="/api"
+      routerLinkActive="app-nav-link--active"
+      >API</a
+    >
   </nav>
 
   <span class="app-spacer"></span>
@@ -17,7 +20,9 @@
   <button
     matIconButton
     (click)="toggleTheme()"
-    [attr.aria-label]="theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+    [attr.aria-label]="
+      theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
+    "
   >
     <mat-icon>{{ theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</mat-icon>
   </button>

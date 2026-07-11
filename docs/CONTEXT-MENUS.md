@@ -10,9 +10,13 @@ The tree ships a **built-in context-menu host** (settled 2026-07-06): you projec
 
   <ng-template treeContextMenu let-node let-ids="ids">
     @switch (node.kind) { @case ('folder') {
-    <button cdkMenuItem (cdkMenuItemTriggered)="tree.expandDescendants(node)">Expand subtree</button>
+    <button cdkMenuItem (cdkMenuItemTriggered)="tree.expandDescendants(node)">
+      Expand subtree
+    </button>
     } @default {
-    <button cdkMenuItem (cdkMenuItemTriggered)="remove(ids)">Delete ({{ ids.length }})</button>
+    <button cdkMenuItem (cdkMenuItemTriggered)="remove(ids)">
+      Delete ({{ ids.length }})
+    </button>
     } }
   </ng-template>
 </angular-tree>

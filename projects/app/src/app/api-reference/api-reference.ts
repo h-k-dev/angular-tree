@@ -18,10 +18,21 @@ export class ApiReference {
       name: '--tree-row-height',
       system: null,
       fallback: '32px (this demo: 40px)',
-      alters: 'Read-only — the [itemSize] input republished on the host; root of the sizing chain',
+      alters:
+        'Read-only — the [itemSize] input republished on the host; root of the sizing chain',
     },
-    { name: '--tree-bg', system: '--mat-sys-surface', fallback: '#ffffff', alters: 'Tree background, drag preview' },
-    { name: '--tree-text', system: '--mat-sys-on-surface', fallback: '#1d1b20', alters: 'Row text' },
+    {
+      name: '--tree-bg',
+      system: '--mat-sys-surface',
+      fallback: '#ffffff',
+      alters: 'Tree background, drag preview',
+    },
+    {
+      name: '--tree-text',
+      system: '--mat-sys-on-surface',
+      fallback: '#1d1b20',
+      alters: 'Row text',
+    },
     {
       name: '--tree-font',
       system: '--mat-sys-body-medium',
@@ -40,7 +51,12 @@ export class ApiReference {
       fallback: '#e8def8',
       alters: 'Selected row ([data-selected])',
     },
-    { name: '--tree-focus-ring', system: '--mat-sys-primary', fallback: '#6750a4', alters: ':focus-visible outline' },
+    {
+      name: '--tree-focus-ring',
+      system: '--mat-sys-primary',
+      fallback: '#6750a4',
+      alters: ':focus-visible outline',
+    },
     {
       name: '--tree-drop-indicator',
       system: '--mat-sys-primary',
@@ -69,7 +85,8 @@ export class ApiReference {
       name: '--tree-guide',
       system: '--mat-sys-outline-variant',
       fallback: '#cac4d0',
-      alters: 'Indent guide lines ([indentGuides]); hover uses --tree-focus-ring',
+      alters:
+        'Indent guide lines ([indentGuides]); hover uses --tree-focus-ring',
     },
     {
       name: '--tree-menu-bg',
@@ -77,7 +94,12 @@ export class ApiReference {
       fallback: '#f3edf7',
       alters: 'Context-menu shell background (treeContextMenu)',
     },
-    { name: '--tree-menu-radius', system: null, fallback: '8px', alters: 'Context-menu shell corner radius' },
+    {
+      name: '--tree-menu-radius',
+      system: null,
+      fallback: '8px',
+      alters: 'Context-menu shell corner radius',
+    },
     {
       name: '--tree-menu-shadow',
       system: '--mat-sys-level2',
@@ -113,12 +135,14 @@ export class ApiReference {
     {
       name: '(activated)',
       payload: 'T — your node',
-      fires: 'Plain row click (default) · double-click under clickAction="select" · Enter',
+      fires:
+        'Plain row click (default) · double-click under clickAction="select" · Enter',
       job: 'Open / navigate. Never mutates selection (Gmail semantics)',
     },
     {
       name: '(moved)',
-      payload: 'MoveEvent<T> { dragIds, dragNodes, parentId (null = root), index, dropEffect }',
+      payload:
+        'MoveEvent<T> { dragIds, dragNodes, parentId (null = root), index, dropEffect }',
       fires: 'Drop completed — pointer drag or keyboard Ctrl/Cmd+X/C → V',
       job: 'Apply the move/copy to your data; index counts children with the dragged nodes still present',
     },
@@ -143,14 +167,16 @@ export class ApiReference {
     },
     {
       name: '(childrenLoaded)',
-      payload: "LoadChildrenEvent<T> { id, node, status: 'loaded' | 'error', error? }",
+      payload:
+        "LoadChildrenEvent<T> { id, node, status: 'loaded' | 'error', error? }",
       fires: 'Async childrenAccessor resolved or failed',
       job: 'Surface errors — a retry button can call tree.retryChildren(node)',
     },
     {
       name: '(contextRequested)',
       payload: 'ContextRequestedEvent<T> { ids, node, position }',
-      fires: 'Right-click · Shift+F10 · ContextMenu key (after selection reconciliation)',
+      fires:
+        'Right-click · Shift+F10 · ContextMenu key (after selection reconciliation)',
       job: 'Host an external menu (MatMenu, …) — not needed with the built-in treeContextMenu',
     },
   ];

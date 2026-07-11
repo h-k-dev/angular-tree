@@ -1,7 +1,10 @@
 <h2 mat-dialog-title>Upload to…</h2>
 
 <mat-dialog-content>
-  <p class="upload-hint">Double-click a folder, right-click a row (built-in menu), or use its ⋮ button (MatMenu).</p>
+  <p class="upload-hint">
+    Double-click a folder, right-click a row (built-in menu), or use its ⋮
+    button (MatMenu).
+  </p>
 
   <!-- Built-in context menu (treeContextMenu): right-click anywhere on any
        row — folder or file — plus Shift+F10 and the more_vert button, all
@@ -18,16 +21,32 @@
     [typeaheadText]="nodeName"
     [indentGuides]="true"
   >
-    <ng-container *treeNodeDef="let node; when: isFolder; let isExpanded = isExpanded">
-      <button treeNodeToggle class="upload-toggle" [attr.aria-label]="'Toggle ' + node.name">
+    <ng-container
+      *treeNodeDef="let node; when: isFolder; let isExpanded = isExpanded"
+    >
+      <button
+        treeNodeToggle
+        class="upload-toggle"
+        [attr.aria-label]="'Toggle ' + node.name"
+      >
         <mat-icon>{{ isExpanded ? 'expand_more' : 'chevron_right' }}</mat-icon>
       </button>
-      <mat-icon class="upload-icon" [class.upload-icon--chosen]="isChosen(node)">
-        {{ isChosen(node) ? 'check_circle' : (node.icon ?? (isExpanded ? 'folder_open' : 'folder')) }}
+      <mat-icon
+        class="upload-icon"
+        [class.upload-icon--chosen]="isChosen(node)"
+      >
+        {{
+          isChosen(node)
+            ? 'check_circle'
+            : (node.icon ?? (isExpanded ? 'folder_open' : 'folder'))
+        }}
       </mat-icon>
-      <span class="upload-name" [class.upload-name--chosen]="isChosen(node)" (dblclick)="choose(node)">{{
-        node.name
-      }}</span>
+      <span
+        class="upload-name"
+        [class.upload-name--chosen]="isChosen(node)"
+        (dblclick)="choose(node)"
+        >{{ node.name }}</span
+      >
       <!-- Arbitrary action-button trigger: a plain MatMenu on the row's
            ⋮ button — independent of the tree's built-in right-click menu,
            proving the two coexist. matMenuTriggerData passes the node. -->
@@ -52,14 +71,34 @@
          container (stacking above the dialog, docs/CONTEXT-MENUS.md) -->
     <ng-template treeContextMenu let-node>
       @if (node.kind === 'folder') {
-        <button class="upload-menu-item" cdkMenuItem (cdkMenuItemTriggered)="choose(node)">Upload here</button>
-        <button class="upload-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.expandDescendants(node)">
+        <button
+          class="upload-menu-item"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="choose(node)"
+        >
+          Upload here
+        </button>
+        <button
+          class="upload-menu-item"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="tree.expandDescendants(node)"
+        >
           Expand subtree
         </button>
-        <button class="upload-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.collapse(node)">Collapse</button>
+        <button
+          class="upload-menu-item"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="tree.collapse(node)"
+        >
+          Collapse
+        </button>
       } @else {
         @if (parentOf(node); as parent) {
-          <button class="upload-menu-item" cdkMenuItem (cdkMenuItemTriggered)="choose(parent)">
+          <button
+            class="upload-menu-item"
+            cdkMenuItem
+            (cdkMenuItemTriggered)="choose(parent)"
+          >
             Upload to “{{ parent.name }}”
           </button>
         }
@@ -92,5 +131,7 @@
     }
   </span>
   <button matButton mat-dialog-close>Cancel</button>
-  <button matButton="filled" [disabled]="!destination()" (click)="confirm()">Upload</button>
+  <button matButton="filled" [disabled]="!destination()" (click)="confirm()">
+    Upload
+  </button>
 </mat-dialog-actions>

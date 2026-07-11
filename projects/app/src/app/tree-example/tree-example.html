@@ -27,8 +27,14 @@
 >
   <!-- Smart-folder def — third union member, third def: saved search with
        accent styling; not selectable, not draggable (predicates) -->
-  <ng-container *treeNodeDef="let node; when: isSmart; let isExpanded = isExpanded">
-    <button treeNodeToggle class="node-toggle" [attr.aria-label]="'Toggle ' + node.name">
+  <ng-container
+    *treeNodeDef="let node; when: isSmart; let isExpanded = isExpanded"
+  >
+    <button
+      treeNodeToggle
+      class="node-toggle"
+      [attr.aria-label]="'Toggle ' + node.name"
+    >
       <mat-icon>{{ isExpanded ? 'expand_more' : 'chevron_right' }}</mat-icon>
     </button>
     <mat-icon class="node-icon node-icon--smart">{{ node.icon }}</mat-icon>
@@ -50,19 +56,29 @@
       let checkState = checkState
     "
   >
-    <button treeNodeToggle class="node-toggle" [attr.aria-label]="'Toggle ' + node.name">
+    <button
+      treeNodeToggle
+      class="node-toggle"
+      [attr.aria-label]="'Toggle ' + node.name"
+    >
       <mat-icon>{{ isExpanded ? 'expand_more' : 'chevron_right' }}</mat-icon>
     </button>
     <!-- Icon-as-checkbox: the folder icon IS the checkbox — icon while
          unchecked, checkbox visual once checked/indeterminate. Custom icons
          per folder type (areas themed, clients 'domain', plain otherwise). -->
-    <button treeNodeCheckbox class="node-check" [attr.aria-label]="'Select ' + node.name">
+    <button
+      treeNodeCheckbox
+      class="node-check"
+      [attr.aria-label]="'Select ' + node.name"
+    >
       @switch (checkState) {
         @case ('checked') {
           <mat-icon class="node-icon node-icon--selected">check_box</mat-icon>
         }
         @case ('indeterminate') {
-          <mat-icon class="node-icon node-icon--selected">indeterminate_check_box</mat-icon>
+          <mat-icon class="node-icon node-icon--selected"
+            >indeterminate_check_box</mat-icon
+          >
         }
         @default {
           <mat-icon class="node-icon node-icon--folder">{{
@@ -74,14 +90,18 @@
     @if (isEditing) {
       <input treeNodeEditInput class="node-rename" [value]="node.name" />
     } @else {
-      <span class="node-name" [class.node-name--area]="level === 0">{{ node.name }}</span>
+      <span class="node-name" [class.node-name--area]="level === 0">{{
+        node.name
+      }}</span>
     }
     <!-- DnD-rules showcase: the rule each row enforces, visible on the row -->
     @if (node.locked) {
       <mat-icon class="node-lock" aria-label="Drag disabled">lock</mat-icon>
     }
     @if (node.accepts; as accepts) {
-      <span class="node-chip node-chip--bin">{{ accepts.length ? 'accepts ' + accepts.join(' + ') : 'no drops' }}</span>
+      <span class="node-chip node-chip--bin">{{
+        accepts.length ? 'accepts ' + accepts.join(' + ') : 'no drops'
+      }}</span>
     }
     @if (isLoading) {
       <mat-icon class="node-icon node-icon--spin">progress_activity</mat-icon>
@@ -115,11 +135,17 @@
     }
     <!-- Same icon-as-checkbox pattern; selection via the icon (Gmail semantics).
          Unchecked shows the per-extension type icon. -->
-    <button treeNodeCheckbox class="node-check" [attr.aria-label]="'Select ' + node.name">
+    <button
+      treeNodeCheckbox
+      class="node-check"
+      [attr.aria-label]="'Select ' + node.name"
+    >
       @if (checkState === 'checked') {
         <mat-icon class="node-icon node-icon--selected">check_box</mat-icon>
       } @else {
-        <mat-icon class="node-icon" [class]="'node-icon--' + node.ext">{{ fileIcons[node.ext] }}</mat-icon>
+        <mat-icon class="node-icon" [class]="'node-icon--' + node.ext">{{
+          fileIcons[node.ext]
+        }}</mat-icon>
       }
     </button>
     @if (isEditing) {
@@ -134,7 +160,9 @@
         <mat-icon class="node-star" aria-label="Starred">star</mat-icon>
       }
       @if (node.status; as status) {
-        <span class="node-chip" [class]="'node-chip--' + status">{{ status }}</span>
+        <span class="node-chip" [class]="'node-chip--' + status">{{
+          status
+        }}</span>
       }
       <!-- DnD-rules showcase: tag / drag-lock, visible on the row -->
       @if (node.dnd; as tag) {
@@ -157,29 +185,85 @@
         <!-- Both rename patterns, side by side: "Rename" flips the tree's
              editing state (inline treeNodeEditInput); "Rename in dialog…"
              opens a prefilled MatDialog — the tree never enters editing state. -->
-        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.edit(node)">Rename</button>
-        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="menuRename(node)">Rename in dialog…</button>
-        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.expandDescendants(node)">
+        <button
+          class="doc-menu-item"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="tree.edit(node)"
+        >
+          Rename
+        </button>
+        <button
+          class="doc-menu-item"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="menuRename(node)"
+        >
+          Rename in dialog…
+        </button>
+        <button
+          class="doc-menu-item"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="tree.expandDescendants(node)"
+        >
           Expand subtree
         </button>
-        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.collapse(node)">Collapse</button>
-        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="menuDelete(ids)">
+        <button
+          class="doc-menu-item"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="tree.collapse(node)"
+        >
+          Collapse
+        </button>
+        <button
+          class="doc-menu-item"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="menuDelete(ids)"
+        >
           Delete{{ ids.length > 1 ? ' (' + ids.length + ')' : '' }}
         </button>
       }
       @case ('smart') {
-        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.expandDescendants(node)">
+        <button
+          class="doc-menu-item"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="tree.expandDescendants(node)"
+        >
           Expand subtree
         </button>
-        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.collapse(node)">Collapse</button>
+        <button
+          class="doc-menu-item"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="tree.collapse(node)"
+        >
+          Collapse
+        </button>
       }
       @default {
-        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.edit(node)">Rename</button>
-        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="menuRename(node)">Rename in dialog…</button>
-        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="menuToggleStar(node)">
+        <button
+          class="doc-menu-item"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="tree.edit(node)"
+        >
+          Rename
+        </button>
+        <button
+          class="doc-menu-item"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="menuRename(node)"
+        >
+          Rename in dialog…
+        </button>
+        <button
+          class="doc-menu-item"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="menuToggleStar(node)"
+        >
           {{ node.starred ? 'Unstar' : 'Star' }}
         </button>
-        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="menuDelete(ids)">
+        <button
+          class="doc-menu-item"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="menuDelete(ids)"
+        >
           Delete{{ ids.length > 1 ? ' (' + ids.length + ')' : '' }}
         </button>
       }
@@ -192,7 +276,13 @@
   <ng-template treeEmptyDef>
     <div class="tree-empty">
       <mat-icon>{{ searchTerm() ? 'search_off' : 'folder_off' }}</mat-icon>
-      <p>{{ searchTerm() ? 'No matches for “' + searchTerm() + '”' : 'No documents yet.' }}</p>
+      <p>
+        {{
+          searchTerm()
+            ? 'No matches for “' + searchTerm() + '”'
+            : 'No documents yet.'
+        }}
+      </p>
     </div>
   </ng-template>
 

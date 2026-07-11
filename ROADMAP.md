@@ -236,7 +236,13 @@ Guiding principle: **DX over raw API minimalism, Material muscle memory over rea
   (contextRequested)="openMenu($event)"
 >
   <!-- expandable node -->
-  <ng-template treeNodeDef let-node [treeNodeDefWhen]="hasChild" let-isExpanded="isExpanded" let-isEditing="isEditing">
+  <ng-template
+    treeNodeDef
+    let-node
+    [treeNodeDefWhen]="hasChild"
+    let-isExpanded="isExpanded"
+    let-isEditing="isEditing"
+  >
     <button treeNodeToggle>{{ isExpanded ? '▾' : '▸' }}</button>
     <!-- Gmail-style swap: checkbox when selection is active, icon otherwise -->
     @if (tree.selectionActive()) {
@@ -257,9 +263,13 @@ Guiding principle: **DX over raw API minimalism, Material muscle memory over rea
        tree's (trigger, position, keyboard, close-on-scroll, cdkMenu shell) -->
   <ng-template treeContextMenu let-node let-ids="ids">
     @switch (node.kind) { @case ('folder') {
-    <button cdkMenuItem (cdkMenuItemTriggered)="tree.expandDescendants(node)">Expand subtree</button>
+    <button cdkMenuItem (cdkMenuItemTriggered)="tree.expandDescendants(node)">
+      Expand subtree
+    </button>
     } @default {
-    <button cdkMenuItem (cdkMenuItemTriggered)="remove(ids)">Delete ({{ ids.length }})</button>
+    <button cdkMenuItem (cdkMenuItemTriggered)="remove(ids)">
+      Delete ({{ ids.length }})
+    </button>
     } }
   </ng-template>
 </angular-tree>

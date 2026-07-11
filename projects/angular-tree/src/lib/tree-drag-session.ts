@@ -74,7 +74,10 @@ export class TreeDragSession<T = unknown> {
    */
   readonly dragStartDelay = { mouse: 0, touch: 1 << 30 };
 
-  readonly #drag = signal<{ keys: readonly string[]; nodes: readonly T[] } | null>(null);
+  readonly #drag = signal<{
+    keys: readonly string[];
+    nodes: readonly T[];
+  } | null>(null);
   readonly dragCount = computed(() => this.#drag()?.keys.length ?? 0);
 
   readonly #dropIndicator = signal<DropIndicator | null>(null);
@@ -85,7 +88,8 @@ export class TreeDragSession<T = unknown> {
   #lastPointerY = 0;
   #autoScrollStep = 0;
   #autoScrollFrame: number | undefined;
-  #hoverExpand: { key: string; timer: ReturnType<typeof setTimeout> } | undefined;
+  #hoverExpand:
+    { key: string; timer: ReturnType<typeof setTimeout> } | undefined;
 
   /** Cut/paste-style keyboard move — rows read this for their `data-move-source` affordance. */
   readonly #marked = signal<{
@@ -124,7 +128,11 @@ export class TreeDragSession<T = unknown> {
   /** Marks the pressed row's pruned drag set for a keyboard drop (Ctrl+X / Ctrl+C). */
   mark(pressedKey: string, effect: 'move' | 'copy') {
     const keys = this.#controller.dragKeysFor(pressedKey);
-    this.#marked.set({ keys: new Set(keys), nodes: this.#controller.nodesForKeys(keys), effect });
+    this.#marked.set({
+      keys: new Set(keys),
+      nodes: this.#controller.nodesForKeys(keys),
+      effect,
+    });
   }
 
   clearMark() {
@@ -200,7 +208,9 @@ export class TreeDragSession<T = unknown> {
   /** ⌥ copies on macOS, Ctrl elsewhere — Ctrl-drag is a context-menu gesture on mac. */
   #isCopyModifierHeld(event: MouseEvent | TouchEvent): boolean {
     if (!(event instanceof MouseEvent)) return false; // touch has no modifiers
-    const isApple = /Mac|iP(hone|ad|od)/.test(globalThis.navigator?.platform ?? '');
+    const isApple = /Mac|iP(hone|ad|od)/.test(
+      globalThis.navigator?.platform ?? '',
+    );
     return isApple ? event.altKey : event.ctrlKey;
   }
 
@@ -229,7 +239,8 @@ export class TreeDragSession<T = unknown> {
     if (!drag) return;
 
     const viewport = this.#inputs.viewport();
-    const viewportTop = viewport.elementRef.nativeElement.getBoundingClientRect().top;
+    const viewportTop =
+      viewport.elementRef.nativeElement.getBoundingClientRect().top;
     const size = this.#inputs.itemSize();
     const contentY = clientY - viewportTop + viewport.measureScrollOffset();
     const rows = this.#inputs.rows();
@@ -247,9 +258,15 @@ export class TreeDragSession<T = unknown> {
     // parity). Sibling-after would land the drop below the row's entire
     // subtree, far from the line. Keyboard 'after' (Ctrl+Shift+V) keeps
     // sibling semantics: no indicator justifies the remap there.
-    const insideFirst = zone === 'after' && row.expandable && row.context.isExpanded;
-    const resolved = this.#controller.dropTargetFor(drag.keys, row.key, insideFirst ? 'inside' : zone);
-    const target = insideFirst && resolved ? { ...resolved, index: 0 } : resolved;
+    const insideFirst =
+      zone === 'after' && row.expandable && row.context.isExpanded;
+    const resolved = this.#controller.dropTargetFor(
+      drag.keys,
+      row.key,
+      insideFirst ? 'inside' : zone,
+    );
+    const target =
+      insideFirst && resolved ? { ...resolved, index: 0 } : resolved;
     const forbidden =
       target != null &&
       (this.#inputs.disableDrop()?.({
@@ -259,7 +276,9 @@ export class TreeDragSession<T = unknown> {
       }) ??
         false);
 
-    this.#scheduleHoverExpand(zone === 'inside' && target != null && !forbidden ? row : null);
+    this.#scheduleHoverExpand(
+      zone === 'inside' && target != null && !forbidden ? row : null,
+    );
 
     if (target == null || forbidden) {
       this.#clearDropTarget();
@@ -307,9 +326,12 @@ export class TreeDragSession<T = unknown> {
    * pointer holds still inside an edge band.
    */
   #updateAutoScroll(clientY: number) {
-    const rect = this.#inputs.viewport().elementRef.nativeElement.getBoundingClientRect();
+    const rect = this.#inputs
+      .viewport()
+      .elementRef.nativeElement.getBoundingClientRect();
     const band = 32;
-    this.#autoScrollStep = clientY < rect.top + band ? -8 : clientY > rect.bottom - band ? 8 : 0;
+    this.#autoScrollStep =
+      clientY < rect.top + band ? -8 : clientY > rect.bottom - band ? 8 : 0;
 
     if (this.#autoScrollStep !== 0 && this.#autoScrollFrame === undefined) {
       this.#autoScrollFrame = requestAnimationFrame(this.#autoScrollTick);
@@ -320,7 +342,9 @@ export class TreeDragSession<T = unknown> {
     this.#autoScrollFrame = undefined;
     if (!this.#drag() || this.#autoScrollStep === 0) return;
     const viewport = this.#inputs.viewport();
-    viewport.scrollToOffset(viewport.measureScrollOffset() + this.#autoScrollStep);
+    viewport.scrollToOffset(
+      viewport.measureScrollOffset() + this.#autoScrollStep,
+    );
     this.#updateDropTarget(this.#lastPointerY);
     this.#autoScrollFrame = requestAnimationFrame(this.#autoScrollTick);
   };

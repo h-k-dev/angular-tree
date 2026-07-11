@@ -31,7 +31,8 @@ export interface TreeContextMenuContext<T> {
   selector: 'ng-template[treeContextMenu]',
 })
 export class TreeContextMenu<T> {
-  readonly template = inject<TemplateRef<TreeContextMenuContext<T>>>(TemplateRef);
+  readonly template =
+    inject<TemplateRef<TreeContextMenuContext<T>>>(TemplateRef);
 
   static ngTemplateContextGuard<T>(
     _directive: TreeContextMenu<T>,

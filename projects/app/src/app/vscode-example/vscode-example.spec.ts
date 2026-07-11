@@ -39,7 +39,9 @@ describe('VscodeExample', () => {
     // Same path, new name — the tree re-reads the mutated workspace.
     expect(find(component.workspace(), target)?.name).toBe('bootstrap.ts');
     // A sibling is untouched — the recursive map copies, it doesn't clobber.
-    expect(find(component.workspace(), 'angular-tree/src/styles.scss')?.name).toBe('styles.scss');
+    expect(
+      find(component.workspace(), 'angular-tree/src/styles.scss')?.name,
+    ).toBe('styles.scss');
   });
 
   it('opens files but never folders (double-click activate)', () => {

@@ -1,0 +1,45 @@
+<!-- The focusable stage OWNS the keyboard (a cross-origin iframe swallows
+     keydown): Escape → back to the library, Space/K → pause, ←/→ → seek. Tab
+     reaches the iframe itself for YouTube's full native controls. -->
+<div
+  class="player-stage"
+  tabindex="0"
+  role="group"
+  [attr.aria-label]="
+    'Player: ' + video().name + ' — Escape returns to the library'
+  "
+  (keydown)="onStageKeydown($event)"
+>
+  <div class="player-frame">
+    <!-- YT.Player replaces this div with its iframe. -->
+    <div class="player-mount"></div>
+  </div>
+  @if (!ready()) {
+    <div class="player-loading" aria-hidden="true">
+      <mat-icon class="player-spin">progress_activity</mat-icon>
+      Loading player…
+    </div>
+  }
+</div>
+
+<!-- Floating glass status strip (top-left) — clear of the top-right library. -->
+<div class="player-bar">
+  <span class="player-title">{{ video().name }}</span>
+  <span class="player-keys" aria-hidden="true">Space · ←/→ · M · Esc</span>
+  <button
+    matIconButton
+    class="player-btn"
+    (click)="toggleMute()"
+    [attr.aria-label]="muted() ? 'Unmute' : 'Mute'"
+  >
+    <mat-icon>{{ muted() ? 'volume_off' : 'volume_up' }}</mat-icon>
+  </button>
+  <button
+    matIconButton
+    class="player-btn"
+    (click)="closed.emit()"
+    aria-label="Stop and close player"
+  >
+    <mat-icon>close</mat-icon>
+  </button>
+</div>

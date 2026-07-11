@@ -2,9 +2,17 @@ import { NgTemplateOutlet } from '@angular/common';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { Directionality } from '@angular/cdk/bidi';
 import { SelectionModel } from '@angular/cdk/collections';
-import { CdkDrag, CdkDragMove, CdkDragPreview, CdkDropList } from '@angular/cdk/drag-drop';
+import {
+  CdkDrag,
+  CdkDragMove,
+  CdkDragPreview,
+  CdkDropList,
+} from '@angular/cdk/drag-drop';
 import { CdkContextMenuTrigger, CdkMenu } from '@angular/cdk/menu';
-import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
+import {
+  CdkVirtualScrollViewport,
+  ScrollingModule,
+} from '@angular/cdk/scrolling';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
@@ -41,8 +49,16 @@ import { LoadResult, TreeController } from './tree-controller';
 import { rowElement } from './tree-dom';
 import { TreeDragSession } from './tree-drag-session';
 import { TreeFocusEngine } from './tree-focus-engine';
-import { clampGuideOverlays, computeGuideGroups, GuideOverlay } from './tree-guides';
-import { interpretTreeKey, TypeaheadBuffer, typeaheadTarget } from './tree-keyboard';
+import {
+  clampGuideOverlays,
+  computeGuideGroups,
+  GuideOverlay,
+} from './tree-guides';
+import {
+  interpretTreeKey,
+  TypeaheadBuffer,
+  typeaheadTarget,
+} from './tree-keyboard';
 import { TreeMenuHost } from './tree-menu-host';
 import { TreeContextMenu } from './tree-context-menu';
 import { TreeNodeDef } from './tree-node-def';
@@ -87,7 +103,14 @@ interface FlatRow<T> {
 @Component({
   selector: 'angular-tree',
   exportAs: 'angularTree',
-  imports: [ScrollingModule, NgTemplateOutlet, CdkDrag, CdkDragPreview, CdkDropList, CdkMenu],
+  imports: [
+    ScrollingModule,
+    NgTemplateOutlet,
+    CdkDrag,
+    CdkDragPreview,
+    CdkDropList,
+    CdkMenu,
+  ],
   providers: [TreeController, TreeFocusEngine, TreeMenuHost, TreeDragSession],
   // The built-in context-menu trigger (ROADMAP 2026-07-06). TreeMenuHost
   // drives it explicitly (threading the triggering event so it can't
@@ -160,7 +183,9 @@ export class AngularTree<T> {
   readonly searchTerm = input('');
 
   /** Required for search — `T` has no shape to match against (ROADMAP settled). */
-  readonly searchMatch = input<((node: T, term: string) => boolean) | undefined>(undefined);
+  readonly searchMatch = input<
+    ((node: T, term: string) => boolean) | undefined
+  >(undefined);
 
   /** Required for type-ahead — same rationale as `searchMatch`; inert without it. */
   readonly typeaheadText = input<((node: T) => string) | undefined>(undefined);
@@ -174,10 +199,14 @@ export class AngularTree<T> {
    * the host, so a plain host attribute would be invisible to AT. Prefer
    * `aria-labelledby` pointing at a visible heading; `aria-label` otherwise.
    */
-  readonly ariaLabel = input<string | undefined>(undefined, { alias: 'aria-label' });
+  readonly ariaLabel = input<string | undefined>(undefined, {
+    alias: 'aria-label',
+  });
 
   /** id of a visible element labelling the tree — wins over `aria-label`. */
-  readonly ariaLabelledby = input<string | undefined>(undefined, { alias: 'aria-labelledby' });
+  readonly ariaLabelledby = input<string | undefined>(undefined, {
+    alias: 'aria-labelledby',
+  });
 
   /**
    * What a plain row click does (v2, reopened v1 lock — ROADMAP2 decisions
@@ -194,7 +223,9 @@ export class AngularTree<T> {
    * ships no live-region DOM. Omitted = terse English defaults; partial
    * objects override per message; `null` silences everything.
    */
-  readonly announcements = input<TreeAnnouncements<T> | null | undefined>(undefined);
+  readonly announcements = input<TreeAnnouncements<T> | null | undefined>(
+    undefined,
+  );
 
   /** `'follow'` = selection tracks focus (aria alignment); default explicit. */
   readonly selectionMode = input<'explicit' | 'follow'>('explicit');
@@ -218,7 +249,9 @@ export class AngularTree<T> {
 
   /// Behavior per type via predicates — the tree never interprets a type field.
   readonly disableDrag = input<((node: T) => boolean) | undefined>(undefined);
-  readonly disableDrop = input<((ctx: TreeDropContext<T>) => boolean) | undefined>(undefined);
+  readonly disableDrop = input<
+    ((ctx: TreeDropContext<T>) => boolean) | undefined
+  >(undefined);
   readonly disableEdit = input<((node: T) => boolean) | undefined>(undefined);
   readonly isSelectable = input<((node: T) => boolean) | undefined>(undefined);
 
@@ -248,8 +281,10 @@ export class AngularTree<T> {
   // TS-private, not #private: Angular query members must be compiler-visible (NG1053).
   private readonly defs = contentChildren<TreeNodeDef<T, T>>(TreeNodeDef);
   private readonly viewport = viewChild.required(CdkVirtualScrollViewport);
-  protected readonly contextMenuDef = contentChild<TreeContextMenu<T>>(TreeContextMenu);
-  private readonly contextMenuShell = viewChild.required<TemplateRef<unknown>>('contextMenuShell');
+  protected readonly contextMenuDef =
+    contentChild<TreeContextMenu<T>>(TreeContextMenu);
+  private readonly contextMenuShell =
+    viewChild.required<TemplateRef<unknown>>('contextMenuShell');
   private readonly emptyDef = contentChild(TreeEmptyDef);
   private readonly loadingDef = contentChild(TreeLoadingDef);
 
@@ -263,7 +298,9 @@ export class AngularTree<T> {
   protected readonly contextMenuContext = this.#menu.context;
 
   /** Gmail-style icon↔checkbox swap driver — reactive via the bridged mirror. */
-  readonly selectionActive = computed(() => this.#controller.selectedIds().size > 0);
+  readonly selectionActive = computed(
+    () => this.#controller.selectedIds().size > 0,
+  );
 
   /** Type-ahead accumulator (tree-keyboard.ts) — cleared after a pause. */
   readonly #typeahead = new TypeaheadBuffer();
@@ -313,10 +350,15 @@ export class AngularTree<T> {
     afterNextRender(() => {
       const viewport = this.viewport();
       this.#renderedRange.set(viewport.getRenderedRange());
-      const subscription = viewport.renderedRangeStream.subscribe((range) => this.#renderedRange.set(range));
+      const subscription = viewport.renderedRangeStream.subscribe((range) =>
+        this.#renderedRange.set(range),
+      );
       this.#destroyRef.onDestroy(() => subscription.unsubscribe());
     });
-    this.#menu.connect({ viewport: this.viewport, shell: this.contextMenuShell });
+    this.#menu.connect({
+      viewport: this.viewport,
+      shell: this.contextMenuShell,
+    });
     this.#dnd.connect({
       viewport: this.viewport,
       itemSize: this.itemSize,
@@ -360,13 +402,15 @@ export class AngularTree<T> {
       if (this.#controller.selectedIds().size === 0) return;
       // Row clicks manage selection themselves; guide clicks collapse groups;
       // overlay clicks (context menu, dialogs) act ON the selection.
-      if (target.closest('[data-node-id], .tree-guide, .cdk-overlay-container')) return;
+      if (target.closest('[data-node-id], .tree-guide, .cdk-overlay-container'))
+        return;
       if (insideHost) {
         // Scrollbar drags are not deselect gestures (layoutless envs skip this).
         const viewport = this.viewport().elementRef.nativeElement;
         if (
           viewport.clientWidth > 0 &&
-          (event.offsetX >= viewport.clientWidth || event.offsetY >= viewport.clientHeight)
+          (event.offsetX >= viewport.clientWidth ||
+            event.offsetY >= viewport.clientHeight)
         ) {
           return;
         }
@@ -374,9 +418,17 @@ export class AngularTree<T> {
       this.#selectionAnchor = null;
       this.#writeSelection([], 'replace');
     };
-    this.#host.ownerDocument.addEventListener('pointerdown', onDocPointerDown, true);
+    this.#host.ownerDocument.addEventListener(
+      'pointerdown',
+      onDocPointerDown,
+      true,
+    );
     this.#destroyRef.onDestroy(() =>
-      this.#host.ownerDocument.removeEventListener('pointerdown', onDocPointerDown, true),
+      this.#host.ownerDocument.removeEventListener(
+        'pointerdown',
+        onDocPointerDown,
+        true,
+      ),
     );
 
     // Search announcements (v2): result counts reach screen readers as the
@@ -386,7 +438,8 @@ export class AngularTree<T> {
       const count = this.#controller.searchMatchCount();
       const term = this.searchTerm();
       untracked(() => {
-        if (count != null) this.#announce((messages) => messages.searchResults?.(count, term));
+        if (count != null)
+          this.#announce((messages) => messages.searchResults?.(count, term));
       });
     });
 
@@ -412,20 +465,33 @@ export class AngularTree<T> {
       const key = flat.key;
       // Per-row computeds: value equality stops propagation, so a selection
       // change re-renders only rows whose state actually flipped (O(visible)).
-      const isSelected = computed(() => this.#controller.selectedIds().has(key));
-      const checkState = computed(() => this.#controller.checkStates().get(key) ?? 'unchecked');
+      const isSelected = computed(() =>
+        this.#controller.selectedIds().has(key),
+      );
+      const checkState = computed(
+        () => this.#controller.checkStates().get(key) ?? 'unchecked',
+      );
       const isEditing = computed(() => this.#controller.editingId() === key);
-      const isLoading = computed(() => this.#controller.loadStates().get(key) === 'loading');
-      const hasError = computed(() => this.#controller.loadStates().get(key) === 'error');
-      const tabIndex = computed(() => (this.#focus.effectiveFocusKey() === key ? 0 : -1));
-      const moveSource = computed(() => this.#dnd.marked()?.keys.has(key) ?? false);
+      const isLoading = computed(
+        () => this.#controller.loadStates().get(key) === 'loading',
+      );
+      const hasError = computed(
+        () => this.#controller.loadStates().get(key) === 'error',
+      );
+      const tabIndex = computed(() =>
+        this.#focus.effectiveFocusKey() === key ? 0 : -1,
+      );
+      const moveSource = computed(
+        () => this.#dnd.marked()?.keys.has(key) ?? false,
+      );
 
       const handle: TreeNodeHandle = {
         expandable: flat.expandable,
         isSelected,
         checkState,
         toggle: () => this.toggle(flat.node),
-        toggleSelection: (range?: boolean) => this.#toggleSelection(key, flat.node, range),
+        toggleSelection: (range?: boolean) =>
+          this.#toggleSelection(key, flat.node, range),
         beginEdit: () => this.edit(flat.node),
         commitEdit: (name) => this.#commitEdit(key, flat.node, name),
         cancelEdit: () => this.#cancelEdit(key),
@@ -483,11 +549,14 @@ export class AngularTree<T> {
    * over empty (a root load in flight shouldn't flash "no items"); each shows
    * only when its def is projected.
    */
-  protected readonly stateTemplate = computed<TemplateRef<unknown> | null>(() => {
-    if (this.loading()) return this.loadingDef()?.template ?? null;
-    if (this.visibleRows().length === 0) return this.emptyDef()?.template ?? null;
-    return null;
-  });
+  protected readonly stateTemplate = computed<TemplateRef<unknown> | null>(
+    () => {
+      if (this.loading()) return this.loadingDef()?.template ?? null;
+      if (this.visibleRows().length === 0)
+        return this.emptyDef()?.template ?? null;
+      return null;
+    },
+  );
 
   /**
    * `'activate'` (default): plain click activates, never mutates selection —
@@ -529,11 +598,19 @@ export class AngularTree<T> {
   }
 
   /** Recomputes only on visibility changes (expand/collapse/search/data) — never on scroll. */
-  readonly #guideGroups = computed(() => computeGuideGroups(this.#controller.visibleNodes()));
+  readonly #guideGroups = computed(() =>
+    computeGuideGroups(this.#controller.visibleNodes()),
+  );
 
   /** Guides clamped to the rendered range, in content-wrapper px (see template). */
   protected readonly guideOverlays = computed<readonly GuideOverlay[]>(() =>
-    this.indentGuides() ? clampGuideOverlays(this.#guideGroups(), this.#renderedRange(), this.itemSize()) : [],
+    this.indentGuides()
+      ? clampGuideOverlays(
+          this.#guideGroups(),
+          this.#renderedRange(),
+          this.itemSize(),
+        )
+      : [],
   );
 
   /** A guide click collapses — and focuses — the group's expanded parent. */
@@ -556,9 +633,13 @@ export class AngularTree<T> {
     this.#controller.focusedId.set(row.key);
 
     // Inside a rename input, leave the browser's paste menu alone.
-    if (this.contextMenuDef() && (event.target as HTMLElement).closest('input')) return;
+    if (this.contextMenuDef() && (event.target as HTMLElement).closest('input'))
+      return;
 
-    const at = this.#prepareContext(row, { x: event.clientX, y: event.clientY });
+    const at = this.#prepareContext(row, {
+      x: event.clientX,
+      y: event.clientY,
+    });
     if (at == null) return; // no projected def → the consumer's trigger's call
 
     // Drive the open ourselves — do NOT lean on CDK's own `contextmenu` host
@@ -588,7 +669,8 @@ export class AngularTree<T> {
   protected onKeydown(event: KeyboardEvent) {
     // Keys inside a rename input belong to the input (Enter/Escape handled
     // by treeNodeEditInput), not to tree navigation.
-    if ((event.target as HTMLElement).closest('input[treeNodeEditInput]')) return;
+    if ((event.target as HTMLElement).closest('input[treeNodeEditInput]'))
+      return;
 
     const rows = this.visibleRows();
     if (rows.length === 0) return;
@@ -611,10 +693,14 @@ export class AngularTree<T> {
       rowCount: rows.length,
       // Viewport-height jumps (APG optional keys, v2). Layoutless
       // environments report size 0 — clamp to a single-row step.
-      pageStep: Math.max(1, Math.floor(this.viewport().getViewportSize() / this.itemSize())),
+      pageStep: Math.max(
+        1,
+        Math.floor(this.viewport().getViewportSize() / this.itemSize()),
+      ),
       rowExpandable: row.expandable,
       rowExpanded: row.context.isExpanded,
-      hasChildBelow: rows[index + 1] != null && rows[index + 1].level > row.level,
+      hasChildBelow:
+        rows[index + 1] != null && rows[index + 1].level > row.level,
     });
     if (command == null) return;
 
@@ -679,7 +765,9 @@ export class AngularTree<T> {
         const text = this.typeaheadText();
         if (!text) return; // inert without the accessor (ROADMAP settled)
         const prefix = this.#typeahead.push(command.char);
-        const match = typeaheadTarget(rows, index, prefix, (candidate) => text(candidate.node));
+        const match = typeaheadTarget(rows, index, prefix, (candidate) =>
+          text(candidate.node),
+        );
         if (match) this.#focus.focusKey(match.key);
         return; // type-ahead never consumes the event
       }
@@ -733,7 +821,9 @@ export class AngularTree<T> {
     }
 
     const model = this.selection();
-    const selected = [...(model ? model.selected : this.#controller.selectedIds())];
+    const selected = [
+      ...(model ? model.selected : this.#controller.selectedIds()),
+    ];
     const ids = selected.length > 0 ? selected : [row.key];
     const rect = rowElement(this.#host, row.key)?.getBoundingClientRect();
     const at = position ?? { x: rect?.left ?? 0, y: rect?.bottom ?? 0 };
@@ -760,11 +850,15 @@ export class AngularTree<T> {
     // Same race as #focusKey: scroll it into the window, then retry
     // frame-aligned until its DOM exists.
     if (position == null && rowElement(this.#host, row.key) == null) {
-      const index = this.visibleRows().findIndex((candidate) => candidate.key === row.key);
+      const index = this.visibleRows().findIndex(
+        (candidate) => candidate.key === row.key,
+      );
       if (index < 0) return;
       this.viewport().scrollToIndex(index);
       this.#menuAttempt = row.key;
-      afterNextRender(() => this.#attemptOpenMenu(row.key, 16), { injector: this.#injector });
+      afterNextRender(() => this.#attemptOpenMenu(row.key, 16), {
+        injector: this.#injector,
+      });
       return;
     }
     const at = this.#prepareContext(row, position);
@@ -832,7 +926,8 @@ export class AngularTree<T> {
       .filter((row) => this.isSelectable()?.(row.node) !== false)
       .map((row) => row.key);
     const selected = this.#controller.selectedIds();
-    const allSelected = keys.length > 0 && keys.every((key) => selected.has(key));
+    const allSelected =
+      keys.length > 0 && keys.every((key) => selected.has(key));
     this.#writeSelection(allSelected ? [] : keys, 'replace');
   }
 
@@ -850,15 +945,21 @@ export class AngularTree<T> {
     }
 
     const ids = [...(model ? model.selected : this.#controller.selectedIds())];
-    this.selectionChange.emit({ ids, nodes: this.#controller.nodesForKeys(ids) });
+    this.selectionChange.emit({
+      ids,
+      nodes: this.#controller.nodesForKeys(ids),
+    });
   }
 
   /** First def whose `when` matches wins; a def without `when` is the fallback. */
   templateFor(row: FlatRow<T>): TemplateRef<TreeNodeContext<T>> {
     const defs = this.defs();
-    const match = defs.find((def) => def.when()?.(row.node)) ?? defs.find((def) => !def.when());
+    const match =
+      defs.find((def) => def.when()?.(row.node)) ??
+      defs.find((def) => !def.when());
 
-    if (!match) throw new Error('angular-tree: no treeNodeDef matches this node.');
+    if (!match)
+      throw new Error('angular-tree: no treeNodeDef matches this node.');
     return match.template;
   }
 
@@ -902,7 +1003,10 @@ export class AngularTree<T> {
       const frontier = this.#controller
         .flat()
         .list.filter(
-          (entry) => entry.expandable && !entry.loaded && this.#controller.loadStates().get(entry.key) !== 'error',
+          (entry) =>
+            entry.expandable &&
+            !entry.loaded &&
+            this.#controller.loadStates().get(entry.key) !== 'error',
         );
       if (frontier.length === 0) return;
 
@@ -968,7 +1072,9 @@ export class AngularTree<T> {
   /** Re-runs a failed async `childrenAccessor` (never leave a node stuck). */
   retryChildren(node: T): void {
     const key = this.expansionKey()(node);
-    void this.#controller.retryChildren(key).then((result) => this.#emitLoad(key, node, result));
+    void this.#controller
+      .retryChildren(key)
+      .then((result) => this.#emitLoad(key, node, result));
   }
 
   /**
@@ -989,7 +1095,9 @@ export class AngularTree<T> {
     for (const key of keys) {
       const entry = map.get(key);
       if (!entry || !expanded.has(key)) continue; // collapsed: next expand reloads
-      void this.#controller.ensureChildren(key).then((result) => this.#emitLoad(key, entry.node, result));
+      void this.#controller
+        .ensureChildren(key)
+        .then((result) => this.#emitLoad(key, entry.node, result));
     }
   }
 
@@ -1003,7 +1111,9 @@ export class AngularTree<T> {
     // Expand intent triggers the lazy load — rendering never does (ROADMAP:
     // virtualization-proof lazy loading).
     if (value) {
-      void this.#controller.ensureChildren(key).then((result) => this.#emitLoad(key, node, result));
+      void this.#controller
+        .ensureChildren(key)
+        .then((result) => this.#emitLoad(key, node, result));
     } else if (this.collapseBehavior() === 'invalidate') {
       // Collapse drops the overlay and aborts an in-flight resolve — the next
       // expand re-runs the accessor (v2; `'keep'` preserves v1 semantics).
@@ -1035,13 +1145,18 @@ export class AngularTree<T> {
       }`,
     childrenLoaded: (event) => {
       const name = this.typeaheadText()?.(event.node);
-      return event.status === 'error' ? `Loading ${name ?? 'children'} failed` : `${name ?? 'Children'} loaded`;
+      return event.status === 'error'
+        ? `Loading ${name ?? 'children'} failed`
+        : `${name ?? 'Children'} loaded`;
     },
-    searchResults: (count, term) => `${count} ${count === 1 ? 'result' : 'results'} for ${term}`,
+    searchResults: (count, term) =>
+      `${count} ${count === 1 ? 'result' : 'results'} for ${term}`,
     selectionCleared: () => 'Selection cleared',
   };
 
-  #announce(select: (messages: Required<TreeAnnouncements<T>>) => string | undefined) {
+  #announce(
+    select: (messages: Required<TreeAnnouncements<T>>) => string | undefined,
+  ) {
     const config = this.announcements();
     if (config === null) return; // consumer-silenced
     const message = select({ ...this.#defaultAnnouncements, ...config });
@@ -1056,7 +1171,8 @@ export class AngularTree<T> {
   }
 
   #cancelEdit(key: string) {
-    if (this.#controller.editingId() === key) this.#controller.editingId.set(null);
+    if (this.#controller.editingId() === key)
+      this.#controller.editingId.set(null);
   }
 
   /**
@@ -1069,7 +1185,12 @@ export class AngularTree<T> {
 
     // Shift+checkbox (v2): additive range from the anchor over visible order —
     // the anchor survives so a further shift-click re-ranges from the same spot.
-    if (range && this.multi() && this.#selectionAnchor != null && this.#selectionAnchor !== key) {
+    if (
+      range &&
+      this.multi() &&
+      this.#selectionAnchor != null &&
+      this.#selectionAnchor !== key
+    ) {
       this.#selectRange(this.#selectionAnchor, key);
       return;
     }
@@ -1095,6 +1216,9 @@ export class AngularTree<T> {
     }
 
     const ids = [...(model ? model.selected : this.#controller.selectedIds())];
-    this.selectionChange.emit({ ids, nodes: this.#controller.nodesForKeys(ids) });
+    this.selectionChange.emit({
+      ids,
+      nodes: this.#controller.nodesForKeys(ids),
+    });
   }
 }

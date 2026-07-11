@@ -1,10 +1,24 @@
 <!-- Example controls — page concerns, not app chrome. Wraps on narrow screens. -->
 <div class="playground-controls">
-  <input class="app-search" type="search" placeholder="Search…" [value]="search()" (input)="onSearch($event)" />
+  <input
+    class="app-search"
+    type="search"
+    placeholder="Search…"
+    [value]="search()"
+    (input)="onSearch($event)"
+  />
 
-  <button matButton (click)="toggleScale()" [attr.aria-pressed]="scale() === 'xl'">
+  <button
+    matButton
+    (click)="toggleScale()"
+    [attr.aria-pressed]="scale() === 'xl'"
+  >
     <mat-icon>speed</mat-icon>
-    {{ scale() === 'xl' ? (example()?.nodeCount() | number) + ' nodes' : '100k mode' }}
+    {{
+      scale() === 'xl'
+        ? (example()?.nodeCount() | number) + ' nodes'
+        : '100k mode'
+    }}
   </button>
 
   <button matButton (click)="simulateLoad()" [disabled]="rootLoading()">
@@ -35,7 +49,11 @@
   <header class="demo-card-bar">
     <nav class="demo-tabs" aria-label="Example view">
       @for (tab of viewTabs; track tab.id) {
-        <button class="demo-tab" [attr.aria-selected]="view() === tab.id" (click)="showView(tab.id)">
+        <button
+          class="demo-tab"
+          [attr.aria-selected]="view() === tab.id"
+          (click)="showView(tab.id)"
+        >
           {{ tab.label }}
         </button>
       }

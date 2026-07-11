@@ -4,7 +4,11 @@ import { Observable } from 'rxjs';
 import { LazyLoadExample } from './lazy-load-example';
 import { applyMove, attachChildren, LazyNode, Source } from './lazy-sources';
 
-const branch = (id: string, source: Source, children?: readonly LazyNode[]): LazyNode => ({
+const branch = (
+  id: string,
+  source: Source,
+  children?: readonly LazyNode[],
+): LazyNode => ({
   id,
   name: id,
   source,
@@ -12,7 +16,13 @@ const branch = (id: string, source: Source, children?: readonly LazyNode[]): Laz
   ref: id,
   children,
 });
-const leaf = (id: string, source: Source): LazyNode => ({ id, name: id, source, leaf: true, ref: id });
+const leaf = (id: string, source: Source): LazyNode => ({
+  id,
+  name: id,
+  source,
+  leaf: true,
+  ref: id,
+});
 
 const find = (nodes: readonly LazyNode[], id: string): LazyNode | undefined => {
   for (const node of nodes) {
@@ -38,13 +48,18 @@ describe('lazy-sources', () => {
 
   it('applyMove reparents a node within its source', () => {
     const roots = [
-      branch('gh', 'github', [branch('gh/f1', 'github', [leaf('gh/x', 'github')]), branch('gh/f2', 'github', [])]),
+      branch('gh', 'github', [
+        branch('gh/f1', 'github', [leaf('gh/x', 'github')]),
+        branch('gh/f2', 'github', []),
+      ]),
     ];
 
     const moved = applyMove(roots, ['gh/x'], 'gh/f2', 0);
 
     expect(find(moved, 'gh/f1')!.children).toEqual([]); // left its source folder
-    expect(find(moved, 'gh/f2')!.children!.map((node) => node.id)).toEqual(['gh/x']); // landed in target
+    expect(find(moved, 'gh/f2')!.children!.map((node) => node.id)).toEqual([
+      'gh/x',
+    ]); // landed in target
   });
 });
 
@@ -53,7 +68,9 @@ describe('LazyLoadExample', () => {
   let fixture: ComponentFixture<LazyLoadExample>;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [LazyLoadExample] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [LazyLoadExample],
+    }).compileComponents();
     fixture = TestBed.createComponent(LazyLoadExample);
     component = fixture.componentInstance;
     await fixture.whenStable();
@@ -61,8 +78,16 @@ describe('LazyLoadExample', () => {
 
   it('starts with five sources, one per public API, nothing fetched yet', () => {
     const sources = component.roots().map((root) => root.source);
-    expect(sources).toEqual(['github', 'gbif', 'hackernews', 'wikipedia', 'jsdelivr']);
-    expect(component.roots().every((root) => root.children === undefined)).toBe(true);
+    expect(sources).toEqual([
+      'github',
+      'gbif',
+      'hackernews',
+      'wikipedia',
+      'jsdelivr',
+    ]);
+    expect(component.roots().every((root) => root.children === undefined)).toBe(
+      true,
+    );
   });
 
   it('probing the accessor NEVER fetches — the observable is cold (regression: page-load request storm)', () => {
@@ -87,12 +112,36 @@ describe('LazyLoadExample', () => {
     const dragGbif = [leaf('gbif:9', 'gbif')];
 
     // root (no parent) — forbidden (a node must stay inside its source)
-    expect(component.dropForbidden({ dragNodes: dragGithub, parentNode: null, index: 0 })).toBe(true);
+    expect(
+      component.dropForbidden({
+        dragNodes: dragGithub,
+        parentNode: null,
+        index: 0,
+      }),
+    ).toBe(true);
     // cross-source — forbidden (can't drag a taxon into a repo)
-    expect(component.dropForbidden({ dragNodes: dragGbif, parentNode: loadedGh, index: 0 })).toBe(true);
+    expect(
+      component.dropForbidden({
+        dragNodes: dragGbif,
+        parentNode: loadedGh,
+        index: 0,
+      }),
+    ).toBe(true);
     // into an unfetched branch — forbidden (open it first)
-    expect(component.dropForbidden({ dragNodes: dragGithub, parentNode: unloadedGh, index: 0 })).toBe(true);
+    expect(
+      component.dropForbidden({
+        dragNodes: dragGithub,
+        parentNode: unloadedGh,
+        index: 0,
+      }),
+    ).toBe(true);
     // same source, loaded target — allowed
-    expect(component.dropForbidden({ dragNodes: dragGithub, parentNode: loadedGh, index: 0 })).toBe(false);
+    expect(
+      component.dropForbidden({
+        dragNodes: dragGithub,
+        parentNode: loadedGh,
+        index: 0,
+      }),
+    ).toBe(false);
   });
 });

@@ -56,25 +56,40 @@ export interface FileNode {
 
 export type DocNode = FolderNode | SmartFolderNode | FileNode;
 
-export const isFolder = (node: DocNode): node is FolderNode => node.kind === 'folder';
-export const isSmart = (node: DocNode): node is SmartFolderNode => node.kind === 'smart';
+export const isFolder = (node: DocNode): node is FolderNode =>
+  node.kind === 'folder';
+export const isSmart = (node: DocNode): node is SmartFolderNode =>
+  node.kind === 'smart';
 export const isFile = (node: DocNode): node is FileNode => node.kind === 'file';
 
 /** Removes the given ids (and their subtrees) — consumer side of a delete intent. */
-export function applyDelete(roots: DocNode[], ids: readonly string[]): DocNode[] {
+export function applyDelete(
+  roots: DocNode[],
+  ids: readonly string[],
+): DocNode[] {
   const remove = new Set(ids);
   const prune = (nodes: DocNode[]): DocNode[] =>
     nodes
       .filter((node) => !remove.has(node.id))
-      .map((node) => (isFile(node) ? node : { ...node, children: prune(node.children) }));
+      .map((node) =>
+        isFile(node) ? node : { ...node, children: prune(node.children) },
+      );
   return prune(roots);
 }
 
 /** Applies a rename — consumer side of the `renamed` intent AND of the dialog flow. */
-export function applyRename(roots: DocNode[], id: string, name: string): DocNode[] {
+export function applyRename(
+  roots: DocNode[],
+  id: string,
+  name: string,
+): DocNode[] {
   const rename = (nodes: DocNode[]): DocNode[] =>
     nodes.map((node) =>
-      node.id === id ? { ...node, name } : isFile(node) ? node : { ...node, children: rename(node.children) },
+      node.id === id
+        ? { ...node, name }
+        : isFile(node)
+          ? node
+          : { ...node, children: rename(node.children) },
     );
   return rename(roots);
 }
@@ -102,8 +117,12 @@ export function applyMove(
     return undefined;
   };
 
-  const targetChildren = parentId == null ? roots : (findFolder(roots, parentId)?.children ?? []);
-  const adjustedIndex = index - targetChildren.slice(0, index).filter((child) => dragSet.has(child.id)).length;
+  const targetChildren =
+    parentId == null ? roots : (findFolder(roots, parentId)?.children ?? []);
+  const adjustedIndex =
+    index -
+    targetChildren.slice(0, index).filter((child) => dragSet.has(child.id))
+      .length;
 
   const removed: DocNode[] = [];
   const prune = (nodes: DocNode[]): DocNode[] =>
@@ -112,7 +131,9 @@ export function applyMove(
         removed.push(node);
         return [];
       }
-      return [isFile(node) ? node : { ...node, children: prune(node.children) }];
+      return [
+        isFile(node) ? node : { ...node, children: prune(node.children) },
+      ];
     });
   const pruned = prune(roots);
 
@@ -151,7 +172,9 @@ export function applyCopy(
 
   const clone = (node: DocNode): DocNode => {
     const id = `${node.id}-copy-${(copySequence += 1)}`;
-    return isFile(node) ? { ...node, id } : { ...node, id, children: node.children.map(clone) };
+    return isFile(node)
+      ? { ...node, id }
+      : { ...node, id, children: node.children.map(clone) };
   };
 
   const collect = (nodes: DocNode[]): DocNode[] =>
@@ -182,7 +205,14 @@ export function applyCopy(
 
 // "Cases" level pools — client → matter → phase → workstream (6 levels deep
 // with the Cases root above and the files below).
-const TOPICS = ['Acme Corp', 'Globex', 'Initech', 'Umbrella', 'Stark Industries', 'Wayne Enterprises'];
+const TOPICS = [
+  'Acme Corp',
+  'Globex',
+  'Initech',
+  'Umbrella',
+  'Stark Industries',
+  'Wayne Enterprises',
+];
 // 'Contract Renewal' stays first: the perf e2e searches "contract" and must hit.
 const MATTERS = [
   'Contract Renewal',
@@ -196,9 +226,24 @@ const MATTERS = [
   'License Negotiation',
   'Antitrust Review',
 ];
-const PHASES = ['Intake', 'Discovery', 'Negotiation', 'Filing', 'Hearing', 'Closing', 'Post-Closing', 'Appeal'];
+const PHASES = [
+  'Intake',
+  'Discovery',
+  'Negotiation',
+  'Filing',
+  'Hearing',
+  'Closing',
+  'Post-Closing',
+  'Appeal',
+];
 const SUBJECTS = ['Drafts', 'Signed', 'Correspondence', 'Evidence', 'Internal'];
-const EXTENSIONS: readonly FileExtension[] = ['pdf', 'docx', 'xlsx', 'eml', 'png'];
+const EXTENSIONS: readonly FileExtension[] = [
+  'pdf',
+  'docx',
+  'xlsx',
+  'eml',
+  'png',
+];
 const BASENAMES = [
   'NDA',
   'Master Agreement',
@@ -213,7 +258,14 @@ const BASENAMES = [
   'Due Diligence',
   'Settlement Offer',
 ];
-const STATUSES: readonly (FileStatus | undefined)[] = [undefined, undefined, undefined, 'draft', 'signed', 'final'];
+const STATUSES: readonly (FileStatus | undefined)[] = [
+  undefined,
+  undefined,
+  undefined,
+  'draft',
+  'signed',
+  'final',
+];
 
 /** Deterministic pseudo-random — stable tree across reloads, no Math.random. */
 const seeded = (seed: number) => () => {
@@ -226,7 +278,13 @@ export type ExampleScale = 'standard' | 'xl';
 /** `xl` ≈ 100k nodes — the ROADMAP Phase 2/8 virtualization smoke target. */
 const SCALES: Record<
   ExampleScale,
-  { clients: number; matters: number; phases: number; workstreams: number; files: number }
+  {
+    clients: number;
+    matters: number;
+    phases: number;
+    workstreams: number;
+    files: number;
+  }
 > = {
   standard: { clients: 6, matters: 4, phases: 3, workstreams: 3, files: 6 },
   xl: { clients: 12, matters: 10, phases: 8, workstreams: 6, files: 12 }, // ≈100k nodes (avg 16.5 files/workstream)
@@ -244,9 +302,12 @@ export function generateExampleTree(scale: ExampleScale = 'standard'): {
   let nodeCount = 0;
 
   const label = (names: readonly string[], index: number) =>
-    index < names.length ? names[index] : `${names[index % names.length]} ${Math.floor(index / names.length) + 1}`;
+    index < names.length
+      ? names[index]
+      : `${names[index % names.length]} ${Math.floor(index / names.length) + 1}`;
 
-  const pick = <T>(pool: readonly T[]): T => pool[Math.floor(random() * pool.length)];
+  const pick = <T>(pool: readonly T[]): T =>
+    pool[Math.floor(random() * pool.length)];
 
   const files = (parentId: string, count: number): FileNode[] =>
     Array.from({ length: count }, () => {
@@ -263,7 +324,12 @@ export function generateExampleTree(scale: ExampleScale = 'standard'): {
       };
     });
 
-  const folder = (id: string, name: string, children: DocNode[], icon?: string): FolderNode => {
+  const folder = (
+    id: string,
+    name: string,
+    children: DocNode[],
+    icon?: string,
+  ): FolderNode => {
     folderIds.push(id);
     nodeCount += 1;
     return { kind: 'folder', id, name, children, ...(icon ? { icon } : {}) };
@@ -283,10 +349,17 @@ export function generateExampleTree(scale: ExampleScale = 'standard'): {
     const level = LEVELS[depth];
     if (!level) return files(prefix, counts.files + Math.floor(random() * 10));
     return Array.from({ length: level.count }, (_, i) =>
-      folder(`${prefix}/${i}`, label(level.pool, i), branch(`${prefix}/${i}`, depth + 1), level.icon),
+      folder(
+        `${prefix}/${i}`,
+        label(level.pool, i),
+        branch(`${prefix}/${i}`, depth + 1),
+        level.icon,
+      ),
     );
   };
-  const roots: DocNode[] = [folder('cases', 'Cases', branch('cases', 0), 'gavel')];
+  const roots: DocNode[] = [
+    folder('cases', 'Cases', branch('cases', 0), 'gavel'),
+  ];
 
   // Smart folder (saved search): *copies* of starred files — ids must stay
   // unique tree-wide, so the copies get their own. Starts collapsed (not in
@@ -305,7 +378,13 @@ export function generateExampleTree(scale: ExampleScale = 'standard'): {
   };
   collectStarred(roots);
   nodeCount += 1 + starred.length;
-  roots.unshift({ kind: 'smart', id: 'smart-starred', name: 'Starred', icon: 'star', children: starred });
+  roots.unshift({
+    kind: 'smart',
+    id: 'smart-starred',
+    name: 'Starred',
+    icon: 'star',
+    children: starred,
+  });
 
   // Drag & drop rules showcase: every predicate combination under one root,
   // each node named after the rule it demonstrates (predicates live in
@@ -313,9 +392,20 @@ export function generateExampleTree(scale: ExampleScale = 'standard'): {
   // near the top of the tree (and the first-`.pdf` drag sources) must not
   // shift — while the bins inside register via `folder()`, so they open
   // pre-expanded the moment the showcase is.
-  const demoFile = (id: string, name: string, extra: Partial<FileNode> = {}): FileNode => {
+  const demoFile = (
+    id: string,
+    name: string,
+    extra: Partial<FileNode> = {},
+  ): FileNode => {
     nodeCount += 1;
-    return { kind: 'file', id: `dnd/${id}`, name, ext: 'pdf', size: 24_000, ...extra };
+    return {
+      kind: 'file',
+      id: `dnd/${id}`,
+      name,
+      ext: 'pdf',
+      size: 24_000,
+      ...extra,
+    };
   };
   nodeCount += 1;
   roots.splice(1, 0, {
@@ -325,15 +415,26 @@ export function generateExampleTree(scale: ExampleScale = 'standard'): {
     icon: 'drag_indicator',
     children: [
       demoFile('free', 'Drag me anywhere.pdf'),
-      demoFile('locked', 'Can’t drag me — locked.docx', { ext: 'docx', locked: true }),
-      demoFile('a', 'Type A — drop me in an A bin.xlsx', { ext: 'xlsx', dnd: 'A' }),
+      demoFile('locked', 'Can’t drag me — locked.docx', {
+        ext: 'docx',
+        locked: true,
+      }),
+      demoFile('a', 'Type A — drop me in an A bin.xlsx', {
+        ext: 'xlsx',
+        dnd: 'A',
+      }),
       demoFile('b', 'Type B — both bins take me.eml', { ext: 'eml', dnd: 'B' }),
       demoFile('c', 'Type C — no bin wants me.png', { ext: 'png', dnd: 'C' }),
       {
         ...folder(
           'dnd/bin-ab',
           'Bin — accepts A + B',
-          [demoFile('bin-ab/resident', 'Type A lives here.xlsx', { ext: 'xlsx', dnd: 'A' })],
+          [
+            demoFile('bin-ab/resident', 'Type A lives here.xlsx', {
+              ext: 'xlsx',
+              dnd: 'A',
+            }),
+          ],
           'move_to_inbox',
         ),
         accepts: ['A', 'B'],
@@ -342,7 +443,12 @@ export function generateExampleTree(scale: ExampleScale = 'standard'): {
         ...folder(
           'dnd/bin-b',
           'Bin — accepts only B',
-          [demoFile('bin-b/resident', 'Type B lives here.eml', { ext: 'eml', dnd: 'B' })],
+          [
+            demoFile('bin-b/resident', 'Type B lives here.eml', {
+              ext: 'eml',
+              dnd: 'B',
+            }),
+          ],
           'move_to_inbox',
         ),
         accepts: ['B'],
@@ -351,7 +457,12 @@ export function generateExampleTree(scale: ExampleScale = 'standard'): {
         ...folder(
           'dnd/bin-none',
           'Bin — accepts nothing',
-          [demoFile('bin-none/escapee', 'Drag me out — nothing comes back.pdf')],
+          [
+            demoFile(
+              'bin-none/escapee',
+              'Drag me out — nothing comes back.pdf',
+            ),
+          ],
           'block',
         ),
         accepts: [],

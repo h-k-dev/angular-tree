@@ -8,7 +8,9 @@ import { rowByName, rows, waitForTree } from './helpers';
  * a synthetic mouseup. Only a real browser runs the full CDK drag pipeline.
  */
 test.describe('Escape cancels a pointer drag', () => {
-  test('no moved intent, preview gone, next drag unaffected', async ({ page }) => {
+  test('no moved intent, preview gone, next drag unaffected', async ({
+    page,
+  }) => {
     await page.goto('/');
     await waitForTree(page);
 
@@ -19,7 +21,9 @@ test.describe('Escape cancels a pointer drag', () => {
 
     await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
     await page.mouse.down();
-    await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 8 });
+    await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, {
+      steps: 8,
+    });
     await expect(page.locator('.tree-drag-preview')).toBeVisible();
 
     await page.keyboard.press('Escape');
@@ -30,12 +34,22 @@ test.describe('Escape cancels a pointer drag', () => {
     await expect(page.locator('.app-last-intent')).toHaveCount(0);
 
     // The cancel didn't poison drag state: a fresh drag still moves.
-    const from2 = (await rows(page).filter({ hasText: '.pdf' }).first().boundingBox())!;
+    const from2 = (await rows(page)
+      .filter({ hasText: '.pdf' })
+      .first()
+      .boundingBox())!;
     const to2 = (await rowByName(page, 'Cases').boundingBox())!;
-    await page.mouse.move(from2.x + from2.width / 2, from2.y + from2.height / 2);
+    await page.mouse.move(
+      from2.x + from2.width / 2,
+      from2.y + from2.height / 2,
+    );
     await page.mouse.down();
-    await page.mouse.move(to2.x + to2.width / 2, to2.y + to2.height / 2, { steps: 8 });
+    await page.mouse.move(to2.x + to2.width / 2, to2.y + to2.height / 2, {
+      steps: 8,
+    });
     await page.mouse.up();
-    await expect(page.locator('.app-last-intent')).toContainText('moved 1 node(s)');
+    await expect(page.locator('.app-last-intent')).toContainText(
+      'moved 1 node(s)',
+    );
   });
 });

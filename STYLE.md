@@ -72,7 +72,9 @@ selections = computed(() =>
 - Dialogs and heavy features are **always** dynamically imported at the call site:
 
 ```ts
-import('./delete/delete').then(({ Delete }) => this.#dialog.open(Delete, { data }));
+import('./delete/delete').then(({ Delete }) =>
+  this.#dialog.open(Delete, { data }),
+);
 ```
 
 - **Bridge callback APIs to promises before branching on their results.** Callback-style APIs (`FileSystemFileEntry.file(cb)`) complete _after_ your synchronous code:
@@ -87,7 +89,12 @@ const files = (
   await Promise.all(
     entries
       .filter((e) => e.fileEntry.isFile)
-      .map((e) => new Promise<File>((res, rej) => (e.fileEntry as FileSystemFileEntry).file(res, rej))),
+      .map(
+        (e) =>
+          new Promise<File>((res, rej) =>
+            (e.fileEntry as FileSystemFileEntry).file(res, rej),
+          ),
+      ),
   )
 ).filter((f): f is File => f instanceof File);
 ```

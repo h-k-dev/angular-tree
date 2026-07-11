@@ -108,6 +108,22 @@
                 "glob": "lazy-sources.ts",
                 "input": "projects/app/src/app/lazy-load-example",
                 "output": "source"
+              },
+              {
+                "glob": "media-example.*",
+                "input": "projects/app/src/app/media-example",
+                "output": "source",
+                "ignore": ["*.spec.ts"]
+              },
+              {
+                "glob": "media-data.ts",
+                "input": "projects/app/src/app/media-example",
+                "output": "source"
+              },
+              {
+                "glob": "media-player.ts",
+                "input": "projects/app/src/app/media-example/media-player",
+                "output": "source"
               }
             ],
             "styles": ["projects/app/src/styles.scss"]

@@ -70,11 +70,28 @@ describe('AngularTree ARIA', () => {
 
   /** jsdom has no layout — fake the viewport size so cdkVirtualFor renders rows. */
   async function forceViewportSize() {
-    const element: HTMLElement = fixture.nativeElement.querySelector('cdk-virtual-scroll-viewport');
-    Object.defineProperty(element, 'clientHeight', { value: 400, configurable: true });
-    Object.defineProperty(element, 'clientWidth', { value: 400, configurable: true });
+    const element: HTMLElement = fixture.nativeElement.querySelector(
+      'cdk-virtual-scroll-viewport',
+    );
+    Object.defineProperty(element, 'clientHeight', {
+      value: 400,
+      configurable: true,
+    });
+    Object.defineProperty(element, 'clientWidth', {
+      value: 400,
+      configurable: true,
+    });
     element.getBoundingClientRect = () =>
-      ({ top: 0, left: 0, right: 400, bottom: 400, width: 400, height: 400, x: 0, y: 0 }) as DOMRect;
+      ({
+        top: 0,
+        left: 0,
+        right: 400,
+        bottom: 400,
+        width: 400,
+        height: 400,
+        x: 0,
+        y: 0,
+      }) as DOMRect;
 
     fixture.debugElement
       .query(By.directive(CdkVirtualScrollViewport))
@@ -83,20 +100,28 @@ describe('AngularTree ARIA', () => {
     await fixture.whenStable();
   }
 
-  const viewportEl = (): HTMLElement => fixture.nativeElement.querySelector('cdk-virtual-scroll-viewport');
-  const rowEl = (key: string): HTMLElement | null => fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
+  const viewportEl = (): HTMLElement =>
+    fixture.nativeElement.querySelector('cdk-virtual-scroll-viewport');
+  const rowEl = (key: string): HTMLElement | null =>
+    fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
   const keydown = (init: KeyboardEventInit) =>
-    viewportEl().dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, ...init }));
+    viewportEl().dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, ...init }),
+    );
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [AriaHost] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [AriaHost],
+    }).compileComponents();
     fixture = TestBed.createComponent(AriaHost);
     await fixture.whenStable();
     await forceViewportSize();
   });
 
   it('renders real rows once the viewport has a size (jsdom sanity)', () => {
-    expect(fixture.nativeElement.querySelectorAll('[role="treeitem"]').length).toBe(4);
+    expect(
+      fixture.nativeElement.querySelectorAll('[role="treeitem"]').length,
+    ).toBe(4);
   });
 
   it('exposes structure: level, setsize, posinset, expanded-on-parents-only', () => {
@@ -112,7 +137,8 @@ describe('AngularTree ARIA', () => {
   });
 
   it('republishes [itemSize] as the read-only --tree-row-height host variable', () => {
-    const host: HTMLElement = fixture.nativeElement.querySelector('angular-tree');
+    const host: HTMLElement =
+      fixture.nativeElement.querySelector('angular-tree');
     expect(host.style.getPropertyValue('--tree-row-height')).toBe('32px');
   });
 
@@ -123,7 +149,8 @@ describe('AngularTree ARIA', () => {
   });
 
   describe('deselectOnOutsideClick', () => {
-    const pointerdown = (target: EventTarget) => target.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+    const pointerdown = (target: EventTarget) =>
+      target.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
 
     beforeEach(async () => {
       fixture.componentInstance.selection.select('a1', 'b');
@@ -150,14 +177,18 @@ describe('AngularTree ARIA', () => {
       pointerdown(menuItem);
       overlay.remove();
 
-      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(new Set(['a1', 'b']));
+      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+        new Set(['a1', 'b']),
+      );
     });
 
     it('opting out leaves outside clicks alone', async () => {
       fixture.componentInstance.deselect.set(false);
       await fixture.whenStable();
       pointerdown(document.body);
-      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(new Set(['a1', 'b']));
+      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+        new Set(['a1', 'b']),
+      );
     });
   });
 
@@ -184,7 +215,9 @@ describe('AngularTree ARIA', () => {
 
     keydown({ key: 'ArrowDown' });
     await fixture.whenStable();
-    expect(viewportEl().getAttribute('aria-activedescendant')).toBe(rowEl('a1')!.id);
+    expect(viewportEl().getAttribute('aria-activedescendant')).toBe(
+      rowEl('a1')!.id,
+    );
   });
 
   it('follow mode: arrow focus replaces the selection', async () => {
@@ -200,18 +233,29 @@ describe('AngularTree ARIA', () => {
   it('Shift+Arrow extends, Ctrl+click toggles, Shift+click ranges over visible order', async () => {
     keydown({ key: ' ' }); // select a (anchor)
     keydown({ key: 'ArrowDown', shiftKey: true }); // extend to a1
-    expect(new Set(fixture.componentInstance.selection.selected)).toEqual(new Set(['a', 'a1']));
+    expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+      new Set(['a', 'a1']),
+    );
 
-    rowEl('a1')!.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
-    expect(new Set(fixture.componentInstance.selection.selected)).toEqual(new Set(['a']));
+    rowEl('a1')!.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, ctrlKey: true }),
+    );
+    expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+      new Set(['a']),
+    );
 
-    rowEl('b')!.dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true }));
+    rowEl('b')!.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, shiftKey: true }),
+    );
     // range anchor (a1, last explicit toggle) → b over visible order
-    expect(new Set(fixture.componentInstance.selection.selected)).toEqual(new Set(['a', 'a1', 'a2', 'b']));
+    expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+      new Set(['a', 'a1', 'a2', 'b']),
+    );
   });
 
   describe('indent guides', () => {
-    const guideEls = () => viewportEl().querySelectorAll<HTMLElement>('.tree-guide');
+    const guideEls = () =>
+      viewportEl().querySelectorAll<HTMLElement>('.tree-guide');
 
     it('renders ONE continuous guide per expanded group and click-collapses it', async () => {
       fixture.componentInstance.guides.set(true);
@@ -239,7 +283,9 @@ describe('AngularTree ARIA', () => {
       fixture.componentInstance.guides.set(true);
       await fixture.whenStable();
       const activated: DemoNode[] = [];
-      fixture.componentInstance.tree().activated.subscribe((node) => activated.push(node));
+      fixture.componentInstance
+        .tree()
+        .activated.subscribe((node) => activated.push(node));
 
       guideEls()[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
       expect(activated).toEqual([]);
@@ -257,37 +303,64 @@ describe('AngularTree ARIA', () => {
     await fixture.whenStable();
 
     const rows = fixture.componentInstance.tree().visibleRows();
-    expect(rows.find((row) => row.key === 'a1')!.context.checkState).toBe('checked');
-    expect(rows.find((row) => row.key === 'a')!.context.checkState).toBe('indeterminate');
-    expect(rows.find((row) => row.key === 'b')!.context.checkState).toBe('unchecked');
+    expect(rows.find((row) => row.key === 'a1')!.context.checkState).toBe(
+      'checked',
+    );
+    expect(rows.find((row) => row.key === 'a')!.context.checkState).toBe(
+      'indeterminate',
+    );
+    expect(rows.find((row) => row.key === 'b')!.context.checkState).toBe(
+      'unchecked',
+    );
   });
 
   describe('context menu contract', () => {
     it('right-click on an unselected row replaces the selection first (OS convention)', () => {
-      const events: { ids: readonly string[]; position: { x: number; y: number } }[] = [];
-      fixture.componentInstance.tree().contextRequested.subscribe((e) => events.push(e));
+      const events: {
+        ids: readonly string[];
+        position: { x: number; y: number };
+      }[] = [];
+      fixture.componentInstance
+        .tree()
+        .contextRequested.subscribe((e) => events.push(e));
       fixture.componentInstance.selection.select('b');
 
-      rowEl('a1')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 40, clientY: 60 }));
+      rowEl('a1')!.dispatchEvent(
+        new MouseEvent('contextmenu', {
+          bubbles: true,
+          clientX: 40,
+          clientY: 60,
+        }),
+      );
 
       expect(fixture.componentInstance.selection.selected).toEqual(['a1']);
-      expect(events).toEqual([expect.objectContaining({ ids: ['a1'], position: { x: 40, y: 60 } })]);
+      expect(events).toEqual([
+        expect.objectContaining({ ids: ['a1'], position: { x: 40, y: 60 } }),
+      ]);
     });
 
     it('right-click inside a multi-selection keeps it intact and reports all ids', () => {
       const events: { ids: readonly string[] }[] = [];
-      fixture.componentInstance.tree().contextRequested.subscribe((e) => events.push(e));
+      fixture.componentInstance
+        .tree()
+        .contextRequested.subscribe((e) => events.push(e));
       fixture.componentInstance.selection.select('a1', 'b');
 
-      rowEl('b')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
+      rowEl('b')!.dispatchEvent(
+        new MouseEvent('contextmenu', { bubbles: true }),
+      );
 
-      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(new Set(['a1', 'b']));
+      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+        new Set(['a1', 'b']),
+      );
       expect(new Set(events[0].ids)).toEqual(new Set(['a1', 'b']));
     });
 
     it('Shift+F10 and the ContextMenu key request a menu for the focused row', () => {
       const events: { node: DemoNode }[] = [];
-      fixture.componentInstance.tree().contextRequested.subscribe((e) => events.push(e));
+      fixture.componentInstance
+        .tree()
+        .contextRequested.subscribe((e) => events.push(e));
 
       keydown({ key: 'ArrowDown' }); // focus a1
       keydown({ key: 'F10', shiftKey: true });

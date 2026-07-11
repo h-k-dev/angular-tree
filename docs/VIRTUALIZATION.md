@@ -27,7 +27,10 @@ The tree republishes the value as a **read-only CSS variable `--tree-row-height`
 
 ```css
 angular-tree {
-  --tree-toggle-size: var(--tree-row-height, 32px); /* toggle target = row height (its ceiling) */
+  --tree-toggle-size: var(
+    --tree-row-height,
+    32px
+  ); /* toggle target = row height (its ceiling) */
   --tree-indent: var(--tree-toggle-size); /* indent step = toggle column */
 }
 ```

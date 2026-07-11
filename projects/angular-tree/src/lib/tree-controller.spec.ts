@@ -1,7 +1,11 @@
 import { signal } from '@angular/core';
 import { of } from 'rxjs';
 
-import { dropZoneAt, TreeController, TreeControllerInputs } from './tree-controller';
+import {
+  dropZoneAt,
+  TreeController,
+  TreeControllerInputs,
+} from './tree-controller';
 
 function deferred<V>() {
   let resolve!: (value: V) => void;
@@ -26,7 +30,11 @@ const DATA: DemoNode[] = [
     name: 'Alpha',
     children: [
       { id: 'a1', name: 'Alpha One' },
-      { id: 'a2', name: 'Alpha Two', children: [{ id: 'a2x', name: 'Deep Match' }] },
+      {
+        id: 'a2',
+        name: 'Alpha Two',
+        children: [{ id: 'a2x', name: 'Deep Match' }],
+      },
     ],
   },
   { id: 'b', name: 'Beta' },
@@ -34,17 +42,23 @@ const DATA: DemoNode[] = [
 ];
 
 /** Plain construction — the controller has no DI of its own. */
-function createController(overrides: Partial<TreeControllerInputs<DemoNode>> = {}) {
+function createController(
+  overrides: Partial<TreeControllerInputs<DemoNode>> = {},
+) {
   const controller = new TreeController<DemoNode>();
   const searchTerm = signal('');
   const inputs: TreeControllerInputs<DemoNode> = {
     dataSource: signal(DATA),
-    childrenAccessor: signal((node: DemoNode) => (node.lazy ? Promise.resolve([]) : node.children)),
+    childrenAccessor: signal((node: DemoNode) =>
+      node.lazy ? Promise.resolve([]) : node.children,
+    ),
     expansionKey: signal((node: DemoNode) => node.id),
     defaultExpandedKeys: signal<readonly string[]>([]),
     defaultFocusedKey: signal<string | undefined>(undefined),
     searchTerm,
-    searchMatch: signal<((node: DemoNode, term: string) => boolean) | undefined>(undefined),
+    searchMatch: signal<
+      ((node: DemoNode, term: string) => boolean) | undefined
+    >(undefined),
     ...overrides,
   };
   controller.connect(inputs);
@@ -57,7 +71,14 @@ describe('TreeController', () => {
       const { controller } = createController();
       const { list, map, rootKeys } = controller.flat();
 
-      expect(list.map((entry) => entry.key)).toEqual(['a', 'a1', 'a2', 'a2x', 'b', 'c']);
+      expect(list.map((entry) => entry.key)).toEqual([
+        'a',
+        'a1',
+        'a2',
+        'a2x',
+        'b',
+        'c',
+      ]);
       expect(rootKeys).toEqual(['a', 'b', 'c']);
       expect(map.get('a2x')?.parentKey).toBe('a2');
       expect(map.get('a')?.childKeys).toEqual(['a1', 'a2']);
@@ -83,44 +104,77 @@ describe('TreeController', () => {
   describe('visibility', () => {
     it('skips children of collapsed nodes', () => {
       const { controller } = createController();
-      expect(controller.visibleNodes().map((row) => row.flat.key)).toEqual(['a', 'b', 'c']);
+      expect(controller.visibleNodes().map((row) => row.flat.key)).toEqual([
+        'a',
+        'b',
+        'c',
+      ]);
     });
 
     it('walks into expanded nodes only', () => {
       const { controller } = createController();
       controller.setExpanded('a', true);
-      expect(controller.visibleNodes().map((row) => row.flat.key)).toEqual(['a', 'a1', 'a2', 'b', 'c']);
+      expect(controller.visibleNodes().map((row) => row.flat.key)).toEqual([
+        'a',
+        'a1',
+        'a2',
+        'b',
+        'c',
+      ]);
     });
   });
 
   describe('search', () => {
-    const match = (node: DemoNode, term: string) => node.name.toLowerCase().includes(term.toLowerCase());
+    const match = (node: DemoNode, term: string) =>
+      node.name.toLowerCase().includes(term.toLowerCase());
 
     it('is inert without a matcher', () => {
       const { controller, searchTerm } = createController();
       searchTerm.set('deep');
       expect(controller.searchVisibleIds()).toBeNull();
-      expect(controller.visibleNodes().map((row) => row.flat.key)).toEqual(['a', 'b', 'c']);
+      expect(controller.visibleNodes().map((row) => row.flat.key)).toEqual([
+        'a',
+        'b',
+        'c',
+      ]);
     });
 
     it('keeps the ancestor chain of a match visible and force-expanded', () => {
-      const { controller, searchTerm } = createController({ searchMatch: signal(match) });
+      const { controller, searchTerm } = createController({
+        searchMatch: signal(match),
+      });
       searchTerm.set('deep');
 
       // a2x matches; a and a2 render as its chain, force-expanded, b/c filtered.
-      expect(controller.visibleNodes().map((row) => row.flat.key)).toEqual(['a', 'a2', 'a2x']);
-      expect(controller.visibleNodes().every((row) => !row.flat.expandable || row.isExpanded)).toBe(true);
+      expect(controller.visibleNodes().map((row) => row.flat.key)).toEqual([
+        'a',
+        'a2',
+        'a2x',
+      ]);
+      expect(
+        controller
+          .visibleNodes()
+          .every((row) => !row.flat.expandable || row.isExpanded),
+      ).toBe(true);
     });
 
     it('never mutates expansion state — clearing the term restores it', () => {
-      const { controller, searchTerm } = createController({ searchMatch: signal(match) });
+      const { controller, searchTerm } = createController({
+        searchMatch: signal(match),
+      });
       controller.setExpanded('a', true);
 
       searchTerm.set('deep');
       expect(controller.expandedIds()).toEqual(new Set(['a']));
 
       searchTerm.set('');
-      expect(controller.visibleNodes().map((row) => row.flat.key)).toEqual(['a', 'a1', 'a2', 'b', 'c']);
+      expect(controller.visibleNodes().map((row) => row.flat.key)).toEqual([
+        'a',
+        'a1',
+        'a2',
+        'b',
+        'c',
+      ]);
     });
   });
 
@@ -156,7 +210,9 @@ describe('TreeController', () => {
       const { promise, resolve } = deferred<DemoNode[]>();
       let calls = 0;
       const { controller } = createController({
-        childrenAccessor: signal((node: DemoNode) => (node.lazy ? ((calls += 1), promise) : node.children)),
+        childrenAccessor: signal((node: DemoNode) =>
+          node.lazy ? ((calls += 1), promise) : node.children,
+        ),
       });
 
       const first = controller.ensureChildren('c');
@@ -175,7 +231,9 @@ describe('TreeController', () => {
     it('survives unmount/remount mid-flight — state is central, not row-local', async () => {
       const { promise, resolve } = deferred<DemoNode[]>();
       const { controller } = createController({
-        childrenAccessor: signal((node: DemoNode) => (node.lazy ? promise : node.children)),
+        childrenAccessor: signal((node: DemoNode) =>
+          node.lazy ? promise : node.children,
+        ),
       });
 
       controller.setExpanded('c', true);
@@ -188,7 +246,9 @@ describe('TreeController', () => {
       await load;
 
       controller.setExpanded('c', true);
-      expect(controller.visibleNodes().map((row) => row.flat.key)).toContain('c1');
+      expect(controller.visibleNodes().map((row) => row.flat.key)).toContain(
+        'c1',
+      );
       expect(controller.loadStates().get('c')).toBeUndefined(); // never stuck
     });
 
@@ -215,7 +275,9 @@ describe('TreeController', () => {
 
     it('treats sync accessors as a noop and supports Observables', async () => {
       const { controller } = createController({
-        childrenAccessor: signal((node: DemoNode) => (node.lazy ? of([child]) : node.children)),
+        childrenAccessor: signal((node: DemoNode) =>
+          node.lazy ? of([child]) : node.children,
+        ),
       });
 
       expect((await controller.ensureChildren('a')).status).toBe('noop');
@@ -279,7 +341,9 @@ describe('TreeController', () => {
       expect(controller.dropTargetFor(['a'], 'a', 'before')).toBeNull(); // onto itself
       expect(controller.dropTargetFor(['a'], 'a2', 'inside')).toBeNull(); // own descendant
       expect(controller.dropTargetFor(['a', 'b'], 'a2x', 'after')).toBeNull(); // inside dragged subtree
-      expect(controller.dropTargetFor(['a2'], 'a1', 'after')).toMatchObject({ parentKey: 'a' }); // sibling ok
+      expect(controller.dropTargetFor(['a2'], 'a1', 'after')).toMatchObject({
+        parentKey: 'a',
+      }); // sibling ok
     });
   });
 
@@ -318,7 +382,9 @@ describe('TreeController', () => {
         seen.push(abort);
         return Promise.resolve([child]);
       };
-      const { controller } = createController({ childrenAccessor: signal(twoArg) });
+      const { controller } = createController({
+        childrenAccessor: signal(twoArg),
+      });
       await controller.ensureChildren('c');
       expect(seen[0]).toBeInstanceOf(AbortSignal);
 
@@ -341,7 +407,9 @@ describe('TreeController', () => {
         abort?.addEventListener('abort', () => (aborted += 1));
         return new Promise<DemoNode[]>(() => {}); // never resolves — the abort is the point
       };
-      const { controller } = createController({ childrenAccessor: signal(accessor) });
+      const { controller } = createController({
+        childrenAccessor: signal(accessor),
+      });
 
       void controller.ensureChildren('c');
       expect(controller.loadStates().get('c')).toBe('loading');
@@ -356,8 +424,14 @@ describe('TreeController', () => {
       const second = deferred<DemoNode[]>();
       let call = 0;
       const accessor = (node: DemoNode) =>
-        node.lazy ? ((call += 1) === 1 ? first.promise : second.promise) : node.children;
-      const { controller } = createController({ childrenAccessor: signal(accessor) });
+        node.lazy
+          ? (call += 1) === 1
+            ? first.promise
+            : second.promise
+          : node.children;
+      const { controller } = createController({
+        childrenAccessor: signal(accessor),
+      });
 
       const stale = controller.ensureChildren('c');
       controller.invalidateChildren('c');
@@ -375,8 +449,11 @@ describe('TreeController', () => {
 
     it('drops the overlay so the accessor re-runs; tree-wide hits every lazy trace', async () => {
       let calls = 0;
-      const accessor = (node: DemoNode) => (node.lazy ? ((calls += 1), Promise.resolve([child])) : node.children);
-      const { controller } = createController({ childrenAccessor: signal(accessor) });
+      const accessor = (node: DemoNode) =>
+        node.lazy ? ((calls += 1), Promise.resolve([child])) : node.children;
+      const { controller } = createController({
+        childrenAccessor: signal(accessor),
+      });
 
       await controller.ensureChildren('c');
       expect(controller.flat().map.get('c')?.loaded).toBe(true);
@@ -398,7 +475,9 @@ describe('TreeController', () => {
         abort?.addEventListener('abort', () => (aborted += 1));
         return new Promise<DemoNode[]>(() => {});
       };
-      const { controller } = createController({ childrenAccessor: signal(accessor) });
+      const { controller } = createController({
+        childrenAccessor: signal(accessor),
+      });
 
       void controller.ensureChildren('c');
       controller.abortAll();

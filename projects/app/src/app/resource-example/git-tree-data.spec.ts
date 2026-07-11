@@ -28,7 +28,12 @@ describe('buildGitTree', () => {
     const lib = src.children[0];
     if (!isGitFolder(lib)) throw new Error('lib must be a folder');
     expect(lib.path).toBe('src/lib');
-    expect(lib.children[0]).toEqual({ kind: 'file', path: 'src/lib/a.ts', name: 'a.ts', size: 10 });
+    expect(lib.children[0]).toEqual({
+      kind: 'file',
+      path: 'src/lib/a.ts',
+      name: 'a.ts',
+      size: 10,
+    });
   });
 
   it('skips submodule pointers and survives out-of-order input', () => {

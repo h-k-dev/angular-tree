@@ -3,13 +3,26 @@
      PREVIOUS repo's data while the next one loads (linkedSignal). -->
 <div class="resource-controls">
   @for (candidate of repos; track candidate) {
-    <button matButton (click)="repo.set(candidate)" [attr.aria-pressed]="repo() === candidate">
+    <button
+      matButton
+      (click)="repo.set(candidate)"
+      [attr.aria-pressed]="repo() === candidate"
+    >
       {{ candidate }}
     </button>
   }
 
-  <button matButton (click)="rawData.reload()" [disabled]="rawData.isLoading()" [showProgress]="rawData.isLoading()">
-    <mat-progress-spinner mode="indeterminate" diameter="20" progressIndicator></mat-progress-spinner>
+  <button
+    matButton
+    (click)="rawData.reload()"
+    [disabled]="rawData.isLoading()"
+    [showProgress]="rawData.isLoading()"
+  >
+    <mat-progress-spinner
+      mode="indeterminate"
+      diameter="20"
+      progressIndicator
+    ></mat-progress-spinner>
     <mat-icon>refresh</mat-icon>
     Refresh
   </button>
@@ -31,7 +44,11 @@
   <header class="demo-card-bar">
     <nav class="demo-tabs" aria-label="Example view">
       @for (tab of viewTabs; track tab.id) {
-        <button class="demo-tab" [attr.aria-selected]="view() === tab.id" (click)="showView(tab.id)">
+        <button
+          class="demo-tab"
+          [attr.aria-selected]="view() === tab.id"
+          (click)="showView(tab.id)"
+        >
           {{ tab.label }}
         </button>
       }
@@ -49,11 +66,19 @@
     [indentGuides]="true"
   >
     <!-- Folder def — type-guard `when` narrows to GitFolder -->
-    <ng-container *treeNodeDef="let node; when: isFolder; let isExpanded = isExpanded">
-      <button treeNodeToggle class="node-toggle" [attr.aria-label]="'Toggle ' + node.name">
+    <ng-container
+      *treeNodeDef="let node; when: isFolder; let isExpanded = isExpanded"
+    >
+      <button
+        treeNodeToggle
+        class="node-toggle"
+        [attr.aria-label]="'Toggle ' + node.name"
+      >
         <mat-icon>{{ isExpanded ? 'expand_more' : 'chevron_right' }}</mat-icon>
       </button>
-      <mat-icon class="node-icon node-icon--folder">{{ isExpanded ? 'folder_open' : 'folder' }}</mat-icon>
+      <mat-icon class="node-icon node-icon--folder">{{
+        isExpanded ? 'folder_open' : 'folder'
+      }}</mat-icon>
       <span class="node-name">{{ node.name }}</span>
       <span class="node-meta">{{ node.children.length }}</span>
     </ng-container>

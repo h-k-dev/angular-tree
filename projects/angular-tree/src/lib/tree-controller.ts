@@ -4,7 +4,10 @@ import { firstValueFrom, Observable } from 'rxjs';
 import { CheckState, TreeChildrenAccessor, TreeExpansionKey } from './types';
 
 /** Outcome of `ensureChildren` — the component maps this to `childrenLoaded`. */
-export type LoadResult = { status: 'noop' } | { status: 'loaded' } | { status: 'error'; error: unknown };
+export type LoadResult =
+  | { status: 'noop' }
+  | { status: 'loaded' }
+  | { status: 'error'; error: unknown };
 
 /** Where in the hovered row the pointer sits (ROADMAP Phase 4 three-zone). */
 export type DropZone = 'before' | 'inside' | 'after';
@@ -77,12 +80,16 @@ export class TreeController<T> {
   // ---------------------------------------------------------------------------
 
   /** Derived from `defaultExpandedKeys` until the first expand/collapse write. */
-  readonly expandedIds = linkedSignal<ReadonlySet<string>>(() => new Set(this.#inputs.defaultExpandedKeys()));
+  readonly expandedIds = linkedSignal<ReadonlySet<string>>(
+    () => new Set(this.#inputs.defaultExpandedKeys()),
+  );
   /** Mirror of the consumer's `SelectionModel` (bridged by the component). */
   readonly selectedIds = signal<ReadonlySet<string>>(new Set());
   readonly editingId = signal<string | null>(null);
   /** Derived from `defaultFocusedKey` until the first focus write (v2). */
-  readonly focusedId = linkedSignal<string | null>(() => this.#inputs.defaultFocusedKey() ?? null);
+  readonly focusedId = linkedSignal<string | null>(
+    () => this.#inputs.defaultFocusedKey() ?? null,
+  );
 
   // ---------------------------------------------------------------------------
   // Lazy loading (virtualization-proof by design: everything lives here,
@@ -90,8 +97,12 @@ export class TreeController<T> {
   // ---------------------------------------------------------------------------
 
   /** Children resolved from async accessors, by node key. */
-  readonly #loadedChildren = signal<ReadonlyMap<string, readonly T[]>>(new Map());
-  readonly #loadStates = signal<ReadonlyMap<string, 'loading' | 'error'>>(new Map());
+  readonly #loadedChildren = signal<ReadonlyMap<string, readonly T[]>>(
+    new Map(),
+  );
+  readonly #loadStates = signal<ReadonlyMap<string, 'loading' | 'error'>>(
+    new Map(),
+  );
   /** Rows read this via per-row computeds (`isLoading`/`hasError` context). */
   readonly loadStates = this.#loadStates.asReadonly();
   /** In-flight dedupe registry — repeat expands await the same promise. */
@@ -157,13 +168,15 @@ export class TreeController<T> {
    */
   ensureChildren(key: string): Promise<LoadResult> {
     const entry = this.flat().map.get(key);
-    if (!entry || entry.loaded || !entry.expandable) return Promise.resolve({ status: 'noop' });
+    if (!entry || entry.loaded || !entry.expandable)
+      return Promise.resolve({ status: 'noop' });
 
     const pending = this.#inflight.get(key);
     if (pending) return pending;
 
     const raw = this.#childrenOf(entry.node, key);
-    if (raw == null || Array.isArray(raw)) return Promise.resolve({ status: 'noop' });
+    if (raw == null || Array.isArray(raw))
+      return Promise.resolve({ status: 'noop' });
 
     // Array.isArray doesn't narrow `readonly T[]` out of the union (TS quirk).
     const async = raw as Promise<readonly T[]> | Observable<readonly T[]>;
@@ -174,10 +187,14 @@ export class TreeController<T> {
     const isCurrent = () => (this.#loadGeneration.get(key) ?? 0) === generation;
 
     this.#setLoadState(key, 'loading');
-    const task: Promise<LoadResult> = (async instanceof Observable ? firstValueFrom(async) : async).then(
+    const task: Promise<LoadResult> = (
+      async instanceof Observable ? firstValueFrom(async) : async
+    ).then(
       (children: readonly T[]): LoadResult => {
         if (!isCurrent()) return { status: 'noop' };
-        this.#loadedChildren.update((current) => new Map(current).set(key, children));
+        this.#loadedChildren.update((current) =>
+          new Map(current).set(key, children),
+        );
         this.#setLoadState(key, undefined);
         return { status: 'loaded' };
       },
@@ -208,15 +225,25 @@ export class TreeController<T> {
     const keys =
       key != null
         ? [key]
-        : [...new Set([...this.#loadedChildren().keys(), ...this.#inflight.keys(), ...this.#loadStates().keys()])];
+        : [
+            ...new Set([
+              ...this.#loadedChildren().keys(),
+              ...this.#inflight.keys(),
+              ...this.#loadStates().keys(),
+            ]),
+          ];
 
     for (const invalidKey of keys) {
-      this.#loadGeneration.set(invalidKey, (this.#loadGeneration.get(invalidKey) ?? 0) + 1);
+      this.#loadGeneration.set(
+        invalidKey,
+        (this.#loadGeneration.get(invalidKey) ?? 0) + 1,
+      );
       this.#abortControllers.get(invalidKey)?.abort();
       this.#abortControllers.delete(invalidKey);
       this.#inflight.delete(invalidKey);
       const node = this.flat().map.get(invalidKey)?.node;
-      if (node != null && typeof node === 'object') this.#rawChildren.delete(node);
+      if (node != null && typeof node === 'object')
+        this.#rawChildren.delete(node);
       this.#setLoadState(invalidKey, undefined);
     }
     // One overlay write for the batch — a tree-wide invalidate over many
@@ -265,13 +292,19 @@ export class TreeController<T> {
     const list: FlatTreeNode<T>[] = [];
     const map = new Map<string, FlatTreeNode<T>>();
 
-    const visit = (nodes: readonly T[], parentKey: string | null, level: number): string[] =>
+    const visit = (
+      nodes: readonly T[],
+      parentKey: string | null,
+      level: number,
+    ): string[] =>
       nodes.map((node, i) => {
         const nodeKey = key(node);
         const raw = this.#childrenOf(node, nodeKey);
         // Async accessor results are overlaid by key, so lazy-resolved
         // children flatten exactly like sync ones from here on.
-        const childNodes = Array.isArray(raw) ? (raw as readonly T[]) : asyncLoaded.get(nodeKey);
+        const childNodes = Array.isArray(raw)
+          ? (raw as readonly T[])
+          : asyncLoaded.get(nodeKey);
         const loaded = childNodes != null;
         const entry: FlatTreeNode<T> = {
           node,
@@ -290,7 +323,11 @@ export class TreeController<T> {
           // Pre-order invariant: children append *after* their parent, so a
           // reverse pass sees children first (checkStates depends on this).
           // Single mutation before the entry is published anywhere.
-          (entry as { childKeys: readonly string[] }).childKeys = visit(childNodes, nodeKey, level + 1);
+          (entry as { childKeys: readonly string[] }).childKeys = visit(
+            childNodes,
+            nodeKey,
+            level + 1,
+          );
         }
         return nodeKey;
       });
@@ -320,7 +357,8 @@ export class TreeController<T> {
       for (
         let current: FlatTreeNode<T> | undefined = entry;
         current && !visible.has(current.key);
-        current = current.parentKey != null ? map.get(current.parentKey) : undefined
+        current =
+          current.parentKey != null ? map.get(current.parentKey) : undefined
       ) {
         visible.add(current.key);
       }
@@ -334,7 +372,8 @@ export class TreeController<T> {
     const match = this.#inputs.searchMatch();
     if (!term || !match) return null;
     let count = 0;
-    for (const entry of this.flat().list) if (match(entry.node, term)) count += 1;
+    for (const entry of this.flat().list)
+      if (match(entry.node, term)) count += 1;
     return count;
   });
 
@@ -350,7 +389,8 @@ export class TreeController<T> {
         const flat = map.get(key)!;
         if (searchIds && !searchIds.has(key)) continue;
         // Ancestors of matches render force-expanded while searching.
-        const isExpanded = flat.expandable && (searchIds ? true : expanded.has(key));
+        const isExpanded =
+          flat.expandable && (searchIds ? true : expanded.has(key));
         out.push({ flat, isExpanded });
         if (isExpanded) visit(flat.childKeys);
       }
@@ -379,7 +419,10 @@ export class TreeController<T> {
       if (entry.childKeys.length === 0) {
         // Leaves and lazy-pending nodes carry their own selection —
         // cascade covers *loaded* nodes only (ROADMAP non-goal).
-        states.set(entry.key, selected.has(entry.key) ? 'checked' : 'unchecked');
+        states.set(
+          entry.key,
+          selected.has(entry.key) ? 'checked' : 'unchecked',
+        );
         continue;
       }
 
@@ -460,7 +503,10 @@ export class TreeController<T> {
    * What a checkbox toggle must do given the current tri-state: indeterminate
    * and unchecked both select the subtree (ARIA checkbox-tree convention).
    */
-  checkToggleDelta(key: string, cascade: boolean): { keys: readonly string[]; select: boolean } {
+  checkToggleDelta(
+    key: string,
+    cascade: boolean,
+  ): { keys: readonly string[]; select: boolean } {
     const select = (this.checkStates().get(key) ?? 'unchecked') !== 'checked';
     return { keys: cascade ? this.subtreeKeys(key) : [key], select };
   }
@@ -485,7 +531,11 @@ export class TreeController<T> {
     for (const entry of list) {
       if (!selected.has(entry.key)) continue;
       let ancestorSelected = false;
-      for (let parent = entry.parentKey; parent != null; parent = map.get(parent)!.parentKey) {
+      for (
+        let parent = entry.parentKey;
+        parent != null;
+        parent = map.get(parent)!.parentKey
+      ) {
         if (selected.has(parent)) {
           ancestorSelected = true;
           break;
@@ -502,7 +552,11 @@ export class TreeController<T> {
    * dragged subtree (every dragged id is checked — multi-drag contract).
    * `inside` on a non-expandable row degrades to `after` (react-arborist).
    */
-  dropTargetFor(dragKeys: readonly string[], targetKey: string, zone: DropZone): DropTarget<T> | null {
+  dropTargetFor(
+    dragKeys: readonly string[],
+    targetKey: string,
+    zone: DropZone,
+  ): DropTarget<T> | null {
     const { map } = this.flat();
     const target = map.get(targetKey);
     if (!target) return null;
@@ -510,14 +564,24 @@ export class TreeController<T> {
     const dragged = new Set(dragKeys);
     if (dragged.has(target.key)) return null;
 
-    const effectiveZone: DropZone = zone === 'inside' && !target.expandable ? 'after' : zone;
-    const parentKey = effectiveZone === 'inside' ? target.key : target.parentKey;
-    for (let key: string | null = parentKey; key != null; key = map.get(key)!.parentKey) {
+    const effectiveZone: DropZone =
+      zone === 'inside' && !target.expandable ? 'after' : zone;
+    const parentKey =
+      effectiveZone === 'inside' ? target.key : target.parentKey;
+    for (
+      let key: string | null = parentKey;
+      key != null;
+      key = map.get(key)!.parentKey
+    ) {
       if (dragged.has(key)) return null;
     }
 
     if (effectiveZone === 'inside') {
-      return { parentKey: target.key, parentNode: target.node, index: target.childKeys.length };
+      return {
+        parentKey: target.key,
+        parentNode: target.node,
+        index: target.childKeys.length,
+      };
     }
 
     const parent = target.parentKey != null ? map.get(target.parentKey)! : null;

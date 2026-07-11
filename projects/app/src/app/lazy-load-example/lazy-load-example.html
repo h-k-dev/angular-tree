@@ -3,7 +3,11 @@
 <header class="demo-card-bar">
   <nav class="demo-tabs" aria-label="Example view">
     @for (tab of viewTabs; track tab.id) {
-      <button class="demo-tab" [attr.aria-selected]="view() === tab.id" (click)="showView(tab.id)">
+      <button
+        class="demo-tab"
+        [attr.aria-selected]="view() === tab.id"
+        (click)="showView(tab.id)"
+      >
         {{ tab.label }}
       </button>
     }
@@ -12,13 +16,18 @@
 
 <!-- Intro: five DIFFERENT public APIs, one tree, unified by the accessor. -->
 <p class="lazy-hint" [class.demo-hidden]="view() !== 'preview'">
-  Five self-contained roots, each a <strong>different public API</strong> — a GitHub repo, a GBIF taxonomy, a Hacker
-  News thread, a Wikipedia category, and an npm package's files. Children load
-  <strong>one level at a time, on open</strong>. Drag &amp; drop is sandboxed per source: you can't drag across data
-  sources.
+  Five self-contained roots, each a <strong>different public API</strong> — a
+  GitHub repo, a GBIF taxonomy, a Hacker News thread, a Wikipedia category, and
+  an npm package's files. Children load
+  <strong>one level at a time, on open</strong>. Drag &amp; drop is sandboxed
+  per source: you can't drag across data sources.
 </p>
 
-<section class="lazy-card" [class.demo-hidden]="view() !== 'preview'" aria-label="Lazy Load Only example">
+<section
+  class="lazy-card"
+  [class.demo-hidden]="view() !== 'preview'"
+  aria-label="Lazy Load Only example"
+>
   <angular-tree
     #tree="angularTree"
     class="lazy-tree"
@@ -44,20 +53,36 @@
       let-hasError="hasError"
     >
       @if (expandable) {
-        <button treeNodeToggle class="lazy-toggle" [attr.aria-label]="'Toggle ' + node.name">
-          <mat-icon>{{ isExpanded ? 'expand_more' : 'chevron_right' }}</mat-icon>
+        <button
+          treeNodeToggle
+          class="lazy-toggle"
+          [attr.aria-label]="'Toggle ' + node.name"
+        >
+          <mat-icon>{{
+            isExpanded ? 'expand_more' : 'chevron_right'
+          }}</mat-icon>
         </button>
         <!-- Root rows show their SOURCE icon; deeper branches a plain folder. -->
         @if (level === 0) {
-          <mat-icon class="lazy-icon lazy-icon--source">{{ sourceIcon[node.source] }}</mat-icon>
+          <mat-icon class="lazy-icon lazy-icon--source">{{
+            sourceIcon[node.source]
+          }}</mat-icon>
         } @else {
-          <mat-icon class="lazy-icon lazy-icon--folder">{{ isExpanded ? 'folder_open' : 'folder' }}</mat-icon>
+          <mat-icon class="lazy-icon lazy-icon--folder">{{
+            isExpanded ? 'folder_open' : 'folder'
+          }}</mat-icon>
         }
         <span class="lazy-name">{{ node.name }}</span>
         @if (isLoading) {
-          <mat-icon class="lazy-icon lazy-spin" aria-label="Loading">progress_activity</mat-icon>
+          <mat-icon class="lazy-icon lazy-spin" aria-label="Loading"
+            >progress_activity</mat-icon
+          >
         } @else if (hasError) {
-          <button matButton class="lazy-retry" (click)="tree.retryChildren(node)">
+          <button
+            matButton
+            class="lazy-retry"
+            (click)="tree.retryChildren(node)"
+          >
             <mat-icon>error</mat-icon>
             Retry
           </button>

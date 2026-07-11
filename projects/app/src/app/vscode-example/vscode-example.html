@@ -3,7 +3,11 @@
 <header class="demo-card-bar">
   <nav class="demo-tabs" aria-label="Example view">
     @for (tab of viewTabs; track tab.id) {
-      <button class="demo-tab" [attr.aria-selected]="view() === tab.id" (click)="showView(tab.id)">
+      <button
+        class="demo-tab"
+        [attr.aria-selected]="view() === tab.id"
+        (click)="showView(tab.id)"
+      >
         {{ tab.label }}
       </button>
     }
@@ -12,7 +16,11 @@
 
 <!-- macOS editor window: traffic-light chrome + the Explorer panel. The window
      dots are the only literal colours; everything below is token-themed. -->
-<section class="vsc-window" [class.demo-hidden]="view() !== 'preview'" aria-label="VS Code example">
+<section
+  class="vsc-window"
+  [class.demo-hidden]="view() !== 'preview'"
+  aria-label="VS Code example"
+>
   <header class="vsc-titlebar">
     <span class="vsc-lights" aria-hidden="true">
       <span class="vsc-light vsc-light--close"></span>
@@ -45,17 +53,30 @@
          so a folder click BOTH toggles and highlights. A single `.vsc-label`
          wrapper keeps row spacing identical to files (the tree's inter-child
          gap only applies between top-level row children). -->
-    <ng-container *treeNodeDef="let node; when: isDir; let isExpanded = isExpanded; let isEditing = isEditing">
+    <ng-container
+      *treeNodeDef="
+        let node;
+        when: isDir;
+        let isExpanded = isExpanded;
+        let isEditing = isEditing
+      "
+    >
       @if (isEditing) {
         <span class="vsc-label">
           <span class="vsc-twisty"></span>
-          <mat-icon class="vsc-icon vsc-icon--folder">{{ isExpanded ? 'folder_open' : 'folder' }}</mat-icon>
+          <mat-icon class="vsc-icon vsc-icon--folder">{{
+            isExpanded ? 'folder_open' : 'folder'
+          }}</mat-icon>
           <input treeNodeEditInput class="vsc-rename" [value]="node.name" />
         </span>
       } @else {
         <span class="vsc-label" (click)="tree.toggle(node)">
-          <mat-icon class="vsc-twisty">{{ isExpanded ? 'expand_more' : 'chevron_right' }}</mat-icon>
-          <mat-icon class="vsc-icon vsc-icon--folder">{{ isExpanded ? 'folder_open' : 'folder' }}</mat-icon>
+          <mat-icon class="vsc-twisty">{{
+            isExpanded ? 'expand_more' : 'chevron_right'
+          }}</mat-icon>
+          <mat-icon class="vsc-icon vsc-icon--folder">{{
+            isExpanded ? 'folder_open' : 'folder'
+          }}</mat-icon>
           <span class="vsc-name">{{ node.name }}</span>
         </span>
       }
@@ -67,7 +88,10 @@
     <ng-template treeNodeDef let-node let-isEditing="isEditing">
       <span class="vsc-label">
         <span class="vsc-twisty"></span>
-        <mat-icon class="vsc-icon" [class]="'vsc-icon--' + extensionOf(node.name)">
+        <mat-icon
+          class="vsc-icon"
+          [class]="'vsc-icon--' + extensionOf(node.name)"
+        >
           {{ icons[extensionOf(node.name)] ?? 'draft' }}
         </mat-icon>
         @if (isEditing) {
@@ -85,7 +109,9 @@
       <mat-icon class="vsc-status-icon">description</mat-icon>
       {{ path }}
     } @else {
-      <span class="vsc-hint">Click a folder to toggle · Enter to rename · double-click to open</span>
+      <span class="vsc-hint"
+        >Click a folder to toggle · Enter to rename · double-click to open</span
+      >
     }
   </footer>
 </section>

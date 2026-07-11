@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MatButtonModule } from '@angular/material/button';
@@ -66,10 +72,13 @@ export class DocumentsExample {
   openUpload() {
     import('../upload-dialog/upload-dialog').then(({ UploadDialog }) => {
       this.#dialog
-        .open<InstanceType<typeof UploadDialog>, undefined, FolderNode>(UploadDialog)
+        .open<InstanceType<typeof UploadDialog>, undefined, FolderNode>(
+          UploadDialog,
+        )
         .afterClosed()
         .subscribe((folder) => {
-          if (folder) this.example()?.lastIntent.set(`upload → "${folder.name}"`);
+          if (folder)
+            this.example()?.lastIntent.set(`upload → "${folder.name}"`);
         });
     });
   }
@@ -87,7 +96,11 @@ export class DocumentsExample {
   view = signal<ExampleView>('preview');
 
   /** Source files, fetched + Shiki-highlighted once on first view (`source/` assets). */
-  exampleSource = signal<Record<string, SafeHtml | null>>({ html: null, ts: null, scss: null });
+  exampleSource = signal<Record<string, SafeHtml | null>>({
+    html: null,
+    ts: null,
+    scss: null,
+  });
 
   showView(view: ExampleView) {
     this.view.set(view);
@@ -95,10 +108,16 @@ export class DocumentsExample {
 
     // Shiki (angular.dev's highlighter) loads lazily with the first code tab;
     // dual themes ride the demo's dark-mode class (see styles.scss).
-    const langs = { html: 'angular-html', ts: 'angular-ts', scss: 'scss' } as const;
+    const langs = {
+      html: 'angular-html',
+      ts: 'angular-ts',
+      scss: 'scss',
+    } as const;
     Promise.all([
       fetch(`source/tree-example.${view}`).then((response) =>
-        response.ok ? response.text() : `// failed to load (${response.status})`,
+        response.ok
+          ? response.text()
+          : `// failed to load (${response.status})`,
       ),
       import('shiki'),
     ])

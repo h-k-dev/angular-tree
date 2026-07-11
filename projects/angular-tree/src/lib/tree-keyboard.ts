@@ -39,7 +39,12 @@ export type TreeKeyCommand =
   | { readonly kind: 'selectToEdge'; readonly index: number }
   | { readonly kind: 'clearMoveMark' }
   | { readonly kind: 'clearSelection' }
-  | { readonly kind: 'focusStep'; readonly index: number; readonly extend: boolean; readonly follow: boolean }
+  | {
+      readonly kind: 'focusStep';
+      readonly index: number;
+      readonly extend: boolean;
+      readonly follow: boolean;
+    }
   | { readonly kind: 'focusIndex'; readonly index: number }
   | { readonly kind: 'expandRow' }
   | { readonly kind: 'collapseRow' }
@@ -52,7 +57,10 @@ export type TreeKeyCommand =
   | { readonly kind: 'consume' }
   | { readonly kind: 'typeahead'; readonly char: string };
 
-export function interpretTreeKey(event: KeyboardEvent, ctx: TreeKeyContext): TreeKeyCommand | null {
+export function interpretTreeKey(
+  event: KeyboardEvent,
+  ctx: TreeKeyContext,
+): TreeKeyCommand | null {
   // Keyboard move: Ctrl+X marks a move, Ctrl+C marks a copy (v2 dropEffect),
   // Ctrl+V drops into, Ctrl+Shift+V drops after. Multi-select (APG optional
   // keys): Ctrl+A selects all visible (again = clear), Ctrl+Shift+Home/End
@@ -62,10 +70,17 @@ export function interpretTreeKey(event: KeyboardEvent, ctx: TreeKeyContext): Tre
     if (combo === 'x' || combo === 'c') {
       return { kind: 'markMove', effect: combo === 'c' ? 'copy' : 'move' };
     }
-    if (combo === 'v') return { kind: 'keyboardDrop', zone: event.shiftKey ? 'after' : 'inside' };
+    if (combo === 'v')
+      return {
+        kind: 'keyboardDrop',
+        zone: event.shiftKey ? 'after' : 'inside',
+      };
     if (combo === 'a' && ctx.multi) return { kind: 'selectAllVisible' };
     if (event.shiftKey && (combo === 'home' || combo === 'end') && ctx.multi) {
-      return { kind: 'selectToEdge', index: combo === 'home' ? 0 : ctx.rowCount - 1 };
+      return {
+        kind: 'selectToEdge',
+        index: combo === 'home' ? 0 : ctx.rowCount - 1,
+      };
     }
     return null;
   }
@@ -107,10 +122,13 @@ export function interpretTreeKey(event: KeyboardEvent, ctx: TreeKeyContext): Tre
     case 'expand':
       if (!ctx.rowExpandable) return null;
       if (!ctx.rowExpanded) return { kind: 'expandRow' };
-      if (ctx.hasChildBelow) return { kind: 'focusIndex', index: ctx.index + 1 };
+      if (ctx.hasChildBelow)
+        return { kind: 'focusIndex', index: ctx.index + 1 };
       return { kind: 'consume' };
     case 'collapse':
-      return ctx.rowExpandable && ctx.rowExpanded ? { kind: 'collapseRow' } : { kind: 'focusParent' };
+      return ctx.rowExpandable && ctx.rowExpanded
+        ? { kind: 'collapseRow' }
+        : { kind: 'focusParent' };
     case 'ContextMenu':
       // The caller's preventDefault also suppresses the browser's synthetic
       // `contextmenu` event — no double emission with the pointer path.
@@ -126,13 +144,21 @@ export function interpretTreeKey(event: KeyboardEvent, ctx: TreeKeyContext): Tre
     case 'PageUp':
       return { kind: 'focusIndex', index: ctx.index - ctx.pageStep };
     case 'Enter':
-      return ctx.enterAction === 'edit' ? { kind: 'beginEdit' } : { kind: 'activate' };
+      return ctx.enterAction === 'edit'
+        ? { kind: 'beginEdit' }
+        : { kind: 'activate' };
     case ' ':
       // APG Shift+Space: contiguous selection from the anchor — same range
       // semantics as shift-click; a plain Space (or no anchor yet) toggles.
       return { kind: 'toggleSelection', range: event.shiftKey };
     default:
-      if (event.key.length !== 1 || event.ctrlKey || event.metaKey || event.altKey) return null;
+      if (
+        event.key.length !== 1 ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey
+      )
+        return null;
       return { kind: 'typeahead', char: event.key };
   }
 }

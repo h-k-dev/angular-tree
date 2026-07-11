@@ -1,13 +1,30 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { CdkMenuItem } from '@angular/cdk/menu';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 
-import { AngularTree, TreeContextMenu, TreeNodeDef, TreeNodeToggle } from '@h-k-dev/angular-tree';
+import {
+  AngularTree,
+  TreeContextMenu,
+  TreeNodeDef,
+  TreeNodeToggle,
+} from '@h-k-dev/angular-tree';
 
-import { DocNode, FolderNode, generateExampleTree, isFile, isFolder } from '../example-data';
+import {
+  DocNode,
+  FolderNode,
+  generateExampleTree,
+  isFile,
+  isFolder,
+} from '../example-data';
 
 /**
  * Testbed dialog for the ROADMAP Phase 8 integration matrix — a tree hosted
@@ -34,7 +51,8 @@ import { DocNode, FolderNode, generateExampleTree, isFile, isFolder } from '../e
   styleUrl: './upload-dialog.scss',
 })
 export class UploadDialog {
-  readonly #dialogRef = inject<MatDialogRef<UploadDialog, FolderNode>>(MatDialogRef);
+  readonly #dialogRef =
+    inject<MatDialogRef<UploadDialog, FolderNode>>(MatDialogRef);
 
   /** Real folders only — a smart folder can't receive uploads, and the
    *  DnD-rules showcase is main-example furniture, not a destination. */
@@ -49,7 +67,9 @@ export class UploadDialog {
     isFile(node)
       ? undefined
       : isFolder(node) && node.lazy
-        ? new Promise<DocNode[]>((resolve) => setTimeout(() => resolve(node.children), 1_200))
+        ? new Promise<DocNode[]>((resolve) =>
+            setTimeout(() => resolve(node.children), 1_200),
+          )
         : node.children;
   key = (node: DocNode) => node.id;
   nodeName = (node: DocNode) => node.name;

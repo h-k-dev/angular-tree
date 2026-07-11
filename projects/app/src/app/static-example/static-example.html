@@ -4,7 +4,11 @@
 <header class="demo-card-bar">
   <nav class="demo-tabs" aria-label="Example view">
     @for (tab of viewTabs; track tab.id) {
-      <button class="demo-tab" [attr.aria-selected]="view() === tab.id" (click)="showView(tab.id)">
+      <button
+        class="demo-tab"
+        [attr.aria-selected]="view() === tab.id"
+        (click)="showView(tab.id)"
+      >
         {{ tab.label }}
       </button>
     }
@@ -30,16 +34,34 @@
       [indentGuides]="true"
       [clickAction]="'select'"
     >
-      <ng-template treeNodeDef let-node let-isExpanded="isExpanded" let-expandable="expandable">
+      <ng-template
+        treeNodeDef
+        let-node
+        let-isExpanded="isExpanded"
+        let-expandable="expandable"
+      >
         @if (expandable) {
-          <button treeNodeToggle class="layer-toggle" [attr.aria-label]="'Toggle ' + node.name">
-            <mat-icon>{{ isExpanded ? 'arrow_drop_down' : 'arrow_right' }}</mat-icon>
+          <button
+            treeNodeToggle
+            class="layer-toggle"
+            [attr.aria-label]="'Toggle ' + node.name"
+          >
+            <mat-icon>{{
+              isExpanded ? 'arrow_drop_down' : 'arrow_right'
+            }}</mat-icon>
           </button>
         } @else {
           <span class="layer-toggle-spacer"></span>
         }
-        <mat-icon class="layer-icon" [class]="'layer-icon--' + node.kind">{{ icons[node.kind] }}</mat-icon>
-        <span class="layer-name" [class.layer-name--component]="node.kind === 'component' || node.kind === 'instance'">
+        <mat-icon class="layer-icon" [class]="'layer-icon--' + node.kind">{{
+          icons[node.kind]
+        }}</mat-icon>
+        <span
+          class="layer-name"
+          [class.layer-name--component]="
+            node.kind === 'component' || node.kind === 'instance'
+          "
+        >
           {{ node.name }}
         </span>
       </ng-template>
@@ -62,16 +84,34 @@
       [indentGuides]="true"
       [clickAction]="'select'"
     >
-      <ng-template treeNodeDef let-node let-isExpanded="isExpanded" let-expandable="expandable">
+      <ng-template
+        treeNodeDef
+        let-node
+        let-isExpanded="isExpanded"
+        let-expandable="expandable"
+      >
         @if (expandable) {
-          <button treeNodeToggle class="layer-toggle" [attr.aria-label]="'Toggle ' + node.name">
-            <mat-icon>{{ isExpanded ? 'arrow_drop_down' : 'arrow_right' }}</mat-icon>
+          <button
+            treeNodeToggle
+            class="layer-toggle"
+            [attr.aria-label]="'Toggle ' + node.name"
+          >
+            <mat-icon>{{
+              isExpanded ? 'arrow_drop_down' : 'arrow_right'
+            }}</mat-icon>
           </button>
         } @else {
           <span class="layer-toggle-spacer"></span>
         }
-        <mat-icon class="layer-icon" [class]="'layer-icon--' + node.kind">{{ icons[node.kind] }}</mat-icon>
-        <span class="layer-name" [class.layer-name--component]="node.kind === 'component' || node.kind === 'instance'">
+        <mat-icon class="layer-icon" [class]="'layer-icon--' + node.kind">{{
+          icons[node.kind]
+        }}</mat-icon>
+        <span
+          class="layer-name"
+          [class.layer-name--component]="
+            node.kind === 'component' || node.kind === 'instance'
+          "
+        >
           {{ node.name }}
         </span>
       </ng-template>

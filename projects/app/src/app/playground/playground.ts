@@ -22,5 +22,6 @@ export class Playground {
     { path: '/static', icon: 'layers', label: 'Static' },
     { path: '/vscode', icon: 'code', label: 'VS Code' },
     { path: '/lazy', icon: 'cloud_sync', label: 'Lazy Load Only' },
+    { path: '/media', icon: 'play_circle', label: 'Media' },
   ];
 }

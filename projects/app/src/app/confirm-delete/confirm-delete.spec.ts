@@ -17,6 +17,8 @@ describe('ConfirmDelete', () => {
   });
 
   it('pluralizes the title from the injected count', () => {
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Delete 3 items?');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      'Delete 3 items?',
+    );
   });
 });

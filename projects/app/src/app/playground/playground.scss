@@ -39,7 +39,11 @@
   white-space: nowrap;
 
   &:hover {
-    background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 8%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--mat-sys-on-surface-variant) 8%,
+      transparent
+    );
   }
 
   &--active {
@@ -62,21 +66,34 @@
   padding: 1rem;
 }
 
-// Narrow screens: the aside becomes a compact row above the example.
+// Narrow screens: the aside becomes a horizontal-scroll strip above the
+// example — the pills scroll sideways instead of bleeding past the viewport.
 @media (max-width: 900px) {
   :host {
     flex-direction: column;
+    // Belt-and-braces: the column layout must never itself scroll sideways;
+    // the overflow lives inside the aside strip only.
+    overflow-x: hidden;
   }
 
   .playground-aside {
     flex: 0 0 auto;
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    padding: 0.5rem;
     border-inline-end: none;
     border-block-end: 1px solid var(--mat-sys-outline-variant);
   }
 
   .playground-aside-nav {
     flex-direction: row;
+    flex-wrap: nowrap;
+    inline-size: max-content; // grow past the strip so it scrolls, not squishes
+  }
+
+  .playground-aside-link {
+    flex: 0 0 auto; // each pill keeps its natural width
   }
 
   .playground-content {

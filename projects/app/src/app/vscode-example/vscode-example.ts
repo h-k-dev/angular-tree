@@ -1,10 +1,28 @@
-import { ChangeDetectionStrategy, Component, inject, linkedSignal, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MatIconModule } from '@angular/material/icon';
 
-import { AngularTree, RenameEvent, TreeNodeDef, TreeNodeEditInput } from '@h-k-dev/angular-tree';
+import {
+  AngularTree,
+  RenameEvent,
+  TreeNodeDef,
+  TreeNodeEditInput,
+} from '@h-k-dev/angular-tree';
 
-import { DEFAULT_OPEN, extensionOf, FILE_ICONS, FsNode, isDir, WORKSPACE } from './fs-data';
+import {
+  DEFAULT_OPEN,
+  extensionOf,
+  FILE_ICONS,
+  FsNode,
+  isDir,
+  WORKSPACE,
+} from './fs-data';
 
 /** Card views: the live panel or one of the example's real source files. */
 type VscodeView = 'preview' | 'html' | 'ts' | 'scss' | 'data';
@@ -14,7 +32,12 @@ type VscodeView = 'preview' | 'html' | 'ts' | 'scss' | 'data';
  * by the build (angular.json assets) and highlighted with Shiki, zero drift.
  */
 const CODE_TABS = [
-  { id: 'html', label: 'HTML', file: 'vscode-example.html', lang: 'angular-html' },
+  {
+    id: 'html',
+    label: 'HTML',
+    file: 'vscode-example.html',
+    lang: 'angular-html',
+  },
   { id: 'ts', label: 'TS', file: 'vscode-example.ts', lang: 'angular-ts' },
   { id: 'scss', label: 'SCSS', file: 'vscode-example.scss', lang: 'scss' },
   { id: 'data', label: 'Data', file: 'fs-data.ts', lang: 'angular-ts' },
@@ -61,7 +84,9 @@ export class VscodeExample {
     const rename = (nodes: readonly FsNode[]): FsNode[] =>
       nodes.map((node) => {
         if (node.path === id) return { ...node, name };
-        return isDir(node) ? { ...node, children: rename(node.children) } : node;
+        return isDir(node)
+          ? { ...node, children: rename(node.children) }
+          : node;
       });
     this.workspace.update(rename);
   }
@@ -74,12 +99,20 @@ export class VscodeExample {
   // ---------------------------------------------------------------------------
   // Example view tabs (PrimeNG-style): preview ↔ the example's real sources
   // ---------------------------------------------------------------------------
-  readonly viewTabs = [{ id: 'preview' as const, label: 'Preview' }, ...CODE_TABS];
+  readonly viewTabs = [
+    { id: 'preview' as const, label: 'Preview' },
+    ...CODE_TABS,
+  ];
 
   view = signal<VscodeView>('preview');
 
   /** Source files, fetched + Shiki-highlighted once on first view (`source/` assets). */
-  exampleSource = signal<Record<string, SafeHtml | null>>({ html: null, ts: null, scss: null, data: null });
+  exampleSource = signal<Record<string, SafeHtml | null>>({
+    html: null,
+    ts: null,
+    scss: null,
+    data: null,
+  });
 
   showView(view: VscodeView) {
     this.view.set(view);
@@ -90,7 +123,9 @@ export class VscodeExample {
     const tab = CODE_TABS.find((candidate) => candidate.id === view)!;
     Promise.all([
       fetch(`source/${tab.file}`).then((response) =>
-        response.ok ? response.text() : `// failed to load (${response.status})`,
+        response.ok
+          ? response.text()
+          : `// failed to load (${response.status})`,
       ),
       import('shiki'),
     ])

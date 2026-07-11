@@ -8,7 +8,8 @@
  */
 
 /** Which public API a node comes from — also its drag & drop sandbox id. */
-export type Source = 'github' | 'gbif' | 'hackernews' | 'wikipedia' | 'jsdelivr';
+export type Source =
+  'github' | 'gbif' | 'hackernews' | 'wikipedia' | 'jsdelivr';
 
 export interface LazyNode {
   /** Unique, stable key (source-prefixed). Immutable across moves. */
@@ -33,11 +34,46 @@ export const isBranch = (node: LazyNode): boolean => !node.leaf;
 /** The five roots — one per source, each an unfetched branch keyed to itself. */
 export function rootNodes(): LazyNode[] {
   return [
-    { id: 'github', name: 'nodejs/node', source: 'github', leaf: false, ref: '', meta: 'GitHub repo' },
-    { id: 'gbif', name: 'Animalia', source: 'gbif', leaf: false, ref: '1', meta: 'GBIF taxonomy' },
-    { id: 'hackernews', name: 'Hacker News', source: 'hackernews', leaf: false, ref: 'top', meta: 'top stories' },
-    { id: 'wikipedia', name: 'Physics', source: 'wikipedia', leaf: false, ref: 'Category:Physics', meta: 'Wikipedia' },
-    { id: 'jsdelivr', name: 'react', source: 'jsdelivr', leaf: false, ref: '', meta: 'npm files' },
+    {
+      id: 'github',
+      name: 'nodejs/node',
+      source: 'github',
+      leaf: false,
+      ref: '',
+      meta: 'GitHub repo',
+    },
+    {
+      id: 'gbif',
+      name: 'Animalia',
+      source: 'gbif',
+      leaf: false,
+      ref: '1',
+      meta: 'GBIF taxonomy',
+    },
+    {
+      id: 'hackernews',
+      name: 'Hacker News',
+      source: 'hackernews',
+      leaf: false,
+      ref: 'top',
+      meta: 'top stories',
+    },
+    {
+      id: 'wikipedia',
+      name: 'Physics',
+      source: 'wikipedia',
+      leaf: false,
+      ref: 'Category:Physics',
+      meta: 'Wikipedia',
+    },
+    {
+      id: 'jsdelivr',
+      name: 'react',
+      source: 'jsdelivr',
+      leaf: false,
+      ref: '',
+      meta: 'npm files',
+    },
   ];
 }
 
@@ -55,7 +91,9 @@ export function fetchChildren(node: LazyNode): Promise<readonly LazyNode[]> {
     case 'jsdelivr':
       return fetchJsdelivr(node);
     default:
-      return Promise.reject(new Error(`unknown source ${node.source satisfies never}`));
+      return Promise.reject(
+        new Error(`unknown source ${node.source satisfies never}`),
+      );
   }
 }
 
@@ -67,10 +105,9 @@ const REPO = 'nodejs/node';
 
 /** GitHub contents API — one directory level per request. */
 async function fetchGithub(node: LazyNode): Promise<LazyNode[]> {
-  const entries = await getJson<{ name: string; path: string; type: string; size: number }[]>(
-    `https://api.github.com/repos/${REPO}/contents/${node.ref}`,
-    'GitHub',
-  );
+  const entries = await getJson<
+    { name: string; path: string; type: string; size: number }[]
+  >(`https://api.github.com/repos/${REPO}/contents/${node.ref}`, 'GitHub');
   return entries
     .map((entry) => ({
       id: `github:${entry.path}`,
@@ -86,7 +123,12 @@ async function fetchGithub(node: LazyNode): Promise<LazyNode[]> {
 /** GBIF taxonomy — a taxon's direct children (kingdom → … → species). */
 async function fetchGbif(node: LazyNode): Promise<LazyNode[]> {
   const data = await getJson<{
-    results: { key: number; canonicalName?: string; scientificName?: string; rank?: string }[];
+    results: {
+      key: number;
+      canonicalName?: string;
+      scientificName?: string;
+      rank?: string;
+    }[];
   }>(`https://api.gbif.org/v1/species/${node.ref}/children?limit=60`, 'GBIF');
   const leafRanks = new Set(['SPECIES', 'SUBSPECIES', 'VARIETY', 'FORM']);
   return data.results
@@ -105,7 +147,12 @@ async function fetchGbif(node: LazyNode): Promise<LazyNode[]> {
 async function fetchHackerNews(node: LazyNode): Promise<LazyNode[]> {
   const ids =
     node.ref === 'top'
-      ? (await getJson<number[]>('https://hacker-news.firebaseio.com/v0/topstories.json', 'Hacker News')).slice(0, 10)
+      ? (
+          await getJson<number[]>(
+            'https://hacker-news.firebaseio.com/v0/topstories.json',
+            'Hacker News',
+          )
+        ).slice(0, 10)
       : (node.kids ?? []).slice(0, 15);
 
   const items = await Promise.all(
@@ -119,12 +166,18 @@ async function fetchHackerNews(node: LazyNode): Promise<LazyNode[]> {
         kids?: number[];
         deleted?: boolean;
         dead?: boolean;
-      }>(`https://hacker-news.firebaseio.com/v0/item/${id}.json`, 'Hacker News').catch(() => null),
+      }>(
+        `https://hacker-news.firebaseio.com/v0/item/${id}.json`,
+        'Hacker News',
+      ).catch(() => null),
     ),
   );
 
   return items
-    .filter((item): item is NonNullable<typeof item> => item != null && !item.deleted && !item.dead)
+    .filter(
+      (item): item is NonNullable<typeof item> =>
+        item != null && !item.deleted && !item.dead,
+    )
     .map((item) => {
       const label = item.title ?? stripHtml(item.text ?? '');
       return {
@@ -144,10 +197,11 @@ async function fetchWikipedia(node: LazyNode): Promise<LazyNode[]> {
   const url =
     `https://en.wikipedia.org/w/api.php?action=query&list=categorymembers` +
     `&cmtitle=${encodeURIComponent(node.ref)}&cmtype=subcat|page&cmlimit=50&format=json&origin=*`;
-  const data = await getJson<{ query?: { categorymembers?: { pageid: number; title: string; ns: number }[] } }>(
-    url,
-    'Wikipedia',
-  );
+  const data = await getJson<{
+    query?: {
+      categorymembers?: { pageid: number; title: string; ns: number }[];
+    };
+  }>(url, 'Wikipedia');
   return (data.query?.categorymembers ?? [])
     .map((member) => ({
       id: `wikipedia:${member.pageid}`,
@@ -187,7 +241,9 @@ async function fetchJsdelivr(_node: LazyNode): Promise<LazyNode[]> {
           source: 'jsdelivr',
           leaf: false,
           ref: path,
-          children: (entry.files ?? []).map((child) => map(child, path)).sort(branchFirst),
+          children: (entry.files ?? [])
+            .map((child) => map(child, path))
+            .sort(branchFirst),
         }
       : {
           id: `jsdelivr:${path}`,
@@ -215,7 +271,11 @@ const branchFirst = (a: LazyNode, b: LazyNode): number =>
   a.leaf === b.leaf ? a.name.localeCompare(b.name) : a.leaf ? 1 : -1;
 
 const formatBytes = (size?: number): string | undefined =>
-  size == null ? undefined : size < 1024 ? `${size} B` : `${(size / 1024).toFixed(1)} kB`;
+  size == null
+    ? undefined
+    : size < 1024
+      ? `${size} B`
+      : `${(size / 1024).toFixed(1)} kB`;
 
 /** HN comment text is HTML — flatten tags and the entities that actually occur. */
 const stripHtml = (html: string): string =>
@@ -272,7 +332,10 @@ export function applyMove(
 ): readonly LazyNode[] {
   const dragSet = new Set(dragIds);
 
-  const find = (nodes: readonly LazyNode[], id: string): LazyNode | undefined => {
+  const find = (
+    nodes: readonly LazyNode[],
+    id: string,
+  ): LazyNode | undefined => {
     for (const node of nodes) {
       if (node.id === id) return node;
       const hit = node.children && find(node.children, id);
@@ -282,7 +345,10 @@ export function applyMove(
   };
 
   const targetChildren = find(roots, parentId)?.children ?? [];
-  const adjustedIndex = index - targetChildren.slice(0, index).filter((child) => dragSet.has(child.id)).length;
+  const adjustedIndex =
+    index -
+    targetChildren.slice(0, index).filter((child) => dragSet.has(child.id))
+      .length;
 
   const removed: LazyNode[] = [];
   const prune = (nodes: readonly LazyNode[]): LazyNode[] =>
@@ -291,7 +357,9 @@ export function applyMove(
         removed.push(node);
         return [];
       }
-      return [node.children ? { ...node, children: prune(node.children) } : node];
+      return [
+        node.children ? { ...node, children: prune(node.children) } : node,
+      ];
     });
   const pruned = prune(roots);
 

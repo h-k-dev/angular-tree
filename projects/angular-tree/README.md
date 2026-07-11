@@ -29,7 +29,12 @@ Peer dependencies: `@angular/core|common|cdk` ≥ 21.2, `rxjs` ≥ 7.8.
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { AngularTree, MoveEvent, TreeNodeDef, TreeNodeToggle } from '@h-k-dev/angular-tree';
+import {
+  AngularTree,
+  MoveEvent,
+  TreeNodeDef,
+  TreeNodeToggle,
+} from '@h-k-dev/angular-tree';
 
 interface DocNode {
   id: string;
@@ -68,7 +73,9 @@ export class Docs {
   (moved)="applyMove($event)"
 >
   <!-- folder template — `when` predicates are typed type guards -->
-  <ng-container *treeNodeDef="let node; when: isFolder; let isExpanded = isExpanded">
+  <ng-container
+    *treeNodeDef="let node; when: isFolder; let isExpanded = isExpanded"
+  >
     <button treeNodeToggle>{{ isExpanded ? '▾' : '▸' }}</button>
     <span>{{ node.name }}</span>
   </ng-container>

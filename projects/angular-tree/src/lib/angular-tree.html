@@ -8,7 +8,9 @@
   [attr.aria-labelledby]="ariaLabelledby()"
   [attr.aria-multiselectable]="multi() || null"
   [attr.tabindex]="focusMode() === 'activedescendant' ? 0 : null"
-  [attr.aria-activedescendant]="focusMode() === 'activedescendant' ? activeDescendantId() : null"
+  [attr.aria-activedescendant]="
+    focusMode() === 'activedescendant' ? activeDescendantId() : null
+  "
   (keydown)="onKeydown($event)"
   (focusin)="onFocusIn($event)"
   (focusout)="onFocusOut($event)"
@@ -35,7 +37,11 @@
     [attr.aria-posinset]="row.posInSet"
     [attr.aria-selected]="checkboxSelection() ? null : row.context.isSelected"
     [attr.aria-checked]="
-      checkboxSelection() ? (row.checkState() === 'indeterminate' ? 'mixed' : row.checkState() === 'checked') : null
+      checkboxSelection()
+        ? row.checkState() === 'indeterminate'
+          ? 'mixed'
+          : row.checkState() === 'checked'
+        : null
     "
     [attr.data-node-id]="row.key"
     [attr.data-selected]="row.context.isSelected || null"
@@ -56,7 +62,13 @@
         <span class="tree-drag-preview-badge">{{ dragCount() }}</span>
       }
     </div>
-    <ng-container *ngTemplateOutlet="templateFor(row); context: row.context; injector: row.injector" />
+    <ng-container
+      *ngTemplateOutlet="
+        templateFor(row);
+        context: row.context;
+        injector: row.injector
+      "
+    />
   </div>
   <!-- Indent guides: ONE continuous line per expanded group (Reddit-style
        whole-line hover + single click target), absolutely positioned in

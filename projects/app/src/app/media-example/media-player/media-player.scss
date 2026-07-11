@@ -1,0 +1,127 @@
+// Fills the stage its parent positions (app-media-player is inset:0). All
+// colours are our tokens; YouTube's chrome lives inside the iframe.
+:host {
+  display: block;
+  block-size: 100%;
+  inline-size: 100%;
+  animation: player-fade 240ms ease-out;
+}
+
+@keyframes player-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    animation: none;
+  }
+}
+
+.player-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mat-sys-surface-dim);
+
+  &:focus-visible {
+    outline: 3px solid var(--tree-focus-ring, var(--mat-sys-primary));
+    outline-offset: -3px;
+  }
+}
+
+// Full-bleed; the YouTube iframe letterboxes the video inside.
+.player-frame,
+.player-mount {
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+// YT injects the iframe outside Angular's view encapsulation.
+:host ::ng-deep iframe {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  border: 0;
+}
+
+.player-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+  pointer-events: none;
+}
+
+.player-spin {
+  animation: player-spin 1s linear infinite;
+}
+
+@keyframes player-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+// Floating glass status strip, top-left (the top-right is the library toggle).
+.player-bar {
+  position: absolute;
+  inset-block-start: 0.75rem;
+  inset-inline-start: 0.75rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-inline-size: min(70%, 26rem);
+  padding: 0.2rem 0.3rem 0.2rem 0.85rem;
+  border-radius: 100vw;
+  background: color-mix(in srgb, var(--mat-sys-surface) 55%, transparent);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border: 1px solid
+    color-mix(in srgb, var(--mat-sys-on-surface) 12%, transparent);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.22);
+  // Fades out with the parent's chrome idle-timer (host attribute).
+  transition:
+    opacity 300ms ease,
+    transform 300ms ease;
+}
+
+:host([data-chrome='hidden']) .player-bar {
+  opacity: 0;
+  transform: translateY(-0.35rem);
+  pointer-events: none;
+}
+
+.player-title {
+  overflow: hidden;
+  min-inline-size: 0;
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-title-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-keys {
+  flex: 0 0 auto;
+  margin-inline-end: 0.15rem;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Compact the Material icon buttons to sit neatly in the slim glass strip.
+.player-btn {
+  flex: 0 0 auto;
+  --mdc-icon-button-state-layer-size: 34px;
+  inline-size: 34px;
+  block-size: 34px;
+  padding: 0;
+  color: var(--mat-sys-on-surface);
+}

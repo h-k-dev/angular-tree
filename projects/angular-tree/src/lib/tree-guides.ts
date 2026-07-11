@@ -40,7 +40,9 @@ export interface GuideOverlay {
  * visible flat array. Stack-based single pass: a row at a level ≤ an open
  * parent's closes that parent's group.
  */
-export function computeGuideGroups(rows: readonly VisibleTreeNode<unknown>[]): readonly GuideGroup[] {
+export function computeGuideGroups(
+  rows: readonly VisibleTreeNode<unknown>[],
+): readonly GuideGroup[] {
   const groups: GuideGroup[] = [];
   const open: { key: string; level: number; start: number; end: number }[] = [];
 
@@ -60,7 +62,12 @@ export function computeGuideGroups(rows: readonly VisibleTreeNode<unknown>[]): r
     const parent = open[open.length - 1];
     if (parent && parent.level === flat.level - 1) parent.end = index;
     if (flat.expandable && isExpanded) {
-      open.push({ key: flat.key, level: flat.level, start: index + 1, end: index });
+      open.push({
+        key: flat.key,
+        level: flat.level,
+        start: index + 1,
+        end: index,
+      });
     }
   }
   close(-Infinity);

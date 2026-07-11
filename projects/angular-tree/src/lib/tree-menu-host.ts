@@ -109,8 +109,12 @@ export class TreeMenuHost<T = unknown> {
             // and blur commits: the rename dies untouched before the user types
             // (matrix bug #7).
             if (this.#controller.editingId() != null) return;
-            const active = this.#host.ownerDocument.activeElement as HTMLElement | null;
-            const orphaned = active == null || active === this.#host.ownerDocument.body || active.tabIndex < 0;
+            const active = this.#host.ownerDocument
+              .activeElement as HTMLElement | null;
+            const orphaned =
+              active == null ||
+              active === this.#host.ownerDocument.body ||
+              active.tabIndex < 0;
             if (orphaned) this.#focus.focusKey(key);
           });
         });
@@ -142,7 +146,10 @@ export class TreeMenuHost<T = unknown> {
    */
   open(userEvent: MouseEvent | null, at: { x: number; y: number }) {
     const trigger = this.#trigger as unknown as {
-      _open(event: MouseEvent | null, coordinates: { x: number; y: number }): void;
+      _open(
+        event: MouseEvent | null,
+        coordinates: { x: number; y: number },
+      ): void;
     };
     this.#trigger.disabled = false;
     try {
@@ -161,7 +168,9 @@ export class TreeMenuHost<T = unknown> {
     // keyboard/API opens land on the first item (APG menu pattern). Overlay
     // attach is synchronous, so the menu DOM exists here; last match wins if
     // several trees render menus into the shared overlay container.
-    const menus = this.#host.ownerDocument.querySelectorAll<HTMLElement>('.cdk-overlay-container .tree-menu');
+    const menus = this.#host.ownerDocument.querySelectorAll<HTMLElement>(
+      '.cdk-overlay-container .tree-menu',
+    );
     const menu = menus.item(menus.length - 1);
     if (!menu) return;
     if (userEvent) menu.focus();

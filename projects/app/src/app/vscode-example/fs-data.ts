@@ -46,7 +46,11 @@ export const FILE_ICONS: Record<string, string | undefined> = {
 };
 
 /** Every folder path — the panel opens with the main src path expanded. */
-export const DEFAULT_OPEN = ['angular-tree', 'angular-tree/src', 'angular-tree/src/app'];
+export const DEFAULT_OPEN = [
+  'angular-tree',
+  'angular-tree/src',
+  'angular-tree/src/app',
+];
 
 export const WORKSPACE: readonly FsNode[] = [
   {
@@ -59,8 +63,16 @@ export const WORKSPACE: readonly FsNode[] = [
         name: '.vscode',
         kind: 'dir',
         children: [
-          { path: 'angular-tree/.vscode/settings.json', name: 'settings.json', kind: 'file' },
-          { path: 'angular-tree/.vscode/launch.json', name: 'launch.json', kind: 'file' },
+          {
+            path: 'angular-tree/.vscode/settings.json',
+            name: 'settings.json',
+            kind: 'file',
+          },
+          {
+            path: 'angular-tree/.vscode/launch.json',
+            name: 'launch.json',
+            kind: 'file',
+          },
         ],
       },
       {
@@ -73,15 +85,39 @@ export const WORKSPACE: readonly FsNode[] = [
             name: 'app',
             kind: 'dir',
             children: [
-              { path: 'angular-tree/src/app/app.ts', name: 'app.ts', kind: 'file' },
-              { path: 'angular-tree/src/app/app.html', name: 'app.html', kind: 'file' },
-              { path: 'angular-tree/src/app/app.scss', name: 'app.scss', kind: 'file' },
-              { path: 'angular-tree/src/app/app.routes.ts', name: 'app.routes.ts', kind: 'file' },
+              {
+                path: 'angular-tree/src/app/app.ts',
+                name: 'app.ts',
+                kind: 'file',
+              },
+              {
+                path: 'angular-tree/src/app/app.html',
+                name: 'app.html',
+                kind: 'file',
+              },
+              {
+                path: 'angular-tree/src/app/app.scss',
+                name: 'app.scss',
+                kind: 'file',
+              },
+              {
+                path: 'angular-tree/src/app/app.routes.ts',
+                name: 'app.routes.ts',
+                kind: 'file',
+              },
             ],
           },
           { path: 'angular-tree/src/main.ts', name: 'main.ts', kind: 'file' },
-          { path: 'angular-tree/src/styles.scss', name: 'styles.scss', kind: 'file' },
-          { path: 'angular-tree/src/index.html', name: 'index.html', kind: 'file' },
+          {
+            path: 'angular-tree/src/styles.scss',
+            name: 'styles.scss',
+            kind: 'file',
+          },
+          {
+            path: 'angular-tree/src/index.html',
+            name: 'index.html',
+            kind: 'file',
+          },
         ],
       },
       {
@@ -89,13 +125,25 @@ export const WORKSPACE: readonly FsNode[] = [
         name: 'e2e',
         kind: 'dir',
         children: [
-          { path: 'angular-tree/e2e/indent-guides.spec.ts', name: 'indent-guides.spec.ts', kind: 'file' },
-          { path: 'angular-tree/e2e/helpers.ts', name: 'helpers.ts', kind: 'file' },
+          {
+            path: 'angular-tree/e2e/indent-guides.spec.ts',
+            name: 'indent-guides.spec.ts',
+            kind: 'file',
+          },
+          {
+            path: 'angular-tree/e2e/helpers.ts',
+            name: 'helpers.ts',
+            kind: 'file',
+          },
         ],
       },
       { path: 'angular-tree/angular.json', name: 'angular.json', kind: 'file' },
       { path: 'angular-tree/package.json', name: 'package.json', kind: 'file' },
-      { path: 'angular-tree/tsconfig.json', name: 'tsconfig.json', kind: 'file' },
+      {
+        path: 'angular-tree/tsconfig.json',
+        name: 'tsconfig.json',
+        kind: 'file',
+      },
       { path: 'angular-tree/bun.lock', name: 'bun.lock', kind: 'file' },
       { path: 'angular-tree/README.md', name: 'README.md', kind: 'file' },
     ],

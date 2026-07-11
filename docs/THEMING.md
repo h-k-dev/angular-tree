@@ -106,7 +106,9 @@ angular-tree {
 }
 
 .node-toggle-spacer {
-  inline-size: calc(var(--tree-toggle-size) * var(--tree-toggle-spacing-factor, 0.5));
+  inline-size: calc(
+    var(--tree-toggle-size) * var(--tree-toggle-spacing-factor, 0.5)
+  );
 }
 ```
 

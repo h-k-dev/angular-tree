@@ -80,11 +80,28 @@ describe('TreeHarness', () => {
 
   /** jsdom has no layout — fake the viewport size so cdkVirtualFor renders rows. */
   async function forceViewportSize() {
-    const element: HTMLElement = fixture.nativeElement.querySelector('cdk-virtual-scroll-viewport');
-    Object.defineProperty(element, 'clientHeight', { value: 400, configurable: true });
-    Object.defineProperty(element, 'clientWidth', { value: 400, configurable: true });
+    const element: HTMLElement = fixture.nativeElement.querySelector(
+      'cdk-virtual-scroll-viewport',
+    );
+    Object.defineProperty(element, 'clientHeight', {
+      value: 400,
+      configurable: true,
+    });
+    Object.defineProperty(element, 'clientWidth', {
+      value: 400,
+      configurable: true,
+    });
     element.getBoundingClientRect = () =>
-      ({ top: 0, left: 0, right: 400, bottom: 400, width: 400, height: 400, x: 0, y: 0 }) as DOMRect;
+      ({
+        top: 0,
+        left: 0,
+        right: 400,
+        bottom: 400,
+        width: 400,
+        height: 400,
+        x: 0,
+        y: 0,
+      }) as DOMRect;
 
     fixture.debugElement
       .query(By.directive(CdkVirtualScrollViewport))
@@ -94,7 +111,9 @@ describe('TreeHarness', () => {
   }
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [Host],
+    }).compileComponents();
     fixture = TestBed.createComponent(Host);
     await fixture.whenStable();
     await forceViewportSize();
@@ -109,7 +128,13 @@ describe('TreeHarness', () => {
 
   it('expandNode reveals children; collapseNode hides them again', async () => {
     await tree.expandNode({ text: 'Alpha' });
-    expect(await tree.getVisibleTexts()).toEqual(['Alpha', 'Alpha One', 'Alpha Two', 'Beta', 'Gamma']);
+    expect(await tree.getVisibleTexts()).toEqual([
+      'Alpha',
+      'Alpha One',
+      'Alpha Two',
+      'Beta',
+      'Gamma',
+    ]);
 
     await tree.collapseNode({ text: 'Alpha' });
     expect(await tree.getVisibleTexts()).toEqual(['Alpha', 'Beta', 'Gamma']);
@@ -133,9 +158,13 @@ describe('TreeHarness', () => {
     expect(roots.length).toBe(3);
 
     const expanded = await tree.getVisibleNodes({ expanded: true });
-    expect(await Promise.all(expanded.map((node) => node.getKey()))).toEqual(['a']);
+    expect(await Promise.all(expanded.map((node) => node.getKey()))).toEqual([
+      'a',
+    ]);
 
-    expect(await (await tree.getNode({ text: /alpha one/i })).getKey()).toBe('a1');
+    expect(await (await tree.getNode({ text: /alpha one/i })).getKey()).toBe(
+      'a1',
+    );
   });
 
   it('toggleSelection drives cascade + tri-state, visible through the harness', async () => {
@@ -143,15 +172,21 @@ describe('TreeHarness', () => {
     await (await tree.getNode({ key: 'a1' })).toggleSelection();
 
     expect(await (await tree.getNode({ key: 'a1' })).isSelected()).toBe(true);
-    expect(await (await tree.getNode({ key: 'a1' })).getCheckState()).toBe('checked');
+    expect(await (await tree.getNode({ key: 'a1' })).getCheckState()).toBe(
+      'checked',
+    );
     // One of two children selected → parent folds to indeterminate.
-    expect(await (await tree.getNode({ key: 'a' })).getCheckState()).toBe('indeterminate');
+    expect(await (await tree.getNode({ key: 'a' })).getCheckState()).toBe(
+      'indeterminate',
+    );
     expect(await tree.getVisibleNodes({ selected: true })).toHaveLength(1);
   });
 
   it('activate clicks the row without touching selection (Gmail semantics)', async () => {
     await (await tree.getNode({ text: 'Beta' })).activate();
-    expect(fixture.componentInstance.activations.map((node) => node.id)).toEqual(['b']);
+    expect(
+      fixture.componentInstance.activations.map((node) => node.id),
+    ).toEqual(['b']);
     expect(fixture.componentInstance.selection.isEmpty()).toBe(true);
   });
 

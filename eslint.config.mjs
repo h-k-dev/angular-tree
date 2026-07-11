@@ -49,8 +49,18 @@ export default tseslint.config(
   },
   {
     files: ['**/*.html'],
-    ignores: ['node_modules/**', 'dist/**', 'build/**', 'coverage/**', 'src/index.html', 'src/app/app.html'],
-    extends: [...angular.configs.templateRecommended, ...angular.configs.templateAccessibility],
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      'build/**',
+      'coverage/**',
+      'src/index.html',
+      'src/app/app.html',
+    ],
+    extends: [
+      ...angular.configs.templateRecommended,
+      ...angular.configs.templateAccessibility,
+    ],
     rules: {},
   },
 );

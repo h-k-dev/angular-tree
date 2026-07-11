@@ -1,0 +1,181 @@
+<!-- View switcher (PrimeNG-style): code tabs render this example's REAL source
+     files (incl. the Player component), Shiki-highlighted — zero drift. -->
+<header class="demo-card-bar">
+  <!-- Paste any YouTube URL → validate → play → it joins the History root once
+       the player reports PLAYING. -->
+  <form
+    class="media-url"
+    [class.media-url--invalid]="urlError()"
+    (submit)="submitUrl($event)"
+  >
+    <mat-icon class="media-url-icon">{{
+      urlError() ? 'error' : 'link'
+    }}</mat-icon>
+    <input
+      class="media-url-input"
+      type="text"
+      inputmode="url"
+      [value]="pastedUrl()"
+      (input)="onUrlInput($event)"
+      [placeholder]="urlError() ? 'Not a YouTube URL' : 'Paste a YouTube URL…'"
+      [attr.aria-invalid]="urlError() || null"
+      aria-label="Paste a YouTube URL to play and add to History"
+    />
+    <button matIconButton type="submit" aria-label="Play URL">
+      <mat-icon>play_arrow</mat-icon>
+    </button>
+  </form>
+
+  <nav class="demo-tabs" aria-label="Example view">
+    @for (tab of viewTabs; track tab.id) {
+      <button
+        class="demo-tab"
+        [attr.aria-selected]="view() === tab.id"
+        (click)="showView(tab.id)"
+      >
+        {{ tab.label }}
+      </button>
+    }
+  </nav>
+</header>
+
+<!-- The stage fills the viewport: full-bleed player (or poster) with a floating
+     glass library summoned from the top-right button. Pointer/keyboard activity
+     reveals the chrome; it fades after a pause (data-chrome). -->
+<section
+  class="media-stage"
+  [class.demo-hidden]="view() !== 'preview'"
+  [attr.data-chrome]="chromeHidden() ? 'hidden' : null"
+  (pointermove)="revealChrome()"
+  (pointerdown)="revealChrome()"
+  (focusin)="revealChrome()"
+  aria-label="Media example"
+>
+  @if (nowPlaying(); as video) {
+    <app-media-player
+      [video]="video"
+      [chromeHidden]="chromeHidden()"
+      (playing)="onPlaying()"
+      (ended)="onEnded()"
+      (escaped)="onEscaped()"
+      (closed)="onClosed()"
+    />
+  } @else {
+    <div class="media-poster">
+      <mat-icon>movie</mat-icon>
+      <p>
+        Open the library and press <kbd>Enter</kbd> on a video to play it here.
+      </p>
+    </div>
+  }
+
+  <!-- Reveal-catcher: only while the chrome is hidden (over the cross-origin
+       iframe, which otherwise swallows moves). Moving/tapping brings it back. -->
+  @if (chromeHidden()) {
+    <div
+      class="media-reveal"
+      (pointermove)="revealChrome()"
+      (pointerdown)="revealChrome()"
+      aria-hidden="true"
+    ></div>
+  }
+
+  <!-- Click-outside scrim: closes the library on any tap off the panel. Covers
+       the video too (iframe clicks never reach a document listener). -->
+  @if (menuOpen()) {
+    <div
+      class="media-scrim"
+      (pointerdown)="menuOpen.set(false)"
+      aria-hidden="true"
+    ></div>
+  }
+
+  <!-- Floating glass toggle (the "menu bar", top-right). -->
+  <button
+    class="media-fab"
+    (click)="toggleMenu()"
+    [attr.aria-expanded]="menuOpen()"
+    aria-controls="media-library"
+    [attr.aria-label]="(menuOpen() ? 'Hide' : 'Show') + ' library'"
+  >
+    <mat-icon>{{ menuOpen() ? 'close' : 'video_library' }}</mat-icon>
+    <span class="media-fab-label">Library</span>
+  </button>
+
+  <!-- Floating 288px glass panel holding the tree. Kept in the DOM (visibility,
+       not @if) so the viewChild + virtualization measurements stay stable; the
+       tree background is transparent so the frost shows through. -->
+  <aside
+    id="media-library"
+    class="media-menu"
+    [class.media-menu--open]="menuOpen()"
+    [attr.aria-hidden]="!menuOpen() || null"
+    aria-label="Media library"
+  >
+    <header class="media-menu-head">
+      <mat-icon>graphic_eq</mat-icon>
+      <span>Library</span>
+    </header>
+
+    <angular-tree
+      #tree="angularTree"
+      class="media-tree"
+      aria-label="Media library"
+      [dataSource]="library()"
+      [childrenAccessor]="children"
+      [expansionKey]="key"
+      [defaultExpandedKeys]="defaultExpanded"
+      [typeaheadText]="nodeName"
+      [itemSize]="32"
+      [indentGuides]="true"
+      [clickAction]="'select'"
+      (activated)="onActivate($event)"
+    >
+      <!-- Category def — playlist headers; Enter/double-click toggles. -->
+      <ng-container
+        *treeNodeDef="let node; when: isCategory; let isExpanded = isExpanded"
+      >
+        <button
+          treeNodeToggle
+          class="media-toggle"
+          [attr.aria-label]="'Toggle ' + node.name"
+        >
+          <mat-icon>{{
+            isExpanded ? 'expand_more' : 'chevron_right'
+          }}</mat-icon>
+        </button>
+        <mat-icon class="media-icon media-icon--category"
+          >video_library</mat-icon
+        >
+        <span class="media-name">{{ node.name }}</span>
+        <span class="media-meta">{{ node.children.length }}</span>
+      </ng-container>
+
+      <!-- Video def — the fallback. The playing row's equalizer badge derives
+           from nowPlaying(), so it survives row recycling. -->
+      <ng-template treeNodeDef let-node>
+        <span class="media-toggle-spacer"></span>
+        <mat-icon
+          class="media-icon"
+          [class.media-icon--playing]="nowPlaying()?.id === node.id"
+        >
+          {{ nowPlaying()?.id === node.id ? 'play_circle' : 'smart_display' }}
+        </mat-icon>
+        <span class="media-name">{{ node.name }}</span>
+        @if (nowPlaying()?.id === node.id) {
+          <span class="media-eq" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="media-sr">(now playing)</span>
+        }
+        <span class="media-meta">{{ node.duration }}</span>
+      </ng-template>
+    </angular-tree>
+  </aside>
+</section>
+
+@if (view() !== 'preview') {
+  @if (exampleSource()[view()]; as code) {
+    <div class="demo-code" [innerHTML]="code"></div>
+  } @else {
+    <div class="demo-code demo-code--loading">Loading…</div>
+  }
+}

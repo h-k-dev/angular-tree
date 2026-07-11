@@ -10,5 +10,7 @@ export function escapeAttributeValue(value: string): string {
 
 /** The row's rendered DOM element, or `null` outside the rendered range. */
 export function rowElement(host: HTMLElement, key: string): HTMLElement | null {
-  return host.querySelector<HTMLElement>(`[data-node-id="${escapeAttributeValue(key)}"]`);
+  return host.querySelector<HTMLElement>(
+    `[data-node-id="${escapeAttributeValue(key)}"]`,
+  );
 }

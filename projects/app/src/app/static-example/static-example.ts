@@ -1,10 +1,25 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  signal,
+} from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MatIconModule } from '@angular/material/icon';
 
-import { AngularTree, TreeNodeDef, TreeNodeToggle } from '@h-k-dev/angular-tree';
+import {
+  AngularTree,
+  TreeNodeDef,
+  TreeNodeToggle,
+} from '@h-k-dev/angular-tree';
 
-import { containerIds, DESIGN_ICONS, DesignNode, FIGMA_LAYERS, FRAMER_LAYERS } from './design-data';
+import {
+  containerIds,
+  DESIGN_ICONS,
+  DesignNode,
+  FIGMA_LAYERS,
+  FRAMER_LAYERS,
+} from './design-data';
 
 /** Card views: the live panels or one of the example's real source files. */
 type StaticView = 'preview' | 'scss' | 'data';
@@ -55,12 +70,18 @@ export class StaticExample {
   // ---------------------------------------------------------------------------
   // Example view tabs (PrimeNG-style): preview ↔ the example's real sources
   // ---------------------------------------------------------------------------
-  readonly viewTabs = [{ id: 'preview' as const, label: 'Preview' }, ...CODE_TABS];
+  readonly viewTabs = [
+    { id: 'preview' as const, label: 'Preview' },
+    ...CODE_TABS,
+  ];
 
   view = signal<StaticView>('preview');
 
   /** Source files, fetched + Shiki-highlighted once on first view (`source/` assets). */
-  exampleSource = signal<Record<string, SafeHtml | null>>({ scss: null, data: null });
+  exampleSource = signal<Record<string, SafeHtml | null>>({
+    scss: null,
+    data: null,
+  });
 
   showView(view: StaticView) {
     this.view.set(view);
@@ -71,7 +92,9 @@ export class StaticExample {
     const tab = CODE_TABS.find((candidate) => candidate.id === view)!;
     Promise.all([
       fetch(`source/${tab.file}`).then((response) =>
-        response.ok ? response.text() : `// failed to load (${response.status})`,
+        response.ok
+          ? response.text()
+          : `// failed to load (${response.status})`,
       ),
       import('shiki'),
     ])

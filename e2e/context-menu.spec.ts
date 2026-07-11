@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test';
 
-import { builtInMenu, focusedNodeId, rowByName, rows, waitForTree } from './helpers';
+import {
+  builtInMenu,
+  focusedNodeId,
+  rowByName,
+  rows,
+  waitForTree,
+} from './helpers';
 
 /**
  * Phase 8 matrix — built-in `treeContextMenu`: right-click + Shift+F10, at the
@@ -15,14 +21,22 @@ test.describe('built-in context menu', () => {
     await waitForTree(page);
   });
 
-  test('right-click on a row opens the menu; item acts on the node', async ({ page }) => {
+  test('right-click on a row opens the menu; item acts on the node', async ({
+    page,
+  }) => {
     const folder = rowByName(page, 'Cases');
     await folder.click({ button: 'right' });
 
     const menu = builtInMenu(page);
     await expect(menu).toBeVisible();
     // Menu receives focus (keyboard-operable immediately — APG menu pattern).
-    await expect.poll(() => page.evaluate(() => document.activeElement?.closest('.tree-menu') != null)).toBe(true);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.activeElement?.closest('.tree-menu') != null,
+        ),
+      )
+      .toBe(true);
 
     await menu.getByRole('menuitem', { name: 'Collapse' }).click();
     await expect(menu).toBeHidden();
@@ -30,7 +44,9 @@ test.describe('built-in context menu', () => {
     await expect(page.locator('.app-last-intent')).toContainText('collapsed');
   });
 
-  test('Escape closes the menu and focus returns to the row', async ({ page }) => {
+  test('Escape closes the menu and focus returns to the row', async ({
+    page,
+  }) => {
     const folder = rowByName(page, 'Cases');
     const id = await folder.getAttribute('data-node-id');
     await folder.click({ button: 'right' });
@@ -48,7 +64,9 @@ test.describe('built-in context menu', () => {
     await expect(builtInMenu(page)).toBeVisible();
   });
 
-  test('menu opens at both virtualized edges (Home / End targets)', async ({ page }) => {
+  test('menu opens at both virtualized edges (Home / End targets)', async ({
+    page,
+  }) => {
     const first = rows(page).first();
     await first.click();
 
@@ -68,12 +86,16 @@ test.describe('built-in context menu', () => {
     await expect(builtInMenu(page)).toBeVisible();
   });
 
-  test('openContextMenu(node) on a scrolled-away node anchors at its row, not (0,0)', async ({ page }) => {
+  test('openContextMenu(node) on a scrolled-away node anchors at its row, not (0,0)', async ({
+    page,
+  }) => {
     // Drive the public API against the last visible node — outside the
     // rendered range, so its row has no DOM until the tree scrolls it in.
     // Regression: the anchor rect query missed and the menu opened at (0,0).
     const targetKey = await page.evaluate(() => {
-      const ng = (window as unknown as { ng: { getComponent(el: Element): unknown } }).ng;
+      const ng = (
+        window as unknown as { ng: { getComponent(el: Element): unknown } }
+      ).ng;
       const tree = ng.getComponent(document.querySelector('angular-tree')!) as {
         visibleRows(): readonly { key: string; node: unknown }[];
         openContextMenu(node: unknown): void;
@@ -100,11 +122,15 @@ test.describe('built-in context menu', () => {
     expect(anchorDistance).toBeLessThan(menuBox.height + 2 * rowBox.height);
   });
 
-  test('scrolling the viewport closes the menu (settled close-on-scroll)', async ({ page }) => {
+  test('scrolling the viewport closes the menu (settled close-on-scroll)', async ({
+    page,
+  }) => {
     await rowByName(page, 'Cases').click({ button: 'right' });
     await expect(builtInMenu(page)).toBeVisible();
 
-    await page.locator('.tree-viewport').evaluate((viewport) => viewport.scrollBy({ top: 200 }));
+    await page
+      .locator('.tree-viewport')
+      .evaluate((viewport) => viewport.scrollBy({ top: 200 }));
     await expect(builtInMenu(page)).toBeHidden();
   });
 });

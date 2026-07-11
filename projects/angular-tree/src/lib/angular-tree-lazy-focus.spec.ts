@@ -41,7 +41,9 @@ const flushMicrotasks = () => new Promise((resolve) => setTimeout(resolve));
       [collapseBehavior]="collapseBehavior()"
     >
       <!-- "key" from the context — the Phase 14 template-parity contract -->
-      <ng-template treeNodeDef let-node let-key="key">{{ key }}:{{ node.name }}</ng-template>
+      <ng-template treeNodeDef let-node let-key="key"
+        >{{ key }}:{{ node.name }}</ng-template
+      >
     </angular-tree>
   `,
 })
@@ -66,7 +68,8 @@ describe('AngularTree v2 — lazy invalidation & focus', () => {
   let host: Host;
   let tree: AngularTree<DemoNode>;
 
-  const rowEl = (key: string): HTMLElement | null => fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
+  const rowEl = (key: string): HTMLElement | null =>
+    fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
 
   const settle = async () => {
     await fixture.whenStable();
@@ -75,7 +78,9 @@ describe('AngularTree v2 — lazy invalidation & focus', () => {
   };
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [Host],
+    }).compileComponents();
     fixture = TestBed.createComponent(Host);
     host = fixture.componentInstance;
     await fixture.whenStable();
@@ -145,7 +150,9 @@ describe('AngularTree v2 — lazy invalidation & focus', () => {
     await flushMicrotasks();
 
     expect(
-      (document.activeElement as HTMLElement | null)?.closest('[data-node-id]')?.getAttribute('data-node-id'),
+      (document.activeElement as HTMLElement | null)
+        ?.closest('[data-node-id]')
+        ?.getAttribute('data-node-id'),
     ).toBe('a1');
   });
 
@@ -164,7 +171,9 @@ describe('AngularTree v2 — lazy invalidation & focus', () => {
     await settle();
 
     expect(
-      (document.activeElement as HTMLElement | null)?.closest('[data-node-id]')?.getAttribute('data-node-id'),
+      (document.activeElement as HTMLElement | null)
+        ?.closest('[data-node-id]')
+        ?.getAttribute('data-node-id'),
     ).toBe('a2');
   });
 

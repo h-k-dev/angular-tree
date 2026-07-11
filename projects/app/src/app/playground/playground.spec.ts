@@ -24,9 +24,18 @@ describe('Playground', () => {
   });
 
   it('lists every example in the aside', () => {
-    const labels = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.playground-aside-label')].map((el) =>
-      el.textContent?.trim(),
-    );
-    expect(labels).toEqual(['All-In-1', 'Resource API', 'Static', 'VS Code', 'Lazy Load Only']);
+    const labels = [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll(
+        '.playground-aside-label',
+      ),
+    ].map((el) => el.textContent?.trim());
+    expect(labels).toEqual([
+      'All-In-1',
+      'Resource API',
+      'Static',
+      'VS Code',
+      'Lazy Load Only',
+      'Media',
+    ]);
   });
 });

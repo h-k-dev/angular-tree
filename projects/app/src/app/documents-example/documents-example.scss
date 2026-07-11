@@ -85,8 +85,14 @@
 // PrimeNG-style view switcher: Preview / HTML / TS / SCSS.
 .demo-tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.25rem;
+  min-inline-size: 0; // let the strip shrink so it scrolls instead of wrapping
+  overflow-x: auto;
+
+  .demo-tab {
+    flex: 0 0 auto; // each tab keeps its width; the row scrolls sideways
+  }
 }
 
 .demo-tab {
@@ -99,7 +105,11 @@
   cursor: pointer;
 
   &:hover {
-    background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 8%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--mat-sys-on-surface-variant) 8%,
+      transparent
+    );
   }
 
   &[aria-selected='true'] {

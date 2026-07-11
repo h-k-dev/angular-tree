@@ -83,7 +83,12 @@ export const TREE_NODE = new InjectionToken<TreeNodeHandle>('TREE_NODE');
 export type TreeChildrenAccessor<T> = (
   node: T,
   signal?: AbortSignal,
-) => readonly T[] | null | undefined | Promise<readonly T[]> | Observable<readonly T[]>;
+) =>
+  | readonly T[]
+  | null
+  | undefined
+  | Promise<readonly T[]>
+  | Observable<readonly T[]>;
 export type TreeExpansionKey<T> = (node: T) => string;
 
 /** Argument to the `disableDrop` predicate (Phase 4 three-zone drop math). */

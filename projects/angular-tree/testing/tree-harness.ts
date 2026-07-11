@@ -27,7 +27,11 @@ export interface TreeNodeHarnessFilters extends BaseHarnessFilters {
 export type TreeDropZone = 'before' | 'inside' | 'after';
 
 /** Pointer offset into a row per zone — safely inside the 25/50/25 bands. */
-const ZONE_RATIO: Record<TreeDropZone, number> = { before: 0.1, inside: 0.5, after: 0.9 };
+const ZONE_RATIO: Record<TreeDropZone, number> = {
+  before: 0.1,
+  inside: 0.5,
+  after: 0.9,
+};
 
 /**
  * Fake-mouse-event payload the CDK drag internals accept: they measure
@@ -35,7 +39,10 @@ const ZONE_RATIO: Record<TreeDropZone, number> = { before: 0.1, inside: 0.5, aft
  * coordinates — synthetic ones must carry both), and treat `buttons === 0 ||
  * detail === 0` as a screen-reader fake that aborts the drag.
  */
-function mouseEventData(point: { x: number; y: number }): Record<string, number> {
+function mouseEventData(point: {
+  x: number;
+  y: number;
+}): Record<string, number> {
   return {
     button: 0,
     buttons: 1,
@@ -55,13 +62,33 @@ function mouseEventData(point: { x: number; y: number }): Record<string, number>
 export class TreeNodeHarness extends ComponentHarness {
   static hostSelector = '.tree-node';
 
-  static with(options: TreeNodeHarnessFilters = {}): HarnessPredicate<TreeNodeHarness> {
+  static with(
+    options: TreeNodeHarnessFilters = {},
+  ): HarnessPredicate<TreeNodeHarness> {
     return new HarnessPredicate(TreeNodeHarness, options)
-      .addOption('text', options.text, (harness, text) => HarnessPredicate.stringMatches(harness.getText(), text))
-      .addOption('key', options.key, async (harness, key) => (await harness.getKey()) === key)
-      .addOption('level', options.level, async (harness, level) => (await harness.getLevel()) === level)
-      .addOption('expanded', options.expanded, async (harness, expanded) => (await harness.isExpanded()) === expanded)
-      .addOption('selected', options.selected, async (harness, selected) => (await harness.isSelected()) === selected);
+      .addOption('text', options.text, (harness, text) =>
+        HarnessPredicate.stringMatches(harness.getText(), text),
+      )
+      .addOption(
+        'key',
+        options.key,
+        async (harness, key) => (await harness.getKey()) === key,
+      )
+      .addOption(
+        'level',
+        options.level,
+        async (harness, level) => (await harness.getLevel()) === level,
+      )
+      .addOption(
+        'expanded',
+        options.expanded,
+        async (harness, expanded) => (await harness.isExpanded()) === expanded,
+      )
+      .addOption(
+        'selected',
+        options.selected,
+        async (harness, selected) => (await harness.isSelected()) === selected,
+      );
   }
 
   /** Trimmed, whitespace-collapsed text of the whole row template. */
@@ -97,7 +124,11 @@ export class TreeNodeHarness extends ComponentHarness {
   /** Tri-state under `checkboxSelection` (`aria-checked`; `mixed` → `indeterminate`). */
   async getCheckState(): Promise<CheckState> {
     const checked = await (await this.host()).getAttribute('aria-checked');
-    return checked === 'mixed' ? 'indeterminate' : checked === 'true' ? 'checked' : 'unchecked';
+    return checked === 'mixed'
+      ? 'indeterminate'
+      : checked === 'true'
+        ? 'checked'
+        : 'unchecked';
   }
 
   /** Expands via the template's `treeNodeToggle`. No-op when already expanded or a leaf. */
@@ -134,7 +165,10 @@ export class TreeNodeHarness extends ComponentHarness {
   }
 
   /** Internal (`_` per STYLE.md): `TreeHarness.dragTo` drives the pointer from outside. */
-  async _dispatchMouse(type: string, point: { x: number; y: number }): Promise<void> {
+  async _dispatchMouse(
+    type: string,
+    point: { x: number; y: number },
+  ): Promise<void> {
     await (await this.host()).dispatchEvent(type, mouseEventData(point));
   }
 
@@ -180,7 +214,9 @@ export class TreeHarness extends ComponentHarness {
    * is the rendered window, not the whole visible set — scroll (or size the
    * host) to materialize more.
    */
-  async getVisibleNodes(filters: TreeNodeHarnessFilters = {}): Promise<TreeNodeHarness[]> {
+  async getVisibleNodes(
+    filters: TreeNodeHarnessFilters = {},
+  ): Promise<TreeNodeHarness[]> {
     return this.locatorForAll(TreeNodeHarness.with(filters))();
   }
 
@@ -237,7 +273,10 @@ export class TreeHarness extends ComponentHarness {
    * index × itemSize), assuming scroll offset 0 — which layoutless
    * environments cannot scroll away from anyway.
    */
-  async #dropPoint(node: TreeNodeHarness, zone: TreeDropZone): Promise<{ x: number; y: number }> {
+  async #dropPoint(
+    node: TreeNodeHarness,
+    zone: TreeDropZone,
+  ): Promise<{ x: number; y: number }> {
     const rect = await node._rect();
     if (rect.height > 0) {
       return { x: rect.left + 8, y: rect.top + rect.height * ZONE_RATIO[zone] };

@@ -23,7 +23,11 @@ const DATA: DemoNode[] = [
 @Component({
   imports: [AngularTree, TreeNodeDef, TreeNodeDragHandle],
   template: `
-    <angular-tree [dataSource]="data" [childrenAccessor]="children" [expansionKey]="key">
+    <angular-tree
+      [dataSource]="data"
+      [childrenAccessor]="children"
+      [expansionKey]="key"
+    >
       <ng-template treeNodeDef let-node>
         <span treeNodeDragHandle class="grip">::</span>
         {{ node.name }}
@@ -42,7 +46,9 @@ describe('TreeNodeDragHandle', () => {
   let fixture: ComponentFixture<Host>;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [Host],
+    }).compileComponents();
     fixture = TestBed.createComponent(Host);
     await fixture.whenStable();
   });

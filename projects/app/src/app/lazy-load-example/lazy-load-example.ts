@@ -1,18 +1,41 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  signal,
+} from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { defer, Observable } from 'rxjs';
 
-import { AngularTree, MoveEvent, TreeDropContext, TreeNodeDef, TreeNodeToggle } from '@h-k-dev/angular-tree';
+import {
+  AngularTree,
+  MoveEvent,
+  TreeDropContext,
+  TreeNodeDef,
+  TreeNodeToggle,
+} from '@h-k-dev/angular-tree';
 
-import { applyMove, attachChildren, fetchChildren, isBranch, LazyNode, rootNodes } from './lazy-sources';
+import {
+  applyMove,
+  attachChildren,
+  fetchChildren,
+  isBranch,
+  LazyNode,
+  rootNodes,
+} from './lazy-sources';
 
 /** Card views: the live panel or one of the example's real source files. */
 type LazyView = 'preview' | 'html' | 'ts' | 'scss' | 'data';
 
 const CODE_TABS = [
-  { id: 'html', label: 'HTML', file: 'lazy-load-example.html', lang: 'angular-html' },
+  {
+    id: 'html',
+    label: 'HTML',
+    file: 'lazy-load-example.html',
+    lang: 'angular-html',
+  },
   { id: 'ts', label: 'TS', file: 'lazy-load-example.ts', lang: 'angular-ts' },
   { id: 'scss', label: 'SCSS', file: 'lazy-load-example.scss', lang: 'scss' },
   { id: 'data', label: 'Data', file: 'lazy-sources.ts', lang: 'angular-ts' },
@@ -30,7 +53,13 @@ const CODE_TABS = [
  */
 @Component({
   selector: 'app-lazy-load-example',
-  imports: [MatButtonModule, MatIconModule, AngularTree, TreeNodeDef, TreeNodeToggle],
+  imports: [
+    MatButtonModule,
+    MatIconModule,
+    AngularTree,
+    TreeNodeDef,
+    TreeNodeToggle,
+  ],
   templateUrl: './lazy-load-example.html',
   styleUrl: './lazy-load-example.scss',
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -71,7 +100,9 @@ export class LazyLoadExample {
    * interaction). `defer` executes only when the tree SUBSCRIBES, which it
    * does exclusively on expand intent.
    */
-  children = (node: LazyNode): readonly LazyNode[] | undefined | Observable<readonly LazyNode[]> => {
+  children = (
+    node: LazyNode,
+  ): readonly LazyNode[] | undefined | Observable<readonly LazyNode[]> => {
     if (!isBranch(node)) return undefined;
     if (node.children !== undefined) return node.children;
     return defer(() => this.#load(node));
@@ -116,12 +147,20 @@ export class LazyLoadExample {
   // ---------------------------------------------------------------------------
   // Example view tabs (PrimeNG-style): preview ↔ the example's real sources
   // ---------------------------------------------------------------------------
-  readonly viewTabs = [{ id: 'preview' as const, label: 'Preview' }, ...CODE_TABS];
+  readonly viewTabs = [
+    { id: 'preview' as const, label: 'Preview' },
+    ...CODE_TABS,
+  ];
 
   view = signal<LazyView>('preview');
 
   /** Source files, fetched + Shiki-highlighted once on first view (`source/` assets). */
-  exampleSource = signal<Record<string, SafeHtml | null>>({ html: null, ts: null, scss: null, data: null });
+  exampleSource = signal<Record<string, SafeHtml | null>>({
+    html: null,
+    ts: null,
+    scss: null,
+    data: null,
+  });
 
   showView(view: LazyView) {
     this.view.set(view);
@@ -130,7 +169,9 @@ export class LazyLoadExample {
     const tab = CODE_TABS.find((candidate) => candidate.id === view)!;
     Promise.all([
       fetch(`source/${tab.file}`).then((response) =>
-        response.ok ? response.text() : `// failed to load (${response.status})`,
+        response.ok
+          ? response.text()
+          : `// failed to load (${response.status})`,
       ),
       import('shiki'),
     ])

@@ -62,12 +62,15 @@ const flushMicrotasks = () => new Promise((resolve) => setTimeout(resolve));
 class Host {
   data = DATA;
   /** Lazy nodes resolve through a swappable resolver so tests control timing. */
-  lazyResolver: () => Promise<DemoNode[]> = () => Promise.resolve([{ id: 'c1', name: 'C1' }]);
-  children = (node: DemoNode) => (node.lazy ? this.lazyResolver() : node.children);
+  lazyResolver: () => Promise<DemoNode[]> = () =>
+    Promise.resolve([{ id: 'c1', name: 'C1' }]);
+  children = (node: DemoNode) =>
+    node.lazy ? this.lazyResolver() : node.children;
   key = (node: DemoNode) => node.id;
   selection = new SelectionModel<string>(true);
   term = signal('');
-  match = (node: DemoNode, term: string) => node.name.toLowerCase().includes(term.toLowerCase());
+  match = (node: DemoNode, term: string) =>
+    node.name.toLowerCase().includes(term.toLowerCase());
   text = (node: DemoNode) => node.name;
   readonly tree = viewChild.required<AngularTree<DemoNode>>(AngularTree);
 }
@@ -77,7 +80,9 @@ describe('AngularTree', () => {
   let tree: AngularTree<DemoNode>;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [Host],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(Host);
     await fixture.whenStable();
@@ -94,7 +99,13 @@ describe('AngularTree', () => {
 
   it('expand reveals children; collapse hides them', () => {
     tree.expand(DATA[0]);
-    expect(tree.visibleRows().map((row) => row.key)).toEqual(['a', 'a1', 'a2', 'b', 'c']);
+    expect(tree.visibleRows().map((row) => row.key)).toEqual([
+      'a',
+      'a1',
+      'a2',
+      'b',
+      'c',
+    ]);
 
     tree.collapse(DATA[0]);
     expect(tree.visibleRows().map((row) => row.key)).toEqual(['a', 'b', 'c']);
@@ -136,7 +147,9 @@ describe('AngularTree', () => {
       .injector.get(TREE_NODE);
 
     handle.toggleSelection();
-    expect(new Set(selection.selected)).toEqual(new Set(['a', 'a1', 'a2', 'a2x']));
+    expect(new Set(selection.selected)).toEqual(
+      new Set(['a', 'a1', 'a2', 'a2x']),
+    );
     expect(handle.checkState()).toBe('checked');
 
     selection.deselect('a2x'); // external model write flows back in
@@ -151,7 +164,11 @@ describe('AngularTree', () => {
 
     host.term.set('a2x');
     await fixture.whenStable();
-    expect(tree.visibleRows().map((row) => row.key)).toEqual(['a', 'a2', 'a2x']);
+    expect(tree.visibleRows().map((row) => row.key)).toEqual([
+      'a',
+      'a2',
+      'a2x',
+    ]);
 
     host.term.set('');
     await fixture.whenStable();
@@ -174,12 +191,22 @@ describe('AngularTree', () => {
 
   describe('keyboard', () => {
     function keydown(key: string, init: KeyboardEventInit = {}) {
-      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
-      fixture.nativeElement.querySelector('cdk-virtual-scroll-viewport')!.dispatchEvent(event);
+      const event = new KeyboardEvent('keydown', {
+        key,
+        bubbles: true,
+        cancelable: true,
+        ...init,
+      });
+      fixture.nativeElement
+        .querySelector('cdk-virtual-scroll-viewport')!
+        .dispatchEvent(event);
       return event;
     }
 
-    const tabIndexes = () => Object.fromEntries(tree.visibleRows().map((row) => [row.key, row.tabIndex()]));
+    const tabIndexes = () =>
+      Object.fromEntries(
+        tree.visibleRows().map((row) => [row.key, row.tabIndex()]),
+      );
 
     it('starts with the first row as the roving tab stop', () => {
       expect(tabIndexes()).toEqual({ a: 0, b: -1, c: -1 });
@@ -224,14 +251,20 @@ describe('AngularTree', () => {
 
     it('F2 is NOT built in — rename has no shipped gesture, edit() is the wiring point', () => {
       keydown('F2');
-      expect(tree.visibleRows().find((r) => r.key === 'a')!.context.isEditing).toBe(false);
+      expect(
+        tree.visibleRows().find((r) => r.key === 'a')!.context.isEditing,
+      ).toBe(false);
       tree.edit(DATA[0]);
-      expect(tree.visibleRows().find((r) => r.key === 'a')!.context.isEditing).toBe(true);
+      expect(
+        tree.visibleRows().find((r) => r.key === 'a')!.context.isEditing,
+      ).toBe(true);
     });
 
     it('Space toggles selection with cascade semantics', () => {
       keydown(' ');
-      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(new Set(['a', 'a1', 'a2', 'a2x']));
+      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+        new Set(['a', 'a1', 'a2', 'a2x']),
+      );
     });
 
     it('Shift+Space range-selects from the anchor over visible order (APG optional)', () => {
@@ -246,21 +279,27 @@ describe('AngularTree', () => {
 
     it('Ctrl+A selects all visible rows; Ctrl+A again clears (APG optional)', () => {
       keydown('a', { ctrlKey: true });
-      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(new Set(['a', 'b', 'c']));
+      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+        new Set(['a', 'b', 'c']),
+      );
       keydown('a', { ctrlKey: true });
       expect(fixture.componentInstance.selection.selected).toEqual([]);
     });
 
     it('Ctrl+Shift+End selects to the last node and moves focus there (APG optional)', () => {
       keydown('End', { ctrlKey: true, shiftKey: true });
-      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(new Set(['a', 'b', 'c']));
+      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+        new Set(['a', 'b', 'c']),
+      );
       expect(tabIndexes()['c']).toBe(0);
     });
 
     it('Ctrl+Shift+Home selects to the first node and moves focus there (APG optional)', () => {
       keydown('End'); // focus 'c' first
       keydown('Home', { ctrlKey: true, shiftKey: true });
-      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(new Set(['a', 'b', 'c']));
+      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+        new Set(['a', 'b', 'c']),
+      );
       expect(tabIndexes()['a']).toBe(0);
     });
 
@@ -272,7 +311,9 @@ describe('AngularTree', () => {
 
     it('Escape clears the selection but never focus, and announces the clear', async () => {
       keydown(' '); // select 'a' (+ cascade), focus on 'a'
-      expect(fixture.componentInstance.selection.selected.length).toBeGreaterThan(0);
+      expect(
+        fixture.componentInstance.selection.selected.length,
+      ).toBeGreaterThan(0);
 
       const escape = keydown('Escape');
       expect(fixture.componentInstance.selection.selected).toEqual([]);
@@ -281,7 +322,9 @@ describe('AngularTree', () => {
 
       // Mass deselects are visually loud but aurally silent without this.
       await new Promise((resolve) => setTimeout(resolve, 150));
-      expect(document.querySelector('.cdk-live-announcer-element')?.textContent).toBe('Selection cleared');
+      expect(
+        document.querySelector('.cdk-live-announcer-element')?.textContent,
+      ).toBe('Selection cleared');
     });
 
     it('Escape ladder: cancels a move-mark first, clears selection second, then bubbles', () => {
@@ -289,7 +332,9 @@ describe('AngularTree', () => {
       keydown('x', { ctrlKey: true }); // mark a move
 
       keydown('Escape'); // layer 1: unmark, selection intact
-      expect(fixture.componentInstance.selection.selected.length).toBeGreaterThan(0);
+      expect(
+        fixture.componentInstance.selection.selected.length,
+      ).toBeGreaterThan(0);
 
       keydown('Escape'); // layer 2: clear selection
       expect(fixture.componentInstance.selection.selected).toEqual([]);
@@ -309,7 +354,13 @@ describe('AngularTree', () => {
       keydown('ArrowUp'); // b
       fixture.nativeElement
         .querySelector('cdk-virtual-scroll-viewport')!
-        .dispatchEvent(new KeyboardEvent('keydown', { key: 'x', ctrlKey: true, bubbles: true }));
+        .dispatchEvent(
+          new KeyboardEvent('keydown', {
+            key: 'x',
+            ctrlKey: true,
+            bubbles: true,
+          }),
+        );
       expect(
         tree
           .visibleRows()
@@ -320,7 +371,13 @@ describe('AngularTree', () => {
       keydown('Home'); // a
       fixture.nativeElement
         .querySelector('cdk-virtual-scroll-viewport')!
-        .dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true }));
+        .dispatchEvent(
+          new KeyboardEvent('keydown', {
+            key: 'v',
+            ctrlKey: true,
+            bubbles: true,
+          }),
+        );
 
       expect(moves).toEqual([
         {
@@ -343,18 +400,40 @@ describe('AngularTree', () => {
     it('keyboard move respects guards and Escape clears the mark', () => {
       const moves: MoveEvent<DemoNode>[] = [];
       tree.moved.subscribe((event) => moves.push(event));
-      const viewport = fixture.nativeElement.querySelector('cdk-virtual-scroll-viewport')!;
+      const viewport = fixture.nativeElement.querySelector(
+        'cdk-virtual-scroll-viewport',
+      )!;
 
       // Mark 'a', try to drop into its own descendant → guarded no-op.
-      viewport.dispatchEvent(new KeyboardEvent('keydown', { key: 'x', ctrlKey: true, bubbles: true }));
+      viewport.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'x',
+          ctrlKey: true,
+          bubbles: true,
+        }),
+      );
       tree.expand(DATA[0]);
       keydown('ArrowDown'); // a1... drop after a1 would be inside parent a — guarded
-      viewport.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, shiftKey: true, bubbles: true }));
+      viewport.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'v',
+          ctrlKey: true,
+          shiftKey: true,
+          bubbles: true,
+        }),
+      );
       expect(moves).toEqual([]);
 
       keydown('Escape');
       keydown('End'); // c
-      viewport.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, shiftKey: true, bubbles: true }));
+      viewport.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'v',
+          ctrlKey: true,
+          shiftKey: true,
+          bubbles: true,
+        }),
+      );
       expect(moves).toEqual([]); // mark was cleared — nothing to drop
     });
 
@@ -384,7 +463,9 @@ describe('AngularTree', () => {
 
       await flushMicrotasks();
       expect(tree.visibleRows().map((r) => r.key)).toContain('c1');
-      expect(tree.visibleRows().find((r) => r.key === 'c')!.context.isLoading).toBe(false);
+      expect(
+        tree.visibleRows().find((r) => r.key === 'c')!.context.isLoading,
+      ).toBe(false);
       expect(events).toEqual([{ id: 'c', node: DATA[2], status: 'loaded' }]);
     });
 
@@ -399,14 +480,20 @@ describe('AngularTree', () => {
 
       failTree.expand(DATA[2]);
       await flushMicrotasks();
-      expect(failTree.visibleRows().find((r) => r.key === 'c')!.context.hasError).toBe(true);
-      expect(failTree.visibleRows().find((r) => r.key === 'c')!.context.isLoading).toBe(false);
+      expect(
+        failTree.visibleRows().find((r) => r.key === 'c')!.context.hasError,
+      ).toBe(true);
+      expect(
+        failTree.visibleRows().find((r) => r.key === 'c')!.context.isLoading,
+      ).toBe(false);
 
       host.lazyResolver = () => Promise.resolve([{ id: 'c1', name: 'C1' }]);
       failTree.retryChildren(DATA[2]);
       await flushMicrotasks();
       expect(failTree.visibleRows().map((r) => r.key)).toContain('c1');
-      expect(failTree.visibleRows().find((r) => r.key === 'c')!.context.hasError).toBe(false);
+      expect(
+        failTree.visibleRows().find((r) => r.key === 'c')!.context.hasError,
+      ).toBe(false);
     });
 
     it('load state reaches the row DOM with no other interaction (zoneless CD)', async () => {
@@ -418,12 +505,16 @@ describe('AngularTree', () => {
       const failFixture = TestBed.createComponent(Host);
       const host = failFixture.componentInstance;
       let rejectLoad!: (error: unknown) => void;
-      host.lazyResolver = () => new Promise((_, reject) => (rejectLoad = reject));
+      host.lazyResolver = () =>
+        new Promise((_, reject) => (rejectLoad = reject));
       await failFixture.whenStable();
 
       failFixture.componentInstance.tree().expand(DATA[2]);
       await failFixture.whenStable();
-      const row = () => failFixture.nativeElement.querySelector('[data-node-id="c"]') as HTMLElement;
+      const row = () =>
+        failFixture.nativeElement.querySelector(
+          '[data-node-id="c"]',
+        ) as HTMLElement;
       expect(row().getAttribute('data-loading')).toBe('true');
 
       rejectLoad(new Error('offline'));
@@ -441,7 +532,12 @@ describe('AngularTree (RTL)', () => {
   it('flips ArrowLeft to expand via Directionality', async () => {
     TestBed.configureTestingModule({
       imports: [Host],
-      providers: [{ provide: Directionality, useValue: { value: 'rtl', change: new Subject() } }],
+      providers: [
+        {
+          provide: Directionality,
+          useValue: { value: 'rtl', change: new Subject() },
+        },
+      ],
     });
     const fixture = TestBed.createComponent(Host);
     await fixture.whenStable();
@@ -449,7 +545,13 @@ describe('AngularTree (RTL)', () => {
 
     fixture.nativeElement
       .querySelector('cdk-virtual-scroll-viewport')!
-      .dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }));
+      .dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'ArrowLeft',
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
     expect(tree.isExpanded(DATA[0])).toBe(true);
   });
 });

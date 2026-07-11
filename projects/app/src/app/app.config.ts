@@ -1,4 +1,7 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  ApplicationConfig,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { MAT_ICON_DEFAULT_OPTIONS } from '@angular/material/icon';
 
@@ -12,6 +15,9 @@ export const appConfig: ApplicationConfig = {
     // classic 'material-icons' default would render some as literal text
     // (draft, progress_activity, folder_managed). index.html loads the
     // matching stylesheet.
-    { provide: MAT_ICON_DEFAULT_OPTIONS, useValue: { fontSet: 'material-symbols-outlined' } },
+    {
+      provide: MAT_ICON_DEFAULT_OPTIONS,
+      useValue: { fontSet: 'material-symbols-outlined' },
+    },
   ],
 };

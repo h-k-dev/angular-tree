@@ -4,12 +4,22 @@
   <mat-dialog-content>
     <mat-form-field class="rename-field" appearance="outline">
       <mat-label>New name</mat-label>
-      <input matInput autocomplete="off" [value]="name()" (input)="onInput($event)" (focus)="onFocus($event)" />
+      <input
+        matInput
+        autocomplete="off"
+        [value]="name()"
+        (input)="onInput($event)"
+        (focus)="onFocus($event)"
+      />
     </mat-form-field>
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
-    <button matButton type="button" [mat-dialog-close]="undefined">Cancel</button>
-    <button matButton="filled" type="submit" [disabled]="!name().trim()">Rename</button>
+    <button matButton type="button" [mat-dialog-close]="undefined">
+      Cancel
+    </button>
+    <button matButton="filled" type="submit" [disabled]="!name().trim()">
+      Rename
+    </button>
   </mat-dialog-actions>
 </form>

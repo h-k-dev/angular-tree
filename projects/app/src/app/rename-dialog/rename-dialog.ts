@@ -1,5 +1,14 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  signal,
+} from '@angular/core';
+import {
+  MAT_DIALOG_DATA,
+  MatDialogModule,
+  MatDialogRef,
+} from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -12,7 +21,12 @@ import { MatInputModule } from '@angular/material/input';
  */
 @Component({
   selector: 'app-rename-dialog',
-  imports: [MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule],
+  imports: [
+    MatDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+  ],
   templateUrl: './rename-dialog.html',
   styleUrl: './rename-dialog.scss',
   changeDetection: ChangeDetectionStrategy.Eager,

@@ -10,12 +10,16 @@ import { rowByName, scrollViewport, waitForTree } from './helpers';
  * retry — exactly the consumer recipe the docs prescribe.
  */
 test.describe('lazy-load error → retry', () => {
-  test('first load errors into the Retry affordance; Retry recovers', async ({ page }) => {
+  test('first load errors into the Retry affordance; Retry recovers', async ({
+    page,
+  }) => {
     await page.goto('/');
     await waitForTree(page);
 
     // The flaky root sits at the very bottom of ~2.6k expanded rows.
-    const scrollHeight = await page.locator('.tree-viewport').evaluate((viewport) => viewport.scrollHeight);
+    const scrollHeight = await page
+      .locator('.tree-viewport')
+      .evaluate((viewport) => viewport.scrollHeight);
     await scrollViewport(page, scrollHeight);
 
     const flaky = rowByName(page, 'Flaky server');
@@ -35,7 +39,9 @@ test.describe('lazy-load error → retry', () => {
     // Retry re-runs the accessor; the second attempt resolves (~1.2s).
     await retry.click();
     await expect(flaky.locator('.node-icon--spin')).toBeVisible();
-    await expect(page.locator('[data-node-id^="flaky/"]').first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('[data-node-id^="flaky/"]').first()).toBeVisible({
+      timeout: 5_000,
+    });
     await expect(retry).toHaveCount(0);
   });
 });

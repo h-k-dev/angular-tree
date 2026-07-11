@@ -15,13 +15,27 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 // Angular Tree
-import { AngularTree, TreeEmptyDef, TreeNodeDef, TreeNodeToggle } from '@h-k-dev/angular-tree';
+import {
+  AngularTree,
+  TreeEmptyDef,
+  TreeNodeDef,
+  TreeNodeToggle,
+} from '@h-k-dev/angular-tree';
 
 import { FileSize } from '../file-size';
-import { buildGitTree, GitNode, GitTreeEntry, isGitFolder } from './git-tree-data';
+import {
+  buildGitTree,
+  GitNode,
+  GitTreeEntry,
+  isGitFolder,
+} from './git-tree-data';
 
 /** Public, CORS-enabled, no auth — switching repos re-runs the loader. */
-const REPOS = ['brimdata/react-arborist', 'chenglou/pretext', 'angular/components'] as const;
+const REPOS = [
+  'brimdata/react-arborist',
+  'chenglou/pretext',
+  'angular/components',
+] as const;
 type Repo = (typeof REPOS)[number];
 
 /** Card views: the live example or one of its real source files. */
@@ -34,7 +48,12 @@ type ResourceView = 'preview' | 'html' | 'ts' | 'scss' | 'data';
  * mapping the tree consumes (`git-tree-data.ts`).
  */
 const CODE_TABS = [
-  { id: 'html', label: 'HTML', file: 'resource-example.html', lang: 'angular-html' },
+  {
+    id: 'html',
+    label: 'HTML',
+    file: 'resource-example.html',
+    lang: 'angular-html',
+  },
   { id: 'ts', label: 'TS', file: 'resource-example.ts', lang: 'angular-ts' },
   { id: 'scss', label: 'SCSS', file: 'resource-example.scss', lang: 'scss' },
   { id: 'data', label: 'Data', file: 'git-tree-data.ts', lang: 'angular-ts' },
@@ -81,10 +100,14 @@ export class ResourceExample {
   readonly rawData = resource({
     params: () => this.repo(),
     loader: async ({ params: repo, abortSignal }) => {
-      const response = await fetch(`https://api.github.com/repos/${repo}/git/trees/HEAD?recursive=1`, {
-        signal: abortSignal,
-      });
-      if (!response.ok) throw new Error(`GitHub answered ${response.status} for ${repo}`);
+      const response = await fetch(
+        `https://api.github.com/repos/${repo}/git/trees/HEAD?recursive=1`,
+        {
+          signal: abortSignal,
+        },
+      );
+      if (!response.ok)
+        throw new Error(`GitHub answered ${response.status} for ${repo}`);
       const body = (await response.json()) as { tree: GitTreeEntry[] };
       return body.tree;
     },
@@ -96,9 +119,13 @@ export class ResourceExample {
    * empty one. The `previous` parameter is exactly why this is a
    * `linkedSignal` and not a `computed` (STYLE.md § State & Signals).
    */
-  readonly nodes = linkedSignal<readonly GitTreeEntry[] | undefined, readonly GitNode[]>({
+  readonly nodes = linkedSignal<
+    readonly GitTreeEntry[] | undefined,
+    readonly GitNode[]
+  >({
     source: () => (this.rawData.hasValue() ? this.rawData.value() : undefined),
-    computation: (entries, previous) => (entries ? buildGitTree(entries) : (previous?.value ?? [])),
+    computation: (entries, previous) =>
+      entries ? buildGitTree(entries) : (previous?.value ?? []),
   });
 
   /// Accessors: the tree never learns the GitNode shape (ROADMAP locked).
@@ -110,12 +137,20 @@ export class ResourceExample {
   // ---------------------------------------------------------------------------
   // Example view tabs (PrimeNG-style): preview ↔ the example's real sources
   // ---------------------------------------------------------------------------
-  readonly viewTabs = [{ id: 'preview' as const, label: 'Preview' }, ...CODE_TABS];
+  readonly viewTabs = [
+    { id: 'preview' as const, label: 'Preview' },
+    ...CODE_TABS,
+  ];
 
   view = signal<ResourceView>('preview');
 
   /** Source files, fetched + Shiki-highlighted once on first view (`source/` assets). */
-  exampleSource = signal<Record<string, SafeHtml | null>>({ html: null, ts: null, scss: null, data: null });
+  exampleSource = signal<Record<string, SafeHtml | null>>({
+    html: null,
+    ts: null,
+    scss: null,
+    data: null,
+  });
 
   showView(view: ResourceView) {
     this.view.set(view);
@@ -126,7 +161,9 @@ export class ResourceExample {
     const tab = CODE_TABS.find((candidate) => candidate.id === view)!;
     Promise.all([
       fetch(`source/${tab.file}`).then((response) =>
-        response.ok ? response.text() : `// failed to load (${response.status})`,
+        response.ok
+          ? response.text()
+          : `// failed to load (${response.status})`,
       ),
       import('shiki'),
     ])

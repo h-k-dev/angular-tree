@@ -29,7 +29,8 @@ export interface GitFile {
 
 export type GitNode = GitFolder | GitFile;
 
-export const isGitFolder = (node: GitNode): node is GitFolder => node.kind === 'folder';
+export const isGitFolder = (node: GitNode): node is GitFolder =>
+  node.kind === 'folder';
 
 /**
  * Nests the flat path list. Order-independent: folders index by path as they
@@ -38,7 +39,9 @@ export const isGitFolder = (node: GitNode): node is GitFolder => node.kind === '
  * contents belong to another repository. Folders sort before files,
  * each alphabetically (file-manager convention).
  */
-export function buildGitTree(entries: readonly GitTreeEntry[]): readonly GitNode[] {
+export function buildGitTree(
+  entries: readonly GitTreeEntry[],
+): readonly GitNode[] {
   const roots: GitNode[] = [];
   const folders = new Map<string, GitFolder>();
   const nameOf = (path: string) => path.slice(path.lastIndexOf('/') + 1);
@@ -47,7 +50,12 @@ export function buildGitTree(entries: readonly GitTreeEntry[]): readonly GitNode
   // emits parents first, but the mapping must not depend on that.
   for (const entry of entries) {
     if (entry.type !== 'tree') continue;
-    folders.set(entry.path, { kind: 'folder', path: entry.path, name: nameOf(entry.path), children: [] });
+    folders.set(entry.path, {
+      kind: 'folder',
+      path: entry.path,
+      name: nameOf(entry.path),
+      children: [],
+    });
   }
 
   const siblingsOf = (path: string): GitNode[] => {
@@ -61,13 +69,25 @@ export function buildGitTree(entries: readonly GitTreeEntry[]): readonly GitNode
     if (entry.type === 'tree') {
       siblingsOf(entry.path).push(folders.get(entry.path)!);
     } else if (entry.type === 'blob') {
-      siblingsOf(entry.path).push({ kind: 'file', path: entry.path, name: nameOf(entry.path), size: entry.size ?? 0 });
+      siblingsOf(entry.path).push({
+        kind: 'file',
+        path: entry.path,
+        name: nameOf(entry.path),
+        size: entry.size ?? 0,
+      });
     }
   }
 
   const sortLevel = (nodes: GitNode[]) => {
-    nodes.sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind === 'folder' ? -1 : 1));
-    for (const node of nodes) if (node.kind === 'folder') sortLevel(node.children);
+    nodes.sort((a, b) =>
+      a.kind === b.kind
+        ? a.name.localeCompare(b.name)
+        : a.kind === 'folder'
+          ? -1
+          : 1,
+    );
+    for (const node of nodes)
+      if (node.kind === 'folder') sortLevel(node.children);
   };
   sortLevel(roots);
   return roots;

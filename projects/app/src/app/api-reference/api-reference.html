@@ -3,9 +3,10 @@
   <h2 class="demo-card-title">Theming tokens</h2>
   <p class="demo-card-hint">
     Every visual aspect resolves through a three-step chain, at point of use:
-    <code>--tree-*</code> &rarr; <code>--mat-sys-*</code> &rarr; hardcoded fallback. Set any token on
-    <code>:root</code>, a layout container, or the element itself &mdash; with a Material M3 theme present (like this
-    demo), dark mode is automatic.
+    <code>--tree-*</code> &rarr; <code>--mat-sys-*</code> &rarr; hardcoded
+    fallback. Set any token on <code>:root</code>, a layout container, or the
+    element itself &mdash; with a Material M3 theme present (like this demo),
+    dark mode is automatic.
   </p>
   <div class="api-table-scroll">
     <table class="api-table">
@@ -40,12 +41,15 @@
     </table>
   </div>
   <p class="demo-card-hint">
-    Read-only variables the tree <em>publishes</em>: <code>--tree-level</code> (per row) and
-    <code>--tree-row-height</code> (the <code>[itemSize]</code> input). Sizing chain in this demo:
-    <code>--tree-toggle-size</code> is the master control size &mdash; toggle and checkbox targets, the thread-line
-    column, and the leaf spacer (<code>&times; --tree-toggle-spacing-factor</code>, 0.25 here) all derive from it. This
-    demo pins it at 32px inside 40px rows; keep it &le; the row height &mdash; a control taller than its row clips and
-    misaligns. Full recipes: docs/THEMING.md.
+    Read-only variables the tree <em>publishes</em>:
+    <code>--tree-level</code> (per row) and <code>--tree-row-height</code> (the
+    <code>[itemSize]</code> input). Sizing chain in this demo:
+    <code>--tree-toggle-size</code> is the master control size &mdash; toggle
+    and checkbox targets, the thread-line column, and the leaf spacer (<code
+      >&times; --tree-toggle-spacing-factor</code
+    >, 0.25 here) all derive from it. This demo pins it at 32px inside 40px
+    rows; keep it &le; the row height &mdash; a control taller than its row
+    clips and misaligns. Full recipes: docs/THEMING.md.
   </p>
 </section>
 
@@ -53,10 +57,12 @@
 <section class="demo-card demo-card--doc" aria-label="Events">
   <h2 class="demo-card-title">Events</h2>
   <p class="demo-card-hint">
-    The tree never mutates your data. Every mutation is an <em>intent</em>: the tree emits, you apply it to your own
-    state, the tree re-renders &mdash; state stays yours. Applying is <em>your</em> call and <em>your</em> timing: await
-    a confirmation dialog and apply on confirm, or decline and simply don't &mdash; nothing to roll back
-    (docs/RECIPES.md). All seven fire live in the playground: watch its intent readout while you click, drag, rename, or
+    The tree never mutates your data. Every mutation is an <em>intent</em>: the
+    tree emits, you apply it to your own state, the tree re-renders &mdash;
+    state stays yours. Applying is <em>your</em> call and <em>your</em> timing:
+    await a confirmation dialog and apply on confirm, or decline and simply
+    don't &mdash; nothing to roll back (docs/RECIPES.md). All seven fire live in
+    the playground: watch its intent readout while you click, drag, rename, or
     right-click.
   </p>
   <div class="api-table-scroll">

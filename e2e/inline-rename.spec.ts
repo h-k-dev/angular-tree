@@ -17,9 +17,13 @@ test.describe('inline rename via the context menu', () => {
     await waitForTree(page);
   });
 
-  test('Rename keeps the edit input focused; Enter commits the typed name', async ({ page }) => {
+  test('Rename keeps the edit input focused; Enter commits the typed name', async ({
+    page,
+  }) => {
     await rowByName(page, 'Due Diligence.xlsx').click({ button: 'right' });
-    await builtInMenu(page).getByRole('menuitem', { name: 'Rename', exact: true }).click();
+    await builtInMenu(page)
+      .getByRole('menuitem', { name: 'Rename', exact: true })
+      .click();
 
     const input = page.locator('input.node-rename');
     await expect(input).toBeVisible();
@@ -31,7 +35,9 @@ test.describe('inline rename via the context menu', () => {
     await input.fill('Quarterly Report.xlsx');
     await input.press('Enter');
 
-    await expect(page.locator('.app-last-intent')).toContainText('Quarterly Report.xlsx');
+    await expect(page.locator('.app-last-intent')).toContainText(
+      'Quarterly Report.xlsx',
+    );
     await expect(rowByName(page, 'Quarterly Report.xlsx')).toBeVisible();
     await expect(input).toBeHidden(); // editing ended with the commit
   });

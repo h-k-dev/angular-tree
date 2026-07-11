@@ -6,34 +6,56 @@ export const routes: Routes = [
   // own child route and chunk. Documents stays the front page.
   {
     path: '',
-    loadComponent: () => import('./playground/playground').then((m) => m.Playground),
+    loadComponent: () =>
+      import('./playground/playground').then((m) => m.Playground),
     children: [
       {
         path: '',
         pathMatch: 'full',
-        loadComponent: () => import('./documents-example/documents-example').then((m) => m.DocumentsExample),
+        loadComponent: () =>
+          import('./documents-example/documents-example').then(
+            (m) => m.DocumentsExample,
+          ),
       },
       {
         path: 'resource',
-        loadComponent: () => import('./resource-example/resource-example').then((m) => m.ResourceExample),
+        loadComponent: () =>
+          import('./resource-example/resource-example').then(
+            (m) => m.ResourceExample,
+          ),
       },
       {
         path: 'static',
-        loadComponent: () => import('./static-example/static-example').then((m) => m.StaticExample),
+        loadComponent: () =>
+          import('./static-example/static-example').then(
+            (m) => m.StaticExample,
+          ),
       },
       {
         path: 'vscode',
-        loadComponent: () => import('./vscode-example/vscode-example').then((m) => m.VscodeExample),
+        loadComponent: () =>
+          import('./vscode-example/vscode-example').then(
+            (m) => m.VscodeExample,
+          ),
       },
       {
         path: 'lazy',
-        loadComponent: () => import('./lazy-load-example/lazy-load-example').then((m) => m.LazyLoadExample),
+        loadComponent: () =>
+          import('./lazy-load-example/lazy-load-example').then(
+            (m) => m.LazyLoadExample,
+          ),
+      },
+      {
+        path: 'media',
+        loadComponent: () =>
+          import('./media-example/media-example').then((m) => m.MediaExample),
       },
     ],
   },
   {
     path: 'api',
-    loadComponent: () => import('./api-reference/api-reference').then((m) => m.ApiReference),
+    loadComponent: () =>
+      import('./api-reference/api-reference').then((m) => m.ApiReference),
   },
   { path: '**', redirectTo: '' },
 ];

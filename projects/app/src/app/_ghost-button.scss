@@ -20,12 +20,20 @@
   // State layers lean on mat-icon-button: on-surface-variant at 8% hover /
   // 12% pressed, instead of shadcn's opaque accent fill.
   &:hover {
-    background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 8%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--mat-sys-on-surface-variant) 8%,
+      transparent
+    );
     color: var(--mat-sys-on-surface);
   }
 
   &:active {
-    background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 12%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--mat-sys-on-surface-variant) 12%,
+      transparent
+    );
   }
 
   &:focus-visible {

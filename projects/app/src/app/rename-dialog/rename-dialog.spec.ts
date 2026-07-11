@@ -7,8 +7,10 @@ describe('RenameDialog', () => {
   let fixture: ComponentFixture<RenameDialog>;
   let closedWith: (string | undefined)[];
 
-  const input = () => (fixture.nativeElement as HTMLElement).querySelector('input')!;
-  const form = () => (fixture.nativeElement as HTMLElement).querySelector('form')!;
+  const input = () =>
+    (fixture.nativeElement as HTMLElement).querySelector('input')!;
+  const form = () =>
+    (fixture.nativeElement as HTMLElement).querySelector('form')!;
 
   const typeName = async (value: string) => {
     input().value = value;
@@ -22,7 +24,10 @@ describe('RenameDialog', () => {
       imports: [RenameDialog],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: { name: 'Bin — accepts A + B' } },
-        { provide: MatDialogRef, useValue: { close: (value?: string) => closedWith.push(value) } },
+        {
+          provide: MatDialogRef,
+          useValue: { close: (value?: string) => closedWith.push(value) },
+        },
       ],
     }).compileComponents();
 
@@ -36,15 +41,21 @@ describe('RenameDialog', () => {
 
   it('submit closes with the trimmed new name', async () => {
     await typeName('  Renamed bin  ');
-    form().dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    form().dispatchEvent(
+      new Event('submit', { bubbles: true, cancelable: true }),
+    );
     expect(closedWith).toEqual(['Renamed bin']);
   });
 
   it('a blank name disables Rename and never closes', async () => {
     await typeName('   ');
-    const rename = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    const rename = (
+      fixture.nativeElement as HTMLElement
+    ).querySelector<HTMLButtonElement>('button[type="submit"]')!;
     expect(rename.disabled).toBe(true);
-    form().dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    form().dispatchEvent(
+      new Event('submit', { bubbles: true, cancelable: true }),
+    );
     expect(closedWith).toEqual([]);
   });
 });

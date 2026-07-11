@@ -1,0 +1,413 @@
+@use '../ghost-button' as *;
+
+// Definite flex chain (block-size 100%, not min-block-size — indefinite for %
+// resolution) so the stage fills the whole viewport.
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-block-size: 0;
+  block-size: 100%;
+  inline-size: 100%;
+  max-inline-size: 75rem;
+  margin-inline: auto;
+}
+
+.demo-card-bar {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+// Paste-a-URL box, pushed to the LEFT of the bar (tabs stay right).
+.media-url {
+  display: flex;
+  flex: 1 1 16rem;
+  align-items: center;
+  gap: 0.25rem;
+  margin-inline-end: auto;
+  max-inline-size: 26rem;
+  padding-inline-start: 0.6rem;
+  border: 1px solid var(--mat-sys-outline);
+  border-radius: 100vw;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface-variant);
+
+  &:focus-within {
+    border-color: var(--mat-sys-primary);
+  }
+
+  &--invalid {
+    border-color: var(--mat-sys-error);
+    color: var(--mat-sys-error);
+  }
+}
+
+.media-url-icon {
+  flex: 0 0 auto;
+  font-size: 18px;
+  inline-size: 18px;
+  block-size: 18px;
+}
+
+.media-url-input {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  border: none;
+  background: transparent;
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.media-url .mat-mdc-icon-button {
+  flex: 0 0 auto;
+  --mdc-icon-button-state-layer-size: 34px;
+  inline-size: 34px;
+  block-size: 34px;
+  padding: 0;
+}
+
+.demo-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  min-inline-size: 0; // let the strip shrink so it scrolls instead of wrapping
+  overflow-x: auto;
+
+  .demo-tab {
+    flex: 0 0 auto; // each tab keeps its width; the row scrolls sideways
+  }
+}
+
+.demo-tab {
+  padding: 0.25rem 0.75rem;
+  border: none;
+  border-radius: 100vw;
+  background: transparent;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-medium);
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(
+      in srgb,
+      var(--mat-sys-on-surface-variant) 8%,
+      transparent
+    );
+  }
+
+  &[aria-selected='true'] {
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+  }
+}
+
+// The stage: fills the first viewport, hosts the full-bleed player + floats. A
+// tinted backdrop gives the glass something to blur when nothing's playing.
+.media-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-block-size: 22rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  background:
+    radial-gradient(
+      130% 90% at 78% -10%,
+      oklch(from var(--mat-sys-primary) l c h / 0.26),
+      transparent 60%
+    ),
+    radial-gradient(
+      120% 90% at 0% 110%,
+      oklch(from var(--mat-sys-tertiary) l c h / 0.2),
+      transparent 55%
+    ),
+    var(--mat-sys-surface-container-high);
+}
+
+app-media-player {
+  position: absolute;
+  inset: 0;
+}
+
+.media-poster {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    font-size: 52px;
+    inline-size: 52px;
+    block-size: 52px;
+    opacity: 0.7;
+  }
+
+  kbd {
+    padding: 0 0.3rem;
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: 0.25rem;
+    background: color-mix(in srgb, var(--mat-sys-surface) 60%, transparent);
+    font: var(--mat-sys-label-small);
+  }
+}
+
+// ── Glassmorphism ───────────────────────────────────────────────────────────
+// Frosted, theme-aware: translucent surface + backdrop blur, tinted 1px edge.
+@mixin glass($surface: 58%, $blur: 18px) {
+  background: color-mix(in srgb, var(--mat-sys-surface) $surface, transparent);
+
+  backdrop-filter: blur($blur) saturate(1.5);
+  -webkit-backdrop-filter: blur($blur) saturate(1.5);
+
+  border: 1px solid
+    color-mix(in srgb, var(--mat-sys-on-surface) 12%, transparent);
+  box-shadow: 0 8px 32px var(--mat-sys-shadow);
+}
+
+// Full-stage overlays (mutually exclusive): the reveal-catcher brings faded
+// chrome back on move over the iframe; the scrim closes the library on an
+// outside tap. Both sit above the player, below the menu + fab.
+.media-reveal,
+.media-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.media-reveal {
+  cursor: none; // immersive: the pointer hides with the chrome
+}
+
+// The floating "menu bar" toggle, top-right.
+.media-fab {
+  @include glass(55%, 14px);
+
+  position: absolute;
+  inset-block-start: 0.75rem;
+  inset-inline-end: 0.75rem;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 100vw;
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-label-large);
+  cursor: pointer;
+  transition:
+    opacity 300ms ease,
+    transform 300ms ease;
+
+  &:hover {
+    background: color-mix(in srgb, var(--mat-sys-surface) 72%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 2px;
+  }
+}
+
+// Idle: the top-right toggle fades away with the player's status strip.
+.media-stage[data-chrome='hidden'] .media-fab {
+  opacity: 0;
+  transform: translateY(-0.35rem);
+  pointer-events: none;
+}
+
+// The 288px glass library panel. Top+bottom pinned → definite height, so the
+// tree's flex chain resolves and it virtualizes correctly even while hidden.
+.media-menu {
+  @include glass(62%, 20px);
+  position: absolute;
+  inset-block: 3.75rem 0.75rem;
+  inset-inline-end: 0.75rem;
+  z-index: 3;
+  inline-size: min(600px, 100%);
+  max-inline-size: calc(100% - 1.5rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1rem;
+
+  // Closed: faded, nudged up, and taken out of hit-testing + the a11y tree.
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-0.5rem) scale(0.98);
+  transform-origin: top right;
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease,
+    visibility 0s linear 200ms;
+}
+
+.media-menu--open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-menu {
+    transition: none;
+  }
+}
+
+.media-menu-head {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  border-block-end: 1px solid
+    color-mix(in srgb, var(--mat-sys-on-surface) 10%, transparent);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-title-small);
+
+  mat-icon {
+    color: var(--mat-sys-primary);
+  }
+}
+
+// Tree over glass: transparent background, so the frost shows through.
+.media-tree {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  --tree-bg: transparent;
+  --tree-toggle-size: 24px;
+  --tree-indent: var(--tree-toggle-size);
+  --tree-node-hover: color-mix(
+    in srgb,
+    var(--mat-sys-on-surface) 8%,
+    transparent
+  );
+  --tree-node-selected: color-mix(
+    in srgb,
+    var(--mat-sys-primary) 24%,
+    transparent
+  );
+  --tree-guide: color-mix(in srgb, var(--mat-sys-on-surface) 18%, transparent);
+}
+
+.media-toggle {
+  @include ghost-icon-button(var(--tree-toggle-size));
+}
+
+.media-toggle-spacer {
+  flex: 0 0 auto;
+  inline-size: var(--tree-toggle-size);
+}
+
+.media-icon {
+  flex: 0 0 auto;
+  font-size: 18px;
+  inline-size: 18px;
+  block-size: 18px;
+  color: var(--mat-sys-on-surface-variant);
+
+  &--category,
+  &--playing {
+    color: var(--mat-sys-primary);
+  }
+}
+
+.media-name {
+  overflow: hidden;
+  min-inline-size: 0; // allow the flex item to shrink so ellipsis engages
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.media-meta {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  padding-inline-end: 0.5rem;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// The playing row's equalizer — pure CSS, fixed-row-height compatible.
+.media-eq {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: flex-end;
+  gap: 2px;
+  block-size: 12px;
+
+  i {
+    inline-size: 3px;
+    border-radius: 1px;
+    background: var(--mat-sys-primary);
+    animation: media-eq 0.9s ease-in-out infinite;
+
+    &:nth-child(1) {
+      block-size: 60%;
+    }
+    &:nth-child(2) {
+      block-size: 100%;
+      animation-delay: 0.2s;
+    }
+    &:nth-child(3) {
+      block-size: 40%;
+      animation-delay: 0.45s;
+    }
+  }
+}
+
+@keyframes media-eq {
+  50% {
+    transform: scaleY(0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-eq i {
+    animation: none;
+  }
+}
+
+// Screen-reader-only "(now playing)" — the equalizer is aria-hidden.
+.media-sr {
+  position: absolute;
+  overflow: hidden;
+  inline-size: 1px;
+  block-size: 1px;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+// Code panes (fetched source assets, Shiki-highlighted — zero drift). The
+// pre/span styling is global (styles.scss): innerHTML carries no _ngcontent.
+.demo-code {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow: auto;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 1rem;
+}
+
+.demo-code--loading {
+  padding: 1rem 1.25rem;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.demo-hidden {
+  display: none !important;
+}

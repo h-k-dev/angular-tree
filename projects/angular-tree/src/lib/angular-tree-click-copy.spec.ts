@@ -60,13 +60,19 @@ describe('AngularTree v2 — clickAction & copy dropEffect', () => {
   let fixture: ComponentFixture<Host>;
   let host: Host;
 
-  const rowEl = (key: string): HTMLElement => fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
-  const viewport = (): HTMLElement => fixture.nativeElement.querySelector('cdk-virtual-scroll-viewport');
+  const rowEl = (key: string): HTMLElement =>
+    fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
+  const viewport = (): HTMLElement =>
+    fixture.nativeElement.querySelector('cdk-virtual-scroll-viewport');
   const keydown = (init: KeyboardEventInit, target?: HTMLElement) =>
-    (target ?? viewport()).dispatchEvent(new KeyboardEvent('keydown', { ...init, bubbles: true }));
+    (target ?? viewport()).dispatchEvent(
+      new KeyboardEvent('keydown', { ...init, bubbles: true }),
+    );
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [Host],
+    }).compileComponents();
     fixture = TestBed.createComponent(Host);
     host = fixture.componentInstance;
     await fixture.whenStable();
@@ -101,8 +107,12 @@ describe('AngularTree v2 — clickAction & copy dropEffect', () => {
     });
 
     it('Ctrl/Cmd-click still toggles — power shortcuts identical in both modes', () => {
-      rowEl('a').dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
-      rowEl('b').dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+      rowEl('a').dispatchEvent(
+        new MouseEvent('click', { bubbles: true, ctrlKey: true }),
+      );
+      rowEl('b').dispatchEvent(
+        new MouseEvent('click', { bubbles: true, ctrlKey: true }),
+      );
       expect([...host.selection.selected].sort()).toEqual(['a', 'b']); // additive, unlike plain
     });
   });

@@ -29,7 +29,11 @@
   text-decoration: none;
 
   &:hover {
-    background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 8%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--mat-sys-on-surface-variant) 8%,
+      transparent
+    );
   }
 
   &--active {

@@ -11,7 +11,9 @@ What the tree guarantees, and the one contract consumer templates must follow.
 - **Announcements** — moves/copies, lazy-load outcomes, and search result counts reach screen readers through a polite live region (CDK `LiveAnnouncer`). Customize or translate via the `announcements` input; pass `null` to silence:
 
 ```html
-<angular-tree [announcements]="{ searchResults: (n, term) => n + ' Treffer für „' + term + '“' }" />
+<angular-tree
+  [announcements]="{ searchResults: (n, term) => n + ' Treffer für „' + term + '“' }"
+/>
 ```
 
 ## The one rule for row templates
@@ -23,7 +25,9 @@ The tree-shipped directives (`treeNodeToggle`, `treeNodeCheckbox`, `treeNodeDrag
 ```html
 <ng-template treeNodeDef let-node>
   <span>{{ node.name }}</span>
-  <button tabindex="-1" [matMenuTriggerFor]="menu" aria-label="Options">⋮</button>
+  <button tabindex="-1" [matMenuTriggerFor]="menu" aria-label="Options">
+    ⋮
+  </button>
 </ng-template>
 ```
 

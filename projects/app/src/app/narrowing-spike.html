@@ -1,4 +1,8 @@
-<angular-tree [dataSource]="roots" [childrenAccessor]="children" [expansionKey]="key">
+<angular-tree
+  [dataSource]="roots"
+  [childrenAccessor]="children"
+  [expansionKey]="key"
+>
   <ng-template treeNodeDef [treeNodeDefWhen]="isFolder" let-node>
     <!-- node: FolderNode — children is only available because narrowing works -->
     {{ node.name }} ({{ node.children.length }})

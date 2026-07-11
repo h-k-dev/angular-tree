@@ -18,7 +18,9 @@ test.describe('RTL', () => {
     await waitForTree(page);
   });
 
-  test('horizontal arrows mirror: ArrowLeft expands, ArrowRight collapses', async ({ page }) => {
+  test('horizontal arrows mirror: ArrowLeft expands, ArrowRight collapses', async ({
+    page,
+  }) => {
     const folder = rowByName(page, 'Cases');
     await folder.click();
     await expect(folder).toHaveAttribute('aria-expanded', 'true');
@@ -30,7 +32,9 @@ test.describe('RTL', () => {
     await expect(folder).toHaveAttribute('aria-expanded', 'true');
   });
 
-  test('drop indicator renders during an RTL pointer drag', async ({ page }) => {
+  test('drop indicator renders during an RTL pointer drag', async ({
+    page,
+  }) => {
     const source = rows(page).filter({ hasText: '.pdf' }).first();
     const target = rowByName(page, 'Cases');
     const from = (await source.boundingBox())!;
@@ -38,7 +42,9 @@ test.describe('RTL', () => {
 
     await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
     await page.mouse.down();
-    await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 10 });
+    await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, {
+      steps: 10,
+    });
 
     await expect(page.locator('.tree-drop-indicator')).toBeVisible();
     await page.mouse.up();

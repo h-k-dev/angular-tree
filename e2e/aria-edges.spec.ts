@@ -25,7 +25,9 @@ test.describe('ARIA at virtualized edges', () => {
 
     // Virtualization is actually on: far fewer rows rendered than exist.
     const rendered = await rows(page).count();
-    const total = await page.evaluate(() => document.querySelectorAll('.tree-viewport [data-node-id]').length);
+    const total = await page.evaluate(
+      () => document.querySelectorAll('.tree-viewport [data-node-id]').length,
+    );
     expect(total).toBe(rendered); // recycled DOM, not a hidden full render
   });
 
@@ -59,7 +61,9 @@ test.describe('ARIA at virtualized edges', () => {
     await expect(rows(page).first()).toHaveAttribute('aria-posinset', '1');
   });
 
-  test('keyboard move (cut/paste) lands as a moved intent end-to-end', async ({ page }) => {
+  test('keyboard move (cut/paste) lands as a moved intent end-to-end', async ({
+    page,
+  }) => {
     // Pick a file row (draggable; folders host drops) and cut it.
     const file = rows(page).filter({ hasText: '.pdf' }).first();
     await file.click();
@@ -70,6 +74,8 @@ test.describe('ARIA at virtualized edges', () => {
     await page.keyboard.press('ArrowDown'); // Starred (smart) → 'Drag & drop rules' (ordinary drop host)
     await page.keyboard.press('ControlOrMeta+v');
 
-    await expect(page.locator('.app-last-intent')).toContainText('moved 1 node(s)');
+    await expect(page.locator('.app-last-intent')).toContainText(
+      'moved 1 node(s)',
+    );
   });
 });

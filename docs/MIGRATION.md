@@ -94,12 +94,19 @@ accessors make them indistinguishable from real nodes; the tree needs no
 "virtual node" concept:
 
 ```ts
-const UNCATEGORIZED = { kind: 'category' as const, id: 'category-none', name: 'Uncategorized' };
+const UNCATEGORIZED = {
+  kind: 'category' as const,
+  id: 'category-none',
+  name: 'Uncategorized',
+};
 const TRASH = { kind: 'trash' as const, id: 'trash', name: 'Trash' };
 
 roots = computed(() => [
   ...this.categories().map(toCategoryNode),
-  { ...UNCATEGORIZED, children: this.documents().filter((d) => d.categoryId == null) },
+  {
+    ...UNCATEGORIZED,
+    children: this.documents().filter((d) => d.categoryId == null),
+  },
   { ...TRASH, children: this.deletedDocuments() },
 ]);
 ```
@@ -130,7 +137,8 @@ Pair with `disableDrop` so illegal combinations (document → document,
 trash-doc → trash) never even highlight:
 
 ```ts
-dropForbidden = (ctx: TreeDropContext<DocNode>) => ctx.parentNode != null && ctx.parentNode.kind === 'document';
+dropForbidden = (ctx: TreeDropContext<DocNode>) =>
+  ctx.parentNode != null && ctx.parentNode.kind === 'document';
 ```
 
 ## Typed node actions — one union, no scattered switches

@@ -25,7 +25,9 @@ export async function waitForTree(page: Page) {
 export async function focusedNodeId(page: Page): Promise<string | null> {
   return page.evaluate(() => {
     const active = document.activeElement as HTMLElement | null;
-    return active?.closest<HTMLElement>('[data-node-id]')?.dataset['nodeId'] ?? null;
+    return (
+      active?.closest<HTMLElement>('[data-node-id]')?.dataset['nodeId'] ?? null
+    );
   });
 }
 

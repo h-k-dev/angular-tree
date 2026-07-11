@@ -143,11 +143,16 @@ export class TreeExample {
     if (isFolder(node) && node.flaky && !this.#flakyTried.has(node.id)) {
       this.#flakyTried.add(node.id);
       return new Promise<DocNode[]>((_, reject) =>
-        setTimeout(() => reject(new Error('flaky by design — retry succeeds')), 800),
+        setTimeout(
+          () => reject(new Error('flaky by design — retry succeeds')),
+          800,
+        ),
       );
     }
     if (isFolder(node) && (node.lazy || node.flaky)) {
-      return new Promise<DocNode[]>((resolve) => setTimeout(() => resolve(node.children), 1_200));
+      return new Promise<DocNode[]>((resolve) =>
+        setTimeout(() => resolve(node.children), 1_200),
+      );
     }
     return node.children;
   };
@@ -156,7 +161,8 @@ export class TreeExample {
 
   nodeName = (node: DocNode) => node.name;
 
-  matchesNode = (node: DocNode, term: string) => node.name.toLowerCase().includes(term.toLowerCase());
+  matchesNode = (node: DocNode, term: string) =>
+    node.name.toLowerCase().includes(term.toLowerCase());
 
   /**
    * Per-type drop rules ("Drag & drop rules" showcase): smart folders are
@@ -169,7 +175,9 @@ export class TreeExample {
     const parent = ctx.parentNode;
     if (parent != null && !isFolder(parent)) return true;
     return ctx.dragNodes.some((node) =>
-      isFile(node) && node.dnd ? !parent?.accepts?.includes(node.dnd) : parent?.accepts != null,
+      isFile(node) && node.dnd
+        ? !parent?.accepts?.includes(node.dnd)
+        : parent?.accepts != null,
     );
   };
 
@@ -222,9 +230,12 @@ export class TreeExample {
     const { RenameDialog } = await import('../rename-dialog/rename-dialog');
     const name = await firstValueFrom(
       this.#dialog
-        .open<InstanceType<typeof RenameDialog>, { name: string }, string>(RenameDialog, {
-          data: { name: node.name },
-        })
+        .open<InstanceType<typeof RenameDialog>, { name: string }, string>(
+          RenameDialog,
+          {
+            data: { name: node.name },
+          },
+        )
         .afterClosed(),
     );
     if (!name || name === node.name) return;
@@ -238,7 +249,9 @@ export class TreeExample {
   }
 
   onToggle(event: ToggleEvent<DocNode>) {
-    this.lastIntent.set(`${event.expanded ? 'expanded' : 'collapsed'} ${event.id}`);
+    this.lastIntent.set(
+      `${event.expanded ? 'expanded' : 'collapsed'} ${event.id}`,
+    );
   }
 
   /** Menu open/selection intents surface in the toolbar; the tree owns the menu itself. */
@@ -268,7 +281,9 @@ export class TreeExample {
   async menuDelete(ids: readonly string[]) {
     const { ConfirmDelete } = await import('../confirm-delete/confirm-delete');
     const confirmed = await firstValueFrom(
-      this.#dialog.open(ConfirmDelete, { data: { count: ids.length } }).afterClosed(),
+      this.#dialog
+        .open(ConfirmDelete, { data: { count: ids.length } })
+        .afterClosed(),
     );
     if (!confirmed) return;
 

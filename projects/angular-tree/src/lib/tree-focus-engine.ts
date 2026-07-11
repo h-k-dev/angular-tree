@@ -49,7 +49,12 @@ export class TreeFocusEngine<T = unknown> {
   }
 
   /** Visible keys as a set — focus fallback + retention lookups (v2). */
-  readonly #visibleKeySet = computed(() => new Set(this.#controller.visibleNodes().map((visible) => visible.flat.key)));
+  readonly #visibleKeySet = computed(
+    () =>
+      new Set(
+        this.#controller.visibleNodes().map((visible) => visible.flat.key),
+      ),
+  );
 
   /**
    * Until the user moves focus — also when `focusedId` names a hidden or
@@ -94,11 +99,14 @@ export class TreeFocusEngine<T = unknown> {
   focusKey(key: string) {
     this.#controller.focusedId.set(key);
 
-    const index = this.#controller.visibleNodes().findIndex(({ flat }) => flat.key === key);
+    const index = this.#controller
+      .visibleNodes()
+      .findIndex(({ flat }) => flat.key === key);
     if (index < 0) return;
     const viewport = this.#inputs.viewport();
     const range = viewport.getRenderedRange();
-    if (index < range.start || index >= range.end) viewport.scrollToIndex(index);
+    if (index < range.start || index >= range.end)
+      viewport.scrollToIndex(index);
 
     // activedescendant mode: DOM focus stays on the tree — aria-activedescendant
     // (bound to focusedId) does the announcing; no per-row focus dance.
@@ -110,13 +118,17 @@ export class TreeFocusEngine<T = unknown> {
     // (Phase 8 matrix find; jsdom's layoutless viewport can't reproduce it).
     // Retry frame-aligned until the row DOM exists; a newer request wins.
     this.#focusAttempt = key;
-    afterNextRender(() => this.#attemptFocus(key, 16), { injector: this.#injector });
+    afterNextRender(() => this.#attemptFocus(key, 16), {
+      injector: this.#injector,
+    });
   }
 
   /** Keeps `focusedId` + focus ownership in sync when focus arrives via Tab or pointer. */
   handleFocusIn(event: FocusEvent) {
     this.#treeOwnsFocus = true;
-    const key = (event.target as HTMLElement).closest<HTMLElement>('[data-node-id]')?.dataset['nodeId'];
+    const key = (event.target as HTMLElement).closest<HTMLElement>(
+      '[data-node-id]',
+    )?.dataset['nodeId'];
     if (key != null) this.#controller.focusedId.set(key);
   }
 
@@ -175,12 +187,18 @@ export class TreeFocusEngine<T = unknown> {
         if (!this.#treeOwnsFocus) return;
         const doc = this.#host.ownerDocument;
         const active = doc.activeElement as HTMLElement | null;
-        const activeKey = active?.closest<HTMLElement>('[data-node-id]')?.dataset['nodeId'];
+        const activeKey =
+          active?.closest<HTMLElement>('[data-node-id]')?.dataset['nodeId'];
         // Focus survived on the right row → hands off. Anything else while we
         // own focus is orphaning: body (row destroyed) or a recycled row
         // element now showing a different node under the caret.
-        if (active != null && this.#host.contains(active) && activeKey === key) return;
-        if (active == null || active === doc.body || this.#host.contains(active)) {
+        if (active != null && this.#host.contains(active) && activeKey === key)
+          return;
+        if (
+          active == null ||
+          active === doc.body ||
+          this.#host.contains(active)
+        ) {
           this.focusKey(key);
         }
       },

@@ -28,7 +28,10 @@ export class TreeNodeDef<T = any, S extends T = T> {
     alias: 'treeNodeDefWhen',
   });
 
-  static ngTemplateContextGuard<T, S extends T>(_dir: TreeNodeDef<T, S>, _ctx: unknown): _ctx is TreeNodeContext<S> {
+  static ngTemplateContextGuard<T, S extends T>(
+    _dir: TreeNodeDef<T, S>,
+    _ctx: unknown,
+  ): _ctx is TreeNodeContext<S> {
     return true;
   }
 }

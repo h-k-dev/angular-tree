@@ -28,7 +28,9 @@ interface DemoNode {
     >
       <ng-template treeNodeDef let-node>{{ node.name }}</ng-template>
       <ng-template treeEmptyDef>
-        <p class="empty">{{ term() ? 'No results for ' + term() : 'No items' }}</p>
+        <p class="empty">
+          {{ term() ? 'No results for ' + term() : 'No items' }}
+        </p>
       </ng-template>
       <ng-template treeLoadingDef><p class="loading">Loading…</p></ng-template>
     </angular-tree>
@@ -40,14 +42,20 @@ class Host {
   term = signal('');
   children = (node: DemoNode) => node.children;
   key = (node: DemoNode) => node.id;
-  match = (node: DemoNode, term: string) => node.name.toLowerCase().includes(term.toLowerCase());
+  match = (node: DemoNode, term: string) =>
+    node.name.toLowerCase().includes(term.toLowerCase());
 }
 
 /** Control: no state defs projected — the tree must stay blank. */
 @Component({
   imports: [AngularTree, TreeNodeDef],
   template: `
-    <angular-tree [dataSource]="data" [childrenAccessor]="children" [expansionKey]="key" [loading]="true">
+    <angular-tree
+      [dataSource]="data"
+      [childrenAccessor]="children"
+      [expansionKey]="key"
+      [loading]="true"
+    >
       <ng-template treeNodeDef let-node>{{ node.name }}</ng-template>
     </angular-tree>
   `,
@@ -61,10 +69,14 @@ class BareHost {
 describe('AngularTree empty/loading states', () => {
   let fixture: ComponentFixture<Host>;
   const stateText = () =>
-    (fixture.nativeElement.querySelector('.tree-state') as HTMLElement | null)?.textContent?.trim();
+    (
+      fixture.nativeElement.querySelector('.tree-state') as HTMLElement | null
+    )?.textContent?.trim();
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [Host, BareHost] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [Host, BareHost],
+    }).compileComponents();
     fixture = TestBed.createComponent(Host);
     await fixture.whenStable();
   });

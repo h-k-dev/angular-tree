@@ -63,13 +63,17 @@ const flushMicrotasks = () => new Promise((resolve) => setTimeout(resolve));
 })
 class Host {
   data = DATA;
-  children = (node: DemoNode) => (node.lazy ? Promise.resolve(LAZY_CHILDREN[node.id] ?? []) : node.children);
+  children = (node: DemoNode) =>
+    node.lazy ? Promise.resolve(LAZY_CHILDREN[node.id] ?? []) : node.children;
   key = (node: DemoNode) => node.id;
   selection = new SelectionModel<string>(true);
   term = signal('');
-  match = (node: DemoNode, term: string) => node.name.toLowerCase().includes(term.toLowerCase());
+  match = (node: DemoNode, term: string) =>
+    node.name.toLowerCase().includes(term.toLowerCase());
   text = (node: DemoNode) => node.name;
-  announcements = signal<TreeAnnouncements<DemoNode> | null | undefined>(undefined);
+  announcements = signal<TreeAnnouncements<DemoNode> | null | undefined>(
+    undefined,
+  );
   readonly tree = viewChild.required<AngularTree<DemoNode>>(AngularTree);
 }
 
@@ -78,18 +82,26 @@ describe('AngularTree v2 — Phase 9 sweep', () => {
   let host: Host;
   let tree: AngularTree<DemoNode>;
 
-  const rowEl = (key: string): HTMLElement => fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
-  const checkboxOf = (key: string): HTMLElement => rowEl(key).querySelector('.check')!;
+  const rowEl = (key: string): HTMLElement =>
+    fixture.nativeElement.querySelector(`[data-node-id="${key}"]`);
+  const checkboxOf = (key: string): HTMLElement =>
+    rowEl(key).querySelector('.check')!;
   const keydown = (init: KeyboardEventInit, target: HTMLElement) =>
-    target.dispatchEvent(new KeyboardEvent('keydown', { ...init, bubbles: true }));
+    target.dispatchEvent(
+      new KeyboardEvent('keydown', { ...init, bubbles: true }),
+    );
   /** LiveAnnouncer applies its message after an internal ~100ms defer. */
   const announcerText = async () => {
     await new Promise((resolve) => setTimeout(resolve, 150));
-    return document.querySelector('.cdk-live-announcer-element')?.textContent ?? '';
+    return (
+      document.querySelector('.cdk-live-announcer-element')?.textContent ?? ''
+    );
   };
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [Host],
+    }).compileComponents();
     fixture = TestBed.createComponent(Host);
     host = fixture.componentInstance;
     await fixture.whenStable();
@@ -104,7 +116,9 @@ describe('AngularTree v2 — Phase 9 sweep', () => {
       checkboxOf('a1').click(); // anchor
       expect(host.selection.selected).toEqual(['a1']);
 
-      checkboxOf('b').dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true }));
+      checkboxOf('b').dispatchEvent(
+        new MouseEvent('click', { bubbles: true, shiftKey: true }),
+      );
       // Visible order a, a1, a2, b, c → range a1..b, additive.
       expect([...host.selection.selected].sort()).toEqual(['a1', 'a2', 'b']);
     });
@@ -158,7 +172,9 @@ describe('AngularTree v2 — Phase 9 sweep', () => {
     });
 
     it('announces search result counts and respects overrides', async () => {
-      host.announcements.set({ searchResults: (count, term) => `${count}x ${term}` });
+      host.announcements.set({
+        searchResults: (count, term) => `${count}x ${term}`,
+      });
       await fixture.whenStable();
       host.term.set('alpha');
       await fixture.whenStable();
