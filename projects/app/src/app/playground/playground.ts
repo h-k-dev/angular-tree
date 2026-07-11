@@ -21,5 +21,6 @@ export class Playground {
     { path: '/resource', icon: 'cloud_download', label: 'Resource API' },
     { path: '/static', icon: 'layers', label: 'Static' },
     { path: '/vscode', icon: 'code', label: 'VS Code' },
+    { path: '/lazy', icon: 'cloud_sync', label: 'Lazy Load Only' },
   ];
 }

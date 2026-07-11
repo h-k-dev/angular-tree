@@ -1,0 +1,170 @@
+@use '../ghost-button' as *;
+
+// Same definite flex chain as the other example pages (block-size 100%, not
+// min-block-size — indefinite for % resolution) so the card fills the viewport.
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-block-size: 0;
+  block-size: 100%;
+  inline-size: 100%;
+  max-inline-size: 75rem;
+  margin-inline: auto;
+}
+
+.demo-card-bar {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.demo-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.demo-tab {
+  padding: 0.25rem 0.75rem;
+  border: none;
+  border-radius: 100vw;
+  background: transparent;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-medium);
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 8%, transparent);
+  }
+
+  &[aria-selected='true'] {
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+  }
+}
+
+.lazy-hint {
+  flex: 0 0 auto;
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+
+  a {
+    color: var(--mat-sys-primary);
+  }
+
+  strong {
+    color: var(--mat-sys-on-surface);
+  }
+}
+
+// The card fills the rest of the first viewport; the tree fills the card.
+.lazy-card {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-block-size: 18rem;
+  overflow: hidden;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 1rem;
+}
+
+.lazy-tree {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  --tree-toggle-size: 22px;
+  --tree-indent: var(--tree-toggle-size);
+  --tree-node-selected: color-mix(in srgb, var(--mat-sys-primary) 16%, transparent);
+}
+
+.lazy-toggle {
+  @include ghost-icon-button(var(--tree-toggle-size));
+}
+
+.lazy-toggle-spacer {
+  flex: 0 0 auto;
+  inline-size: var(--tree-toggle-size);
+}
+
+.lazy-icon {
+  flex: 0 0 auto;
+  font-size: 18px;
+  inline-size: 18px;
+  block-size: 18px;
+  color: var(--mat-sys-on-surface-variant);
+
+  &--folder {
+    color: var(--mat-sys-primary);
+  }
+
+  // Root rows: the source glyph in the accent colour.
+  &--source {
+    color: var(--mat-sys-primary);
+  }
+}
+
+.lazy-spin {
+  color: var(--mat-sys-primary);
+  animation: lazy-spin 1s linear infinite;
+}
+
+@keyframes lazy-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.lazy-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Trailing label — rank / score / size / type, right-aligned and muted.
+.lazy-meta {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  padding-inline-end: 0.5rem;
+  overflow: hidden;
+  max-inline-size: 40%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.lazy-retry {
+  flex: 0 0 auto;
+  color: var(--mat-sys-error);
+}
+
+.lazy-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Code panes (fetched source assets, Shiki-highlighted — zero drift). The
+// pre/span styling is global (styles.scss): innerHTML carries no _ngcontent.
+.demo-code {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow: auto;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 1rem;
+}
+
+.demo-code--loading {
+  padding: 1rem 1.25rem;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.demo-hidden {
+  display: none !important;
+}

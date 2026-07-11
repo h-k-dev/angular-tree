@@ -33,7 +33,7 @@ export function extensionOf(name: string): string {
  * Extension → Material Symbols glyph (Seti-icon stand-ins). Missing keys fall
  * back to a plain document in the template.
  */
-export const FILE_ICONS: Record<string, string> = {
+export const FILE_ICONS: Record<string, string | undefined> = {
   ts: 'code_blocks',
   js: 'javascript',
   html: 'html',

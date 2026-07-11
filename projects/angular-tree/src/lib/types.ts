@@ -67,6 +67,12 @@ export const TREE_NODE = new InjectionToken<TreeNodeHandle>('TREE_NODE');
  * An async return (`Promise`/`Observable`) marks the node lazy: the tree sets
  * `isLoading` in the row context until it resolves (ROADMAP Phase 3).
  *
+ * **Remote children: return a COLD `Observable` (`defer`), not a `Promise`.**
+ * The tree also *probes* the accessor while flattening — once per loaded node,
+ * expanded or not — just to learn expandability. A `Promise` starts its fetch
+ * at probe time (one request per visible branch before any expand); an
+ * `Observable` is only subscribed on expand intent, so probing stays free.
+ *
  * Cancellation (v2) is opt-in by declaring the second parameter: accessors
  * written as `(node, signal) => fetch(url, { signal })` get an `AbortSignal`
  * the tree aborts on destroy and on `invalidateChildren` while in flight

@@ -97,6 +97,17 @@
                 "glob": "fs-data.ts",
                 "input": "projects/app/src/app/vscode-example",
                 "output": "source"
+              },
+              {
+                "glob": "lazy-load-example.*",
+                "input": "projects/app/src/app/lazy-load-example",
+                "output": "source",
+                "ignore": ["*.spec.ts"]
+              },
+              {
+                "glob": "lazy-sources.ts",
+                "input": "projects/app/src/app/lazy-load-example",
+                "output": "source"
               }
             ],
             "styles": ["projects/app/src/styles.scss"]

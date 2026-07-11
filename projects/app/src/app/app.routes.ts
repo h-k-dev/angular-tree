@@ -25,6 +25,10 @@ export const routes: Routes = [
         path: 'vscode',
         loadComponent: () => import('./vscode-example/vscode-example').then((m) => m.VscodeExample),
       },
+      {
+        path: 'lazy',
+        loadComponent: () => import('./lazy-load-example/lazy-load-example').then((m) => m.LazyLoadExample),
+      },
     ],
   },
   {
