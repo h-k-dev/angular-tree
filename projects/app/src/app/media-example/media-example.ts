@@ -130,7 +130,7 @@ export class MediaExample {
    * iframe eats pointer moves over the video, so the template overlays a
    * reveal-catcher during the hidden state to bring the chrome back on move.
    */
-  readonly chromeHidden = computed(
+  chromeHidden = computed(
     () =>
       !this.#chromeVisible() && !this.menuOpen() && this.nowPlaying() != null,
   );

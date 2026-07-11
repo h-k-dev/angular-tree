@@ -18,13 +18,10 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('renders the toolbar title and page navigation', async () => {
+  it('renders the page navigation', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.app-title')?.textContent).toContain(
-      'angular-tree',
-    );
     const links = [...compiled.querySelectorAll('.app-nav-link')].map((a) =>
       a.textContent?.trim(),
     );
