@@ -1,0 +1,174 @@
+@use '../ghost-button' as *;
+
+// Same definite flex chain as the documents example: block-size 100% of the
+// playground content (NOT min-block-size — indefinite for % resolution).
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-block-size: 0;
+  block-size: 100%;
+  inline-size: 100%;
+  max-inline-size: 75rem;
+  margin-inline: auto;
+
+  --tree-toggle-spacing-factor: 0;
+}
+
+.resource-controls {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+
+  [aria-pressed='true'] {
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+  }
+}
+
+.resource-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-inline-start: auto;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.resource-error {
+  color: var(--mat-sys-error);
+}
+
+.resource-error-icon {
+  color: var(--mat-sys-error);
+}
+
+.resource-spin {
+  animation: resource-spin 1s linear infinite;
+}
+
+@keyframes resource-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+// The card fills the rest of the first viewport; the tree fills the card.
+.resource-card {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-block-size: 18rem;
+  overflow: hidden;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 1rem;
+
+  angular-tree {
+    flex: 1 1 auto;
+    min-block-size: 0;
+    --tree-toggle-size: 24px;
+    --tree-indent: var(--tree-toggle-size);
+  }
+}
+
+// Header row of the card: the view tabs (Preview / HTML / TS / SCSS / Data).
+.demo-card-bar {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem 1rem;
+  border-block-end: 1px solid var(--mat-sys-outline-variant);
+  padding: 0.25rem 0.5rem;
+}
+
+.demo-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.demo-tab {
+  padding: 0.25rem 0.75rem;
+  border: none;
+  border-radius: 100vw;
+  background: transparent;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-medium);
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 8%, transparent);
+  }
+
+  &[aria-selected='true'] {
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+  }
+}
+
+// Code panes show this example's REAL source files (fetched as assets,
+// Shiki-highlighted) — they cannot drift from the live preview. The
+// pre/span styling is global (styles.scss): innerHTML content carries no
+// _ngcontent attribute, so scoped rules can't reach it.
+.demo-code {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow: auto;
+}
+
+.demo-code--loading {
+  padding: 1rem 1.25rem;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.demo-hidden {
+  display: none !important;
+}
+
+// Minimal node styling — this example is about DATA, not template flourish.
+.node-toggle {
+  @include ghost-icon-button(var(--tree-toggle-size));
+}
+
+.node-toggle-spacer {
+  flex: 0 0 auto;
+  inline-size: calc(var(--tree-toggle-size) * var(--tree-toggle-spacing-factor, 0.5));
+}
+
+.node-icon {
+  flex: 0 0 auto;
+  font-size: 18px;
+  inline-size: 18px;
+  block-size: 18px;
+
+  &--folder {
+    color: var(--mat-sys-primary);
+  }
+}
+
+.node-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-meta {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  padding-inline-end: 0.75rem;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.resource-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--mat-sys-on-surface-variant);
+}

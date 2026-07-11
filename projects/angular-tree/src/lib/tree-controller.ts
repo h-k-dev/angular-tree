@@ -63,7 +63,7 @@ export interface TreeControllerInputs<T> {
  * model, one place for expansion/selection/editing/focus state — no event
  * bubbling through nested components. Provided on `AngularTree`, internal-only.
  */
-@Service()
+@Service({ autoProvided: false })
 export class TreeController<T> {
   #inputs!: TreeControllerInputs<T>;
 

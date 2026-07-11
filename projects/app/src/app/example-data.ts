@@ -70,6 +70,15 @@ export function applyDelete(roots: DocNode[], ids: readonly string[]): DocNode[]
   return prune(roots);
 }
 
+/** Applies a rename — consumer side of the `renamed` intent AND of the dialog flow. */
+export function applyRename(roots: DocNode[], id: string, name: string): DocNode[] {
+  const rename = (nodes: DocNode[]): DocNode[] =>
+    nodes.map((node) =>
+      node.id === id ? { ...node, name } : isFile(node) ? node : { ...node, children: rename(node.children) },
+    );
+  return rename(roots);
+}
+
 /**
  * Applies a `MoveEvent` to the nested data (consumer side of the controlled
  * contract). `index` counts the target's children *with dragged nodes still

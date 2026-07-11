@@ -1,4 +1,5 @@
 // Readable reference page: comfortable measure, body-medium type throughout.
+// Pages own their inset since .app-main ships none (playground aside is flush).
 :host {
   display: flex;
   flex-direction: column;
@@ -6,6 +7,7 @@
   margin-inline: auto;
   inline-size: 100%;
   max-inline-size: 72rem;
+  padding: 1rem;
 }
 
 .demo-card--doc {

@@ -1,0 +1,128 @@
+@use '../ghost-button' as *;
+
+// Same definite flex chain as the other example pages.
+:host {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+  block-size: 100%;
+  inline-size: 100%;
+  max-inline-size: 75rem;
+  margin-inline: auto;
+
+  --tree-toggle-spacing-factor: 0;
+}
+
+.tool-grid {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 1rem;
+  min-block-size: 0;
+}
+
+// Design tools are dark regardless of the demo theme — each panel retunes
+// the SAME tree via the documented --tree-* tokens (docs/THEMING.md).
+.tool-panel {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-inline-size: 0;
+  min-block-size: 18rem;
+  overflow: hidden;
+  border-radius: 0.75rem;
+
+  angular-tree {
+    flex: 1 1 auto;
+    min-block-size: 0;
+    --tree-toggle-size: 20px;
+    --tree-toggle-spacing-factor: 1;
+    --tree-indent: 16px;
+  }
+}
+
+.tool-panel--figma {
+  background: #2c2c2c;
+
+  angular-tree {
+    --tree-bg: #2c2c2c;
+    --tree-text: #ffffff;
+    --tree-node-hover: rgb(255 255 255 / 6%);
+    --tree-node-selected: rgb(12 140 233 / 35%);
+    --tree-focus-ring: #0c8ce9;
+    --tree-guide: rgb(255 255 255 / 14%);
+  }
+
+  .layer-icon--component,
+  .layer-icon--instance,
+  .layer-name--component {
+    color: #9a6ff2; // Figma's component purple
+  }
+}
+
+.tool-panel--framer {
+  background: #111111;
+
+  angular-tree {
+    --tree-bg: #111111;
+    --tree-text: #eeeeee;
+    --tree-node-hover: rgb(255 255 255 / 7%);
+    --tree-node-selected: rgb(0 153 255 / 35%);
+    --tree-focus-ring: #0099ff;
+    --tree-guide: rgb(255 255 255 / 12%);
+  }
+
+  .layer-icon--component,
+  .layer-icon--instance,
+  .layer-name--component {
+    color: #0099ff; // Framer blue
+  }
+}
+
+.tool-panel-bar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-block-end: 1px solid rgb(255 255 255 / 10%);
+  color: #ffffff;
+  font: var(--mat-sys-title-small);
+}
+
+.tool-panel-hint {
+  color: rgb(255 255 255 / 55%);
+  font: var(--mat-sys-body-small);
+}
+
+// Compact layer rows.
+.layer-toggle {
+  @include ghost-icon-button(var(--tree-toggle-size));
+  color: rgb(255 255 255 / 65%);
+}
+
+.layer-toggle-spacer {
+  flex: 0 0 auto;
+  inline-size: var(--tree-toggle-size);
+}
+
+.layer-icon {
+  flex: 0 0 auto;
+  font-size: 14px;
+  inline-size: 14px;
+  block-size: 14px;
+  color: rgb(255 255 255 / 65%);
+}
+
+.layer-name {
+  overflow: hidden;
+  font: var(--mat-sys-body-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Panels stack on narrow screens.
+@media (max-width: 900px) {
+  .tool-grid {
+    flex-direction: column;
+  }
+}

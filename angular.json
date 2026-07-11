@@ -64,6 +64,17 @@
                 "input": "projects/app/src/app/tree-example",
                 "output": "source",
                 "ignore": ["*.spec.ts"]
+              },
+              {
+                "glob": "resource-example.*",
+                "input": "projects/app/src/app/resource-example",
+                "output": "source",
+                "ignore": ["*.spec.ts"]
+              },
+              {
+                "glob": "git-tree-data.ts",
+                "input": "projects/app/src/app/resource-example",
+                "output": "source"
               }
             ],
             "styles": ["projects/app/src/styles.scss"]

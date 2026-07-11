@@ -37,8 +37,14 @@ import type {
   ToggleEvent,
   TreeAnnouncements,
 } from './events';
-import { DropTarget, dropZoneAt, LoadResult, TreeController } from './tree-controller';
-import { TreeContextMenu, TreeContextMenuContext } from './tree-context-menu';
+import { LoadResult, TreeController } from './tree-controller';
+import { rowElement } from './tree-dom';
+import { TreeDragSession } from './tree-drag-session';
+import { TreeFocusEngine } from './tree-focus-engine';
+import { clampGuideOverlays, computeGuideGroups, GuideOverlay } from './tree-guides';
+import { interpretTreeKey, TypeaheadBuffer, typeaheadTarget } from './tree-keyboard';
+import { TreeMenuHost } from './tree-menu-host';
+import { TreeContextMenu } from './tree-context-menu';
 import { TreeNodeDef } from './tree-node-def';
 import { TreeEmptyDef, TreeLoadingDef } from './tree-state-def';
 import {
@@ -52,11 +58,6 @@ import {
 
 /** DOM-id mint for aria-activedescendant (static #private + decorators = TS18036). */
 let nextTreeUid = 0;
-
-/** Attribute-value escape for `[data-node-id="…"]` queries — CSS.escape is absent in jsdom. */
-function escapeAttributeValue(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
 
 /** One entry of the visible flat render array. Internal. */
 interface FlatRow<T> {
@@ -77,33 +78,6 @@ interface FlatRow<T> {
   readonly injector: Injector;
 }
 
-/** One expanded group's guide span over the *visible* flat array. Internal. */
-interface GuideGroup {
-  /** Key of the expanded parent the guide belongs to. */
-  readonly key: string;
-  readonly level: number;
-  /** First / last visible-row index the guide spans (the parent's descendants). */
-  readonly start: number;
-  readonly end: number;
-}
-
-/** A guide clamped to the rendered range, in content-wrapper px. Internal. */
-interface GuideOverlay {
-  readonly key: string;
-  readonly level: number;
-  readonly top: number;
-  readonly height: number;
-}
-
-/** Purely visual drop marker — never reorders DOM mid-drag (ROADMAP Phase 4). */
-interface DropIndicator {
-  /** Viewport-relative px (the indicator overlays the viewport, not the content). */
-  readonly top: number;
-  readonly height: number;
-  readonly inside: boolean;
-  readonly level: number;
-}
-
 /**
  * Virtualized tree. Consumer data stays untouched — `childrenAccessor` +
  * `expansionKey` describe it (Material `CdkTree` pattern). Rendering is a flat
@@ -114,9 +88,9 @@ interface DropIndicator {
   selector: 'angular-tree',
   exportAs: 'angularTree',
   imports: [ScrollingModule, NgTemplateOutlet, CdkDrag, CdkDragPreview, CdkDropList, CdkMenu],
-  providers: [TreeController],
-  // The built-in context-menu trigger (ROADMAP 2026-07-06). The tree drives it
-  // explicitly via #openMenu (threading the triggering event so it can't
+  providers: [TreeController, TreeFocusEngine, TreeMenuHost, TreeDragSession],
+  // The built-in context-menu trigger (ROADMAP 2026-07-06). TreeMenuHost
+  // drives it explicitly (threading the triggering event so it can't
   // self-close); the trigger stays disabled at rest so its own contextmenu
   // listener never opens a stale menu. Inert without a projected treeContextMenu.
   hostDirectives: [CdkContextMenuTrigger],
@@ -133,6 +107,7 @@ interface DropIndicator {
 export class AngularTree<T> {
   readonly #injector = inject(Injector);
   readonly #controller = inject<TreeController<T>>(TreeController);
+  readonly #focus = inject<TreeFocusEngine<T>>(TreeFocusEngine);
 
   /** Roots of the nested consumer data. The consumer owns it (controlled). */
   readonly dataSource = input.required<readonly T[]>();
@@ -281,81 +256,27 @@ export class AngularTree<T> {
   readonly #dir = inject(Directionality);
   readonly #host: HTMLElement = inject(ElementRef).nativeElement;
 
-  /** The built-in menu's trigger (host directive) — armed per-event by the tree. */
-  readonly #menuTrigger = inject(CdkContextMenuTrigger, { self: true });
-
-  /** Scroll-dismiss must not reclaim focus (it would scroll right back). */
-  #suppressMenuFocusRestore = false;
-
-  /** An outside pointer-down closed the menu — the click target keeps focus. */
-  #menuClosedByPointer = false;
-  #menuPointerCleanup: (() => void) | null = null;
+  /** Menu mechanics live in the engine (tree-menu-host.ts). */
+  readonly #menu = inject<TreeMenuHost<T>>(TreeMenuHost);
 
   /** Context handed to the projected treeContextMenu template. */
-  readonly #contextMenuContext = signal<TreeContextMenuContext<T> | null>(null);
-  protected readonly contextMenuContext = this.#contextMenuContext.asReadonly();
+  protected readonly contextMenuContext = this.#menu.context;
 
   /** Gmail-style icon↔checkbox swap driver — reactive via the bridged mirror. */
   readonly selectionActive = computed(() => this.#controller.selectedIds().size > 0);
 
-  /** Visible keys as a set — focus fallback + retention lookups (v2). */
-  readonly #visibleKeySet = computed(() => new Set(this.#controller.visibleNodes().map((visible) => visible.flat.key)));
-
-  /**
-   * Until the user moves focus — also when `focusedId` names a hidden or
-   * unknown row (bad `defaultFocusedKey`, collapsed-away ancestor) — the Tab
-   * target falls back to the first *selected* visible row (APG: a tree with a
-   * selection receives focus on it), then to the first row: the tree must
-   * never lose its Tab target.
-   */
-  readonly #effectiveFocusKey = computed(() => {
-    const id = this.#controller.focusedId();
-    if (id != null && this.#visibleKeySet().has(id)) return id;
-
-    const nodes = this.#controller.visibleNodes();
-    const selected = this.#controller.selectedIds();
-
-    if (selected.size > 0) {
-      const row = nodes.find((node) => selected.has(node.flat.key));
-      if (row) return row.flat.key;
-    }
-
-    return nodes[0]?.flat.key ?? null;
-  });
-
-  /** Type-ahead accumulator — cleared after a pause, aria-tree convention. */
-  #typeBuffer = '';
-  #typeTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Type-ahead accumulator (tree-keyboard.ts) — cleared after a pause. */
+  readonly #typeahead = new TypeaheadBuffer();
 
   // ---------------------------------------------------------------------------
-  // Drag & drop state (Phase 4)
+  // Drag & drop (Phase 4) — session lifecycle lives in tree-drag-session.ts
   // ---------------------------------------------------------------------------
 
-  /**
-   * Touch decision (ROADMAP): context menu owns long-press, so touch-initiated
-   * drags are effectively disabled; keyboard move is the non-pointer path.
-   */
-  protected readonly dragStartDelay = { mouse: 0, touch: 1 << 30 };
+  readonly #dnd = inject<TreeDragSession<T>>(TreeDragSession);
 
-  readonly #drag = signal<{ keys: readonly string[]; nodes: readonly T[] } | null>(null);
-  protected readonly dragCount = computed(() => this.#drag()?.keys.length ?? 0);
-
-  readonly #dropIndicator = signal<DropIndicator | null>(null);
-  protected readonly dropIndicator = this.#dropIndicator.asReadonly();
-
-  /** The validated destination the next release commits to (plain field: read once). */
-  #pendingDrop: DropTarget<T> | null = null;
-  #lastPointerY = 0;
-  #autoScrollStep = 0;
-  #autoScrollFrame: number | undefined;
-  #hoverExpand: { key: string; timer: ReturnType<typeof setTimeout> } | undefined;
-
-  /** Cut/paste-style keyboard move (WCAG 2.5.7 — every drag has a non-pointer path). */
-  readonly #moveMarked = signal<{
-    keys: ReadonlySet<string>;
-    nodes: readonly T[];
-    effect: 'move' | 'copy';
-  } | null>(null);
+  protected readonly dragStartDelay = this.#dnd.dragStartDelay;
+  protected readonly dragCount = this.#dnd.dragCount;
+  protected readonly dropIndicator = this.#dnd.dropIndicator;
 
   // ---------------------------------------------------------------------------
   // ARIA (Phase 6)
@@ -373,7 +294,7 @@ export class AngularTree<T> {
   }
 
   protected readonly activeDescendantId = computed(() => {
-    const key = this.#effectiveFocusKey();
+    const key = this.#focus.effectiveFocusKey();
     return key != null ? this.rowId(key) : null;
   });
 
@@ -387,61 +308,25 @@ export class AngularTree<T> {
   readonly #renderedRange = signal<ListRange>({ start: 0, end: 0 });
 
   constructor() {
-    // Disabled at rest: #openMenu un-gates it only for its own synchronous
-    // call, so CDK's own contextmenu listener can't open a stale menu on an
-    // empty-space click, and every open funnels through the tree.
-    this.#menuTrigger.disabled = true;
-
     // afterNextRender, not an effect: viewChild.required throws before the
     // first render, and effects can run that early.
     afterNextRender(() => {
-      this.#menuTrigger.menuTemplateRef = this.contextMenuShell();
-
       const viewport = this.viewport();
       this.#renderedRange.set(viewport.getRenderedRange());
       const subscription = viewport.renderedRangeStream.subscribe((range) => this.#renderedRange.set(range));
-      // Close-on-scroll (settled): under virtualization the anchor row's DOM
-      // is destroyed when it leaves the render range — repositioning would
-      // track a recycled element. Focus restore is suppressed here: pulling
-      // focus back to the row would `scrollToIndex` straight back against
-      // the user's scroll.
-      const scrollSubscription = viewport.elementScrolled().subscribe(() => {
-        // Wheel-scroll mid-drag (v2): the pointer is stationary, so no
-        // pointermove re-targets the drop — re-run it from the last known
-        // pointer position or the indicator tracks a recycled row.
-        if (this.#drag()) this.#updateDropTarget(this.#lastPointerY);
-
-        if (!this.#menuTrigger.isOpen()) return;
-        this.#suppressMenuFocusRestore = true;
-        this.#menuTrigger.close();
-        this.#suppressMenuFocusRestore = false;
-      });
-      // Menu close hands focus back to the row (matrix: "restores focus to
-      // the row on close") — CDK restores to its trigger host, which is the
-      // tree element, not the roving-tabindex row. Microtask: teardown must
-      // finish first. Two guards: outside-pointer closes keep the user's
-      // click target (tracked in #openMenu), and an element the close
-      // genuinely focused (e.g. rename's edit input) wins — only orphaned
-      // focus is reclaimed. "Orphaned" includes tabindex:-1 containers: a
-      // MatDialog focus trap re-anchors to its container when the menu DOM
-      // vanishes, and leaving focus there strands keyboard users.
-      const closedSubscription = this.#menuTrigger.closed.subscribe(() => {
-        this.#menuPointerCleanup?.();
-        if (this.#suppressMenuFocusRestore || this.#menuClosedByPointer) return;
-        const key = this.#controller.focusedId();
-        if (key == null) return;
-        queueMicrotask(() => {
-          const active = this.#host.ownerDocument.activeElement as HTMLElement | null;
-          const orphaned = active == null || active === this.#host.ownerDocument.body || active.tabIndex < 0;
-          if (orphaned) this.#focusKey(key);
-        });
-      });
-      this.#destroyRef.onDestroy(() => {
-        subscription.unsubscribe();
-        scrollSubscription.unsubscribe();
-        closedSubscription.unsubscribe();
-        this.#menuPointerCleanup?.(); // destroy with the menu still open
-      });
+      this.#destroyRef.onDestroy(() => subscription.unsubscribe());
+    });
+    this.#menu.connect({ viewport: this.viewport, shell: this.contextMenuShell });
+    this.#dnd.connect({
+      viewport: this.viewport,
+      itemSize: this.itemSize,
+      rows: this.visibleRows,
+      disableDrop: this.disableDrop,
+      expand: (node) => this.expand(node),
+      drop: (event) => {
+        this.moved.emit(event);
+        this.#announce((messages) => messages.moved?.(event));
+      },
     });
 
     this.#controller.connect({
@@ -453,6 +338,7 @@ export class AngularTree<T> {
       searchTerm: this.searchTerm,
       searchMatch: this.searchMatch,
     });
+    this.#focus.connect({ viewport: this.viewport, focusMode: this.focusMode });
     // In-flight accessor fetches must not outlive the tree (v2 cancellation).
     this.#destroyRef.onDestroy(() => this.#controller.abortAll());
 
@@ -468,7 +354,7 @@ export class AngularTree<T> {
     const onDocPointerDown = (event: PointerEvent) => {
       const target = event.target as HTMLElement;
       const insideHost = this.#host.contains(target);
-      if (!insideHost) this.#treeOwnsFocus = false;
+      if (!insideHost) this.#focus.disownFocus();
 
       if (!this.deselectOnOutsideClick()) return;
       if (this.#controller.selectedIds().size === 0) return;
@@ -504,17 +390,6 @@ export class AngularTree<T> {
       });
     });
 
-    // Focus retention across data replacement (v2, ROADMAP2 Phase 9): when
-    // the consumer swaps dataSource (immutable updates) or overlays change,
-    // the focused row's DOM is destroyed and browser focus silently dies.
-    // Re-attach it to the same key — or, when the key vanished (delete,
-    // move-to-trash), to the nearest survivor in the previous visible order
-    // (following first, then preceding — ends at the parent naturally).
-    effect(() => {
-      const visible = this.#controller.visibleNodes();
-      untracked(() => this.#retainFocus(visible));
-    });
-
     // SelectionModel bridge: the model stays the consumer's source of truth;
     // the controller holds a Set mirror so reads are signal-reactive.
     effect((onCleanup) => {
@@ -542,8 +417,8 @@ export class AngularTree<T> {
       const isEditing = computed(() => this.#controller.editingId() === key);
       const isLoading = computed(() => this.#controller.loadStates().get(key) === 'loading');
       const hasError = computed(() => this.#controller.loadStates().get(key) === 'error');
-      const tabIndex = computed(() => (this.#effectiveFocusKey() === key ? 0 : -1));
-      const moveSource = computed(() => this.#moveMarked()?.keys.has(key) ?? false);
+      const tabIndex = computed(() => (this.#focus.effectiveFocusKey() === key ? 0 : -1));
+      const moveSource = computed(() => this.#dnd.marked()?.keys.has(key) ?? false);
 
       const handle: TreeNodeHandle = {
         expandable: flat.expandable,
@@ -653,63 +528,20 @@ export class AngularTree<T> {
     this.activated.emit(row.node);
   }
 
-  /**
-   * One guide span per expanded row with visible descendants, over the whole
-   * visible flat array. Stack-based single pass: a row at a level ≤ an open
-   * parent's closes that parent's group. Recomputes only when visibility
-   * changes (expand/collapse/search/data) — never on scroll.
-   */
-  readonly #guideGroups = computed<readonly GuideGroup[]>(() => {
-    const rows = this.#controller.visibleNodes();
-    const groups: GuideGroup[] = [];
-    const open: { key: string; level: number; start: number }[] = [];
-
-    const close = (until: number, end: number) => {
-      while (open.length > 0 && until <= open[open.length - 1].level) {
-        const group = open.pop()!;
-        // Expanded but childless (e.g. lazy load in flight) → no line yet.
-        if (end >= group.start) groups.push({ ...group, end });
-      }
-    };
-
-    for (let index = 0; index < rows.length; index++) {
-      const { flat, isExpanded } = rows[index];
-      close(flat.level, index - 1);
-      if (flat.expandable && isExpanded) {
-        open.push({ key: flat.key, level: flat.level, start: index + 1 });
-      }
-    }
-    close(-Infinity, rows.length - 1);
-    return groups;
-  });
+  /** Recomputes only on visibility changes (expand/collapse/search/data) — never on scroll. */
+  readonly #guideGroups = computed(() => computeGuideGroups(this.#controller.visibleNodes()));
 
   /** Guides clamped to the rendered range, in content-wrapper px (see template). */
-  protected readonly guideOverlays = computed<readonly GuideOverlay[]>(() => {
-    if (!this.indentGuides()) return [];
-    const range = this.#renderedRange();
-    const size = this.itemSize();
-    const overlays: GuideOverlay[] = [];
-
-    for (const group of this.#guideGroups()) {
-      const start = Math.max(group.start, range.start);
-      const end = Math.min(group.end, range.end - 1);
-      if (start > end) continue; // group entirely outside the rendered window
-      overlays.push({
-        key: group.key,
-        level: group.level,
-        top: (start - range.start) * size,
-        height: (end - start + 1) * size,
-      });
-    }
-    return overlays;
-  });
+  protected readonly guideOverlays = computed<readonly GuideOverlay[]>(() =>
+    this.indentGuides() ? clampGuideOverlays(this.#guideGroups(), this.#renderedRange(), this.itemSize()) : [],
+  );
 
   /** A guide click collapses — and focuses — the group's expanded parent. */
   protected onGuideClick(parentKey: string) {
     const parent = this.#controller.flat().map.get(parentKey);
     if (!parent) return;
     this.collapse(parent.node);
-    this.#focusKey(parentKey);
+    this.#focus.focusKey(parentKey);
   }
 
   /**
@@ -732,38 +564,26 @@ export class AngularTree<T> {
     // Drive the open ourselves — do NOT lean on CDK's own `contextmenu` host
     // listener (its firing through hostDirectives proved unreliable on real
     // trackpads: the browser menu won). We suppress the native menu and open
-    // via #openMenu, threading THIS event so the gesture's trailing pointer
+    // via the menu host, threading THIS event so the gesture's trailing pointer
     // event doesn't self-close the menu (the flicker).
     event.preventDefault();
-    this.#openMenu(event, at);
+    this.#menu.open(event, at);
   }
 
-  /** Keeps `focusedId` in sync when focus arrives via Tab or pointer. */
+  /** Focus bookkeeping lives in the engine (tree-focus-engine.ts). */
   protected onFocusIn(event: FocusEvent) {
-    this.#treeOwnsFocus = true;
-    const key = (event.target as HTMLElement).closest<HTMLElement>('[data-node-id]')?.dataset['nodeId'];
-    if (key != null) this.#controller.focusedId.set(key);
+    this.#focus.handleFocusIn(event);
   }
 
-  /**
-   * Focus-ownership bookkeeping for retention (v2). Only a focusout with a
-   * real outside destination clears the flag: when the browser drops focus
-   * because the focused row's DOM was destroyed, no event fires at all —
-   * that's exactly the orphaning retention exists to repair. Outside
-   * pointer-downs clear it too (listener in the constructor): clicking a
-   * non-focusable area emits focusout with a null relatedTarget, which is
-   * indistinguishable from destruction by events alone.
-   */
   protected onFocusOut(event: FocusEvent) {
-    const next = event.relatedTarget as HTMLElement | null;
-    if (next != null && !this.#host.contains(next)) this.#treeOwnsFocus = false;
+    this.#focus.handleFocusOut(event);
   }
-
-  #treeOwnsFocus = false;
 
   /**
    * One handler over the whole viewport (controller-driven focus — ROADMAP
    * Phase 3 decision): works for targets virtualization hasn't rendered.
+   * The key map itself is the pure `interpretTreeKey` (tree-keyboard.ts);
+   * this is only the exhaustive dispatch.
    */
   protected onKeydown(event: KeyboardEvent) {
     // Keys inside a rename input belong to the input (Enter/Escape handled
@@ -773,150 +593,100 @@ export class AngularTree<T> {
     const rows = this.visibleRows();
     if (rows.length === 0) return;
 
-    const focusKey = this.#effectiveFocusKey();
+    const focusKey = this.#focus.effectiveFocusKey();
     const index = Math.max(
       0,
       rows.findIndex((row) => row.key === focusKey),
     );
     const row = rows[index];
-    const rtl = this.#dir.value === 'rtl';
 
-    // Keyboard move: Ctrl+X marks a move, Ctrl+C marks a copy (v2 dropEffect),
-    // Ctrl+V drops into, Ctrl+Shift+V drops after. Multi-select (APG optional
-    // keys): Ctrl+A selects all visible (again = clear), Ctrl+Shift+Home/End
-    // range-selects to the edge and moves focus there.
-    if ((event.ctrlKey || event.metaKey) && !event.altKey) {
-      const combo = event.key.toLowerCase();
-      if (combo === 'x' || combo === 'c') {
-        const keys = this.#controller.dragKeysFor(row.key);
-        this.#moveMarked.set({
-          keys: new Set(keys),
-          nodes: this.#controller.nodesForKeys(keys),
-          effect: combo === 'c' ? 'copy' : 'move',
-        });
-        event.preventDefault();
-      } else if (combo === 'v') {
-        this.#keyboardDrop(row, event.shiftKey ? 'after' : 'inside');
-        event.preventDefault();
-      } else if (combo === 'a' && this.multi()) {
+    const command = interpretTreeKey(event, {
+      rtl: this.#dir.value === 'rtl',
+      multi: this.multi(),
+      enterAction: this.enterAction(),
+      followSelection: this.selectionMode() === 'follow',
+      hasMoveMark: this.#dnd.marked() != null,
+      hasSelection: this.#controller.selectedIds().size > 0,
+      index,
+      rowCount: rows.length,
+      // Viewport-height jumps (APG optional keys, v2). Layoutless
+      // environments report size 0 — clamp to a single-row step.
+      pageStep: Math.max(1, Math.floor(this.viewport().getViewportSize() / this.itemSize())),
+      rowExpandable: row.expandable,
+      rowExpanded: row.context.isExpanded,
+      hasChildBelow: rows[index + 1] != null && rows[index + 1].level > row.level,
+    });
+    if (command == null) return;
+
+    switch (command.kind) {
+      case 'markMove':
+        this.#dnd.mark(row.key, command.effect);
+        break;
+      case 'keyboardDrop':
+        this.#dnd.keyboardDrop(row, command.zone);
+        break;
+      case 'selectAllVisible':
         this.#selectAllVisible();
-        event.preventDefault();
-      } else if (event.shiftKey && (combo === 'home' || combo === 'end') && this.multi()) {
-        const edge = combo === 'home' ? 0 : rows.length - 1;
-        this.#selectRange(row.key, rows[edge].key);
-        this.#focusIndex(edge);
-        event.preventDefault();
-      }
-      return;
-    }
-    // Escape ladder — one layer per press: cancel move-mark, then clear the
-    // selection (Finder/Explorer; focus STAYS on the row — APG requires a
-    // visible active element). An unconsumed Escape bubbles untouched so an
-    // enclosing dialog still closes.
-    if (event.key === 'Escape') {
-      if (this.#moveMarked()) {
-        this.#moveMarked.set(null);
-        event.preventDefault();
-      } else if (this.#controller.selectedIds().size > 0) {
+        break;
+      case 'selectToEdge':
+        this.#selectRange(row.key, rows[command.index].key);
+        this.#focusIndex(command.index);
+        break;
+      case 'clearMoveMark':
+        this.#dnd.clearMark();
+        break;
+      case 'clearSelection':
         this.#selectionAnchor = null;
         this.#writeSelection([], 'replace');
         this.#announce((messages) => messages.selectionCleared?.());
-        event.preventDefault();
-      }
-      return;
-    }
-
-    // Normalize horizontal arrows so the switch stays direction-free (RTL
-    // flips expand/collapse — ROADMAP Phase 3).
-    const key =
-      event.key === 'ArrowRight'
-        ? rtl
-          ? 'collapse'
-          : 'expand'
-        : event.key === 'ArrowLeft'
-          ? rtl
-            ? 'expand'
-            : 'collapse'
-          : event.key;
-
-    switch (key) {
-      case 'ArrowDown':
-      case 'ArrowUp': {
-        const focused = this.#focusIndex(key === 'ArrowDown' ? index + 1 : index - 1);
+        break;
+      case 'focusStep': {
+        const focused = this.#focusIndex(command.index);
         if (!focused) break;
-        // APG: Shift+Arrow extends the selection to the newly focused node.
-        if (event.shiftKey && this.multi()) this.#extendSelection(focused);
-        else if (this.selectionMode() === 'follow') this.#followFocus(focused);
+        if (command.extend) this.#extendSelection(focused);
+        else if (command.follow) this.#followFocus(focused);
         break;
       }
-      case 'expand':
-        if (!row.expandable) return;
-        if (!row.context.isExpanded) this.expand(row.node);
-        else if (rows[index + 1] && rows[index + 1].level > row.level) this.#focusIndex(index + 1);
+      case 'focusIndex':
+        this.#focusIndex(command.index);
         break;
-      case 'collapse':
-        if (row.expandable && row.context.isExpanded) {
-          this.collapse(row.node);
-        } else {
-          const parentKey = this.#controller.flat().map.get(row.key)?.parentKey;
-          if (parentKey != null) this.#focusKey(parentKey);
-        }
+      case 'expandRow':
+        this.expand(row.node);
         break;
-      case 'ContextMenu':
-        // preventDefault (below) also suppresses the browser's synthetic
-        // `contextmenu` event — no double emission with onContextMenu.
-        this.#openContextMenuAt(row);
+      case 'collapseRow':
+        this.collapse(row.node);
         break;
-      case 'F10':
-        if (!event.shiftKey) return;
-        this.#openContextMenuAt(row);
-        break;
-      case 'Home':
-        this.#focusIndex(0);
-        break;
-      case 'End':
-        this.#focusIndex(rows.length - 1);
-        break;
-      case 'PageDown':
-      case 'PageUp': {
-        // Viewport-height jumps (APG optional keys, v2). Layoutless
-        // environments report size 0 — clamp to a single-row step.
-        const step = Math.max(1, Math.floor(this.viewport().getViewportSize() / this.itemSize()));
-        this.#focusIndex(key === 'PageDown' ? index + step : index - step);
+      case 'focusParent': {
+        const parentKey = this.#controller.flat().map.get(row.key)?.parentKey;
+        if (parentKey != null) this.#focus.focusKey(parentKey);
         break;
       }
-      case 'Enter':
-        if (this.enterAction() === 'edit') this.edit(row.node);
-        else this.activated.emit(row.node);
+      case 'openContextMenu':
+        this.#openContextMenuAt(row);
         break;
-      case ' ':
-        // APG Shift+Space: contiguous selection from the anchor — same range
-        // semantics as shift-click; a plain Space (or no anchor yet) toggles.
-        this.#toggleSelection(row.key, row.node, event.shiftKey);
+      case 'activate':
+        this.activated.emit(row.node);
         break;
+      case 'beginEdit':
+        this.edit(row.node);
+        break;
+      case 'toggleSelection':
+        this.#toggleSelection(row.key, row.node, command.range);
+        break;
+      case 'consume':
+        break;
+      case 'typeahead': {
+        const text = this.typeaheadText();
+        if (!text) return; // inert without the accessor (ROADMAP settled)
+        const prefix = this.#typeahead.push(command.char);
+        const match = typeaheadTarget(rows, index, prefix, (candidate) => text(candidate.node));
+        if (match) this.#focus.focusKey(match.key);
+        return; // type-ahead never consumes the event
+      }
       default:
-        this.#typeahead(event, rows, index);
-        return;
+        command satisfies never;
     }
     event.preventDefault();
-  }
-
-  /** Prefix match over `typeaheadText`, starting after the focused row, wrapping. */
-  #typeahead(event: KeyboardEvent, rows: readonly FlatRow<T>[], index: number) {
-    const text = this.typeaheadText();
-    if (!text || event.key.length !== 1 || event.ctrlKey || event.metaKey || event.altKey) return;
-
-    clearTimeout(this.#typeTimer);
-    this.#typeBuffer += event.key.toLowerCase();
-    this.#typeTimer = setTimeout(() => (this.#typeBuffer = ''), 500);
-
-    for (let offset = 1; offset <= rows.length; offset++) {
-      const candidate = rows[(index + offset) % rows.length];
-      if (text(candidate.node).toLowerCase().startsWith(this.#typeBuffer)) {
-        this.#focusKey(candidate.key);
-        return;
-      }
-    }
   }
 
   // ---------------------------------------------------------------------------
@@ -927,220 +697,18 @@ export class AngularTree<T> {
     return this.typeaheadText()?.(node) ?? '';
   }
 
-  /** Same validation and `MoveEvent` as a pointer drop — only the input differs. */
-  #keyboardDrop(row: FlatRow<T>, zone: 'inside' | 'after') {
-    const marked = this.#moveMarked();
-    if (!marked) return;
-
-    const keys = [...marked.keys];
-    const target = this.#controller.dropTargetFor(keys, row.key, zone);
-    if (!target) return;
-    if (
-      this.disableDrop()?.({
-        dragNodes: marked.nodes,
-        parentNode: target.parentNode,
-        index: target.index,
-      })
-    ) {
-      return;
-    }
-
-    this.#moveMarked.set(null);
-    const event: MoveEvent<T> = {
-      dragIds: keys,
-      dragNodes: marked.nodes,
-      parentId: target.parentKey,
-      parentNode: target.parentNode,
-      index: target.index,
-      dropEffect: marked.effect,
-    };
-    this.moved.emit(event);
-    this.#announce((messages) => messages.moved?.(event));
-  }
+  /// cdkDrag template bindings — the session lives in tree-drag-session.ts.
 
   protected onDragStart(row: FlatRow<T>) {
-    const keys = this.#controller.dragKeysFor(row.key);
-    this.#dragCopy = false;
-    this.#dragCancelled = false;
-    this.#drag.set({ keys, nodes: this.#controller.nodesForKeys(keys) });
-
-    // Escape cancels the drag (v2 — CDK has no public mid-drag cancel): flag
-    // the drop as dead, then end CDK's sequence with a synthetic mouseup.
-    // Mouse drags only — DragRef reads coordinates off the up-event, and a
-    // fabricated TouchEvent can't carry them; touch cancels by lifting.
-    const doc = this.#host.ownerDocument;
-    const onKeydown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      this.#dragCancelled = true;
-      this.#clearDropTarget();
-      event.stopPropagation(); // a hosting dialog must not close on the same press
-      doc.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
-    };
-    doc.addEventListener('keydown', onKeydown, true);
-    this.#dragEscapeCleanup = () => {
-      doc.removeEventListener('keydown', onKeydown, true);
-      this.#dragEscapeCleanup = null;
-    };
+    this.#dnd.dragStart(row);
   }
-
-  #dragCancelled = false;
-  #dragEscapeCleanup: (() => void) | null = null;
 
   protected onDragMove(event: CdkDragMove<unknown>) {
-    // Copy modifier is sampled continuously and used at drop time — pressing
-    // or releasing it mid-drag must count (OS file-manager behavior).
-    this.#dragCopy = this.#isCopyModifierHeld(event.event);
-    this.#lastPointerY = event.pointerPosition.y;
-    this.#updateDropTarget(event.pointerPosition.y);
-    this.#updateAutoScroll(event.pointerPosition.y);
+    this.#dnd.dragMove(event);
   }
-
-  /** ⌥ copies on macOS, Ctrl elsewhere — Ctrl-drag is a context-menu gesture on mac. */
-  #isCopyModifierHeld(event: MouseEvent | TouchEvent): boolean {
-    if (!(event instanceof MouseEvent)) return false; // touch has no modifiers
-    const isApple = /Mac|iP(hone|ad|od)/.test(globalThis.navigator?.platform ?? '');
-    return isApple ? event.altKey : event.ctrlKey;
-  }
-
-  /** Copy modifier state at the latest drag move — read at drop. */
-  #dragCopy = false;
 
   protected onDragEnd() {
-    const drag = this.#drag();
-    const drop = this.#pendingDrop;
-    if (drag && drop && !this.#dragCancelled) {
-      const event: MoveEvent<T> = {
-        dragIds: drag.keys,
-        dragNodes: drag.nodes,
-        parentId: drop.parentKey,
-        parentNode: drop.parentNode,
-        index: drop.index,
-        dropEffect: this.#dragCopy ? 'copy' : 'move',
-      };
-      this.moved.emit(event);
-      this.#announce((messages) => messages.moved?.(event));
-    }
-    this.#resetDragState();
-  }
-
-  /** Fixed `itemSize` makes hovered row + zone pure arithmetic — no hit testing. */
-  #updateDropTarget(clientY: number) {
-    const drag = this.#drag();
-    if (!drag) return;
-
-    const viewport = this.viewport();
-    const viewportTop = viewport.elementRef.nativeElement.getBoundingClientRect().top;
-    const size = this.itemSize();
-    const contentY = clientY - viewportTop + viewport.measureScrollOffset();
-    const rows = this.visibleRows();
-    const index = Math.floor(contentY / size);
-
-    if (index < 0 || index >= rows.length) {
-      this.#clearDropTarget();
-      return;
-    }
-
-    const row = rows[index];
-    const zone = dropZoneAt(contentY - index * size, size);
-    // The 'after' line under an EXPANDED row sits visually between the row and
-    // its first child — resolve to that slot (first child, react-arborist
-    // parity). Sibling-after would land the drop below the row's entire
-    // subtree, far from the line. Keyboard 'after' (Ctrl+Shift+V) keeps
-    // sibling semantics: no indicator justifies the remap there.
-    const insideFirst = zone === 'after' && row.expandable && row.context.isExpanded;
-    const resolved = this.#controller.dropTargetFor(drag.keys, row.key, insideFirst ? 'inside' : zone);
-    const target = insideFirst && resolved ? { ...resolved, index: 0 } : resolved;
-    const forbidden =
-      target != null &&
-      (this.disableDrop()?.({
-        dragNodes: drag.nodes,
-        parentNode: target.parentNode,
-        index: target.index,
-      }) ??
-        false);
-
-    this.#scheduleHoverExpand(zone === 'inside' && target != null && !forbidden ? row : null);
-
-    if (target == null || forbidden) {
-      this.#clearDropTarget();
-      return;
-    }
-
-    this.#pendingDrop = target;
-    const rowTop = index * size - viewport.measureScrollOffset();
-    this.#dropIndicator.set(
-      zone === 'inside' && row.expandable
-        ? { top: rowTop, height: size, inside: true, level: row.level }
-        : {
-            top: zone === 'before' ? rowTop - 1 : rowTop + size - 1,
-            height: 2,
-            inside: false,
-            // First-child remap: the line indents one level deeper so it
-            // reads as "will become a child", not a sibling.
-            level: insideFirst ? row.level + 1 : row.level,
-          },
-    );
-  }
-
-  /** Hovering the make-child zone auto-expands after a delay (ROADMAP). */
-  #scheduleHoverExpand(row: FlatRow<T> | null) {
-    if (this.#hoverExpand && this.#hoverExpand.key === row?.key) return;
-    if (this.#hoverExpand) {
-      clearTimeout(this.#hoverExpand.timer);
-      this.#hoverExpand = undefined;
-    }
-    if (!row || !row.expandable || row.context.isExpanded) return;
-
-    this.#hoverExpand = {
-      key: row.key,
-      timer: setTimeout(() => {
-        this.#hoverExpand = undefined;
-        this.expand(row.node);
-      }, 600),
-    };
-  }
-
-  /**
-   * Manual edge auto-scroll: standard `cdkDropList` auto-scroll doesn't know
-   * the virtual viewport (ROADMAP). A rAF loop keeps scrolling — and keeps
-   * re-targeting rows that virtualization materializes mid-drag — while the
-   * pointer holds still inside an edge band.
-   */
-  #updateAutoScroll(clientY: number) {
-    const rect = this.viewport().elementRef.nativeElement.getBoundingClientRect();
-    const band = 32;
-    this.#autoScrollStep = clientY < rect.top + band ? -8 : clientY > rect.bottom - band ? 8 : 0;
-
-    if (this.#autoScrollStep !== 0 && this.#autoScrollFrame === undefined) {
-      this.#autoScrollFrame = requestAnimationFrame(this.#autoScrollTick);
-    }
-  }
-
-  readonly #autoScrollTick = () => {
-    this.#autoScrollFrame = undefined;
-    if (!this.#drag() || this.#autoScrollStep === 0) return;
-    const viewport = this.viewport();
-    viewport.scrollToOffset(viewport.measureScrollOffset() + this.#autoScrollStep);
-    this.#updateDropTarget(this.#lastPointerY);
-    this.#autoScrollFrame = requestAnimationFrame(this.#autoScrollTick);
-  };
-
-  #clearDropTarget() {
-    this.#pendingDrop = null;
-    this.#dropIndicator.set(null);
-  }
-
-  #resetDragState() {
-    this.#drag.set(null);
-    this.#dragCopy = false;
-    this.#dragEscapeCleanup?.();
-    this.#clearDropTarget();
-    this.#scheduleHoverExpand(null);
-    this.#autoScrollStep = 0;
-    if (this.#autoScrollFrame !== undefined) {
-      cancelAnimationFrame(this.#autoScrollFrame);
-      this.#autoScrollFrame = undefined;
-    }
+    this.#dnd.dragEnd();
   }
 
   /** Focuses the row at `index` (clamped) and returns it — callers must not re-clamp. */
@@ -1148,104 +716,8 @@ export class AngularTree<T> {
     const rows = this.visibleRows();
     if (rows.length === 0) return null;
     const row = rows[Math.max(0, Math.min(rows.length - 1, index))];
-    this.#focusKey(row.key);
+    this.#focus.focusKey(row.key);
     return row;
-  }
-
-  /**
-   * Focus a row that may not be rendered yet: scroll it into the viewport,
-   * then focus its DOM after the next render (ROADMAP: `afterNextRender` +
-   * `data-node-id` query).
-   */
-  #focusKey(key: string) {
-    this.#controller.focusedId.set(key);
-
-    const index = this.visibleRows().findIndex((row) => row.key === key);
-    if (index < 0) return;
-    const range = this.viewport().getRenderedRange();
-    if (index < range.start || index >= range.end) this.viewport().scrollToIndex(index);
-
-    // activedescendant mode: DOM focus stays on the tree — aria-activedescendant
-    // (bound to focusedId) does the announcing; no per-row focus dance.
-    if (this.focusMode() === 'activedescendant') return;
-
-    // Far jumps (End/Home, `focus()` API) race CDK's re-render: scrollToIndex
-    // materializes the target row asynchronously, so a single next-render
-    // query can miss it — focus then dies with the recycled source row
-    // (Phase 8 matrix find; jsdom's layoutless viewport can't reproduce it).
-    // Retry frame-aligned until the row DOM exists; a newer request wins.
-    this.#focusAttempt = key;
-    afterNextRender(() => this.#attemptFocus(key, 16), { injector: this.#injector });
-  }
-
-  /** Previous visible order — the neighborhood a vanished focus falls back into. */
-  #prevVisibleKeys: readonly string[] = [];
-
-  #retainFocus(visible: readonly { flat: { key: string } }[]) {
-    const keys = visible.map((entry) => entry.flat.key);
-    const prev = this.#prevVisibleKeys;
-    this.#prevVisibleKeys = keys;
-
-    if (prev.length === 0 || !this.#treeOwnsFocus) return;
-    if (this.focusMode() === 'activedescendant') return; // DOM focus never leaves the tree
-    const focused = this.#controller.focusedId();
-    if (focused == null) return;
-
-    const current = new Set(keys);
-    let target: string | null = focused;
-    if (!current.has(focused)) {
-      const at = prev.indexOf(focused);
-      if (at < 0) return;
-      target = null;
-      for (let i = at + 1; i < prev.length && target == null; i++) {
-        if (current.has(prev[i])) target = prev[i];
-      }
-      for (let i = at - 1; i >= 0 && target == null; i--) {
-        if (current.has(prev[i])) target = prev[i];
-      }
-      if (target == null) return; // nothing survived — empty tree, no focus to keep
-    }
-
-    const key = target;
-    afterNextRender(
-      () => {
-        if (!this.#treeOwnsFocus) return;
-        const doc = this.#host.ownerDocument;
-        const active = doc.activeElement as HTMLElement | null;
-        const activeKey = active?.closest<HTMLElement>('[data-node-id]')?.dataset['nodeId'];
-        // Focus survived on the right row → hands off. Anything else while we
-        // own focus is orphaning: body (row destroyed) or a recycled row
-        // element now showing a different node under the caret.
-        if (active != null && this.#host.contains(active) && activeKey === key) return;
-        if (active == null || active === doc.body || this.#host.contains(active)) {
-          this.#focusKey(key);
-        }
-      },
-      { injector: this.#injector },
-    );
-  }
-
-  /** The row's rendered DOM element, or `null` outside the rendered range. */
-  #rowElement(key: string): HTMLElement | null {
-    return this.#host.querySelector<HTMLElement>(`[data-node-id="${escapeAttributeValue(key)}"]`);
-  }
-
-  /** The focus target currently being chased across virtual re-renders. */
-  #focusAttempt: string | null = null;
-
-  #attemptFocus(key: string, retries: number) {
-    if (this.#focusAttempt !== key) return; // superseded
-    const row = this.#rowElement(key);
-    if (row) {
-      row.focus();
-      this.#focusAttempt = null;
-      return;
-    }
-    if (retries === 0) {
-      this.#focusAttempt = null; // row left the visible set (collapse/filter) — give up quietly
-      return;
-    }
-    requestAnimationFrame(() => this.#attemptFocus(key, retries - 1));
   }
 
   /**
@@ -1263,13 +735,13 @@ export class AngularTree<T> {
     const model = this.selection();
     const selected = [...(model ? model.selected : this.#controller.selectedIds())];
     const ids = selected.length > 0 ? selected : [row.key];
-    const rect = this.#rowElement(row.key)?.getBoundingClientRect();
+    const rect = rowElement(this.#host, row.key)?.getBoundingClientRect();
     const at = position ?? { x: rect?.left ?? 0, y: rect?.bottom ?? 0 };
 
     this.contextRequested.emit({ ids, node: row.node, position: at });
 
     if (!this.contextMenuDef()) return null;
-    this.#contextMenuContext.set({
+    this.#menu.setContext({
       $implicit: row.node,
       node: row.node,
       nodes: this.#controller.nodesForKeys(ids),
@@ -1287,7 +759,7 @@ export class AngularTree<T> {
     // would anchor the menu — and the contextRequested position — at (0,0).
     // Same race as #focusKey: scroll it into the window, then retry
     // frame-aligned until its DOM exists.
-    if (position == null && this.#rowElement(row.key) == null) {
+    if (position == null && rowElement(this.#host, row.key) == null) {
       const index = this.visibleRows().findIndex((candidate) => candidate.key === row.key);
       if (index < 0) return;
       this.viewport().scrollToIndex(index);
@@ -1296,7 +768,7 @@ export class AngularTree<T> {
       return;
     }
     const at = this.#prepareContext(row, position);
-    if (at != null) this.#openMenu(null, at);
+    if (at != null) this.#menu.open(null, at);
   }
 
   /** The menu-anchor target being chased across virtual re-renders. */
@@ -1304,14 +776,14 @@ export class AngularTree<T> {
 
   #attemptOpenMenu(key: string, retries: number) {
     if (this.#menuAttempt !== key) return; // superseded
-    if (this.#rowElement(key)) {
+    if (rowElement(this.#host, key)) {
       this.#menuAttempt = null;
       // Re-resolve by key: the FlatRow from the initiating call may be stale
       // if the data changed while the scroll materialized the row.
       const row = this.visibleRows().find((candidate) => candidate.key === key);
       if (!row) return;
       const at = this.#prepareContext(row);
-      if (at != null) this.#openMenu(null, at);
+      if (at != null) this.#menu.open(null, at);
       return;
     }
     if (retries === 0) {
@@ -1319,74 +791,6 @@ export class AngularTree<T> {
       return;
     }
     requestAnimationFrame(() => this.#attemptOpenMenu(key, retries - 1));
-  }
-
-  /**
-   * Opens the built-in menu at `at`. `userEvent` (the triggering
-   * `contextmenu`, or `null` for keyboard/API) is threaded into CDK's
-   * `_open` so the outside-click stream skips the gesture's own trailing
-   * pointer event — the public `open()` omits it and the menu self-closes
-   * (the flicker).
-   *
-   * The trigger stays `disabled` at rest so its own `contextmenu` host
-   * listener never opens a stale menu on empty-space clicks; we un-gate it
-   * only for this synchronous call. `_open` is CDK-internal (no public
-   * coordinate+event overload) — the single quarantined boundary here.
-   */
-  #openMenu(userEvent: MouseEvent | null, at: { x: number; y: number }) {
-    const trigger = this.#menuTrigger as unknown as {
-      _open(event: MouseEvent | null, coordinates: { x: number; y: number }): void;
-    };
-    this.#menuTrigger.disabled = false;
-    try {
-      trigger._open(userEvent, at);
-    } finally {
-      // finally: a throw out of the CDK-internal _open (a version bump away)
-      // must not leave the trigger armed — its own contextmenu listener would
-      // then open stale menus on empty-space clicks. Never closes an open menu.
-      this.#menuTrigger.disabled = true;
-    }
-
-    // CDK's context trigger leaves focus on the row — in a real browser the
-    // menu then ignores Escape and arrow keys until clicked (Phase 8 matrix
-    // find; jsdom couldn't see it). Mouse opens focus the shell (Escape +
-    // arrow entry work, no item pre-highlight — OS menu behavior);
-    // keyboard/API opens land on the first item (APG menu pattern). Overlay
-    // attach is synchronous, so the menu DOM exists here; last match wins if
-    // several trees render menus into the shared overlay container.
-    const menus = this.#host.ownerDocument.querySelectorAll<HTMLElement>('.cdk-overlay-container .tree-menu');
-    const menu = menus.item(menus.length - 1);
-    if (!menu) return;
-    if (userEvent) menu.focus();
-    else (menu.querySelector<HTMLElement>('[cdkmenuitem]') ?? menu).focus();
-
-    // One Escape, one layer (OS menus): CdkMenu handles Escape on the menu
-    // element itself, but the event then bubbles to the document where the
-    // overlay keyboard dispatcher hands it to the *dialog* hosting the tree —
-    // both close on a single keypress. stopPropagation here still lets
-    // CdkMenu's same-element listener run; the listener dies with the menu
-    // DOM on close.
-    menu.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') event.stopPropagation();
-    });
-
-    // Track whether the eventual close comes from an outside pointer-down —
-    // then the user's click target keeps focus and the close handler must
-    // not reclaim it for the row. Capture phase: CDK's own outside-click
-    // close runs on the same event.
-    this.#menuClosedByPointer = false;
-    this.#menuPointerCleanup?.();
-    const doc = this.#host.ownerDocument;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!(event.target as HTMLElement | null)?.closest('.tree-menu')) {
-        this.#menuClosedByPointer = true;
-      }
-    };
-    doc.addEventListener('pointerdown', onPointerDown, true);
-    this.#menuPointerCleanup = () => {
-      doc.removeEventListener('pointerdown', onPointerDown, true);
-      this.#menuPointerCleanup = null;
-    };
   }
 
   /// Selection writes (Phase 6 interaction modes) — one funnel, one event.
@@ -1541,7 +945,7 @@ export class AngularTree<T> {
   }
 
   focus(node: T): void {
-    this.#focusKey(this.expansionKey()(node));
+    this.#focus.focusKey(this.expansionKey()(node));
   }
 
   scrollTo(node: T): void {

@@ -12,6 +12,8 @@ import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { AngularTree } from './angular-tree';
 import { TreeContextMenu } from './tree-context-menu';
 import { TreeNodeDef } from './tree-node-def';
+import { TreeNodeEditInput } from './tree-node-edit-input';
+import { RenameEvent } from './events';
 
 interface DemoNode {
   kind: 'folder' | 'file';
@@ -35,7 +37,7 @@ const DATA: DemoNode[] = [
 
 /** Consumer shape: items projected via treeContextMenu, branching per kind. */
 @Component({
-  imports: [AngularTree, TreeNodeDef, TreeContextMenu, CdkMenuItem],
+  imports: [AngularTree, TreeNodeDef, TreeContextMenu, TreeNodeEditInput, CdkMenuItem],
   template: `
     <angular-tree
       style="height: 400px"
@@ -45,14 +47,21 @@ const DATA: DemoNode[] = [
       [selection]="selection"
       [multi]="true"
       [defaultExpandedKeys]="['a']"
+      (renamed)="renames.push($event)"
     >
-      <ng-template treeNodeDef let-node>{{ node.name }}</ng-template>
+      <ng-template treeNodeDef let-node let-isEditing="isEditing">
+        @if (isEditing) {
+          <input treeNodeEditInput [value]="node.name" />
+        } @else {
+          {{ node.name }}
+        }
+      </ng-template>
 
       <ng-template treeContextMenu let-node let-ids="ids">
         @if (node.kind === 'folder') {
           <button cdkMenuItem class="menu-folder-action">Expand subtree</button>
         } @else {
-          <button cdkMenuItem class="menu-file-action">Rename</button>
+          <button cdkMenuItem class="menu-file-action" (cdkMenuItemTriggered)="tree().edit(node)">Rename</button>
         }
         <button cdkMenuItem class="menu-delete">Delete ({{ ids.length }})</button>
       </ng-template>
@@ -64,6 +73,7 @@ class MenuHost {
   children = (node: DemoNode) => node.children;
   key = (node: DemoNode) => node.id;
   selection = new SelectionModel<string>(true);
+  renames: RenameEvent<DemoNode>[] = [];
   readonly tree = viewChild.required<AngularTree<DemoNode>>(AngularTree);
 }
 
@@ -166,6 +176,23 @@ describe('AngularTree built-in context menu', () => {
     fixture.nativeElement.querySelector('cdk-virtual-scroll-viewport')!.dispatchEvent(new Event('scroll'));
     await fixture.whenStable();
     expect(menuEl()).toBeNull();
+  });
+
+  it('a menu-item rename keeps the edit input alive and focused (close must not reclaim the row)', async () => {
+    rightClick(rowEl('b'));
+    await fixture.whenStable();
+
+    (menuEl()!.querySelector('.menu-file-action') as HTMLElement).click();
+    await fixture.whenStable();
+    // Give the (buggy) reclaim's frame-aligned focus chase room to land —
+    // regression: it focused the row, blurring the input → instant commit.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    await fixture.whenStable();
+
+    const input = rowEl('b').querySelector<HTMLInputElement>('input[treeNodeEditInput]');
+    expect(input).toBeTruthy(); // editing survived the menu close
+    expect(document.activeElement).toBe(input); // …and owns focus (typing works)
+    expect(fixture.componentInstance.renames).toEqual([]); // no premature blur-commit
   });
 
   it('without a treeContextMenu def the tree neither opens nor suppresses anything', async () => {

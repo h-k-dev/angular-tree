@@ -46,7 +46,9 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding: 1rem;
+  // No inset here: pages own their padding and 1200px content cap — the
+  // playground's aside must reach the window's left edge below the toolbar.
+  padding: 0;
 }
 
 // Narrow screens: tighter chrome, same layout (everything else wraps).
@@ -54,9 +56,5 @@
   .app-toolbar {
     gap: 0.5rem;
     padding-inline: 0.5rem;
-  }
-
-  .app-main {
-    padding: 0.5rem;
   }
 }

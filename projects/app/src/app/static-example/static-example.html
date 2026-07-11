@@ -1,0 +1,67 @@
+<!-- Two layer panels, same component, different token themes. clickAction
+     'select' = layer-panel semantics: click selects, double-click activates. -->
+<div class="tool-grid">
+  <section class="tool-panel tool-panel--figma" aria-labelledby="figma-title">
+    <header class="tool-panel-bar">
+      <span class="tool-panel-name" id="figma-title">Figma-style</span>
+      <span class="tool-panel-hint">Layers</span>
+    </header>
+    <angular-tree
+      aria-labelledby="figma-title"
+      [dataSource]="figma"
+      [childrenAccessor]="children"
+      [expansionKey]="key"
+      [defaultExpandedKeys]="figmaExpanded"
+      [typeaheadText]="nodeName"
+      [itemSize]="28"
+      [indentGuides]="true"
+      [clickAction]="'select'"
+    >
+      <ng-template treeNodeDef let-node let-isExpanded="isExpanded" let-expandable="expandable">
+        @if (expandable) {
+          <button treeNodeToggle class="layer-toggle" [attr.aria-label]="'Toggle ' + node.name">
+            <mat-icon>{{ isExpanded ? 'arrow_drop_down' : 'arrow_right' }}</mat-icon>
+          </button>
+        } @else {
+          <span class="layer-toggle-spacer"></span>
+        }
+        <mat-icon class="layer-icon" [class]="'layer-icon--' + node.kind">{{ icons[node.kind] }}</mat-icon>
+        <span class="layer-name" [class.layer-name--component]="node.kind === 'component' || node.kind === 'instance'">
+          {{ node.name }}
+        </span>
+      </ng-template>
+    </angular-tree>
+  </section>
+
+  <section class="tool-panel tool-panel--framer" aria-labelledby="framer-title">
+    <header class="tool-panel-bar">
+      <span class="tool-panel-name" id="framer-title">Framer-style</span>
+      <span class="tool-panel-hint">Layers</span>
+    </header>
+    <angular-tree
+      aria-labelledby="framer-title"
+      [dataSource]="framer"
+      [childrenAccessor]="children"
+      [expansionKey]="key"
+      [defaultExpandedKeys]="framerExpanded"
+      [typeaheadText]="nodeName"
+      [itemSize]="28"
+      [indentGuides]="true"
+      [clickAction]="'select'"
+    >
+      <ng-template treeNodeDef let-node let-isExpanded="isExpanded" let-expandable="expandable">
+        @if (expandable) {
+          <button treeNodeToggle class="layer-toggle" [attr.aria-label]="'Toggle ' + node.name">
+            <mat-icon>{{ isExpanded ? 'arrow_drop_down' : 'arrow_right' }}</mat-icon>
+          </button>
+        } @else {
+          <span class="layer-toggle-spacer"></span>
+        }
+        <mat-icon class="layer-icon" [class]="'layer-icon--' + node.kind">{{ icons[node.kind] }}</mat-icon>
+        <span class="layer-name" [class.layer-name--component]="node.kind === 'component' || node.kind === 'instance'">
+          {{ node.name }}
+        </span>
+      </ng-template>
+    </angular-tree>
+  </section>
+</div>

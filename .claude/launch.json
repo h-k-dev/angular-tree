@@ -4,7 +4,7 @@
     {
       "name": "app",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["start", "--", "--port", "4201"],
+      "runtimeArgs": ["start", "--", "--port", "4201", "--host", "127.0.0.1"],
       "port": 4201,
       "autoPort": false
     }

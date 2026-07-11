@@ -1,0 +1,14 @@
+h2[mat-dialog-title] {
+  max-inline-size: 28rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rename-field {
+  inline-size: 100%;
+  min-inline-size: 20rem;
+  // Outline appearance floats the label above the field's border box —
+  // without this it clips against the dialog content's padding edge.
+  margin-block-start: 0.25rem;
+}

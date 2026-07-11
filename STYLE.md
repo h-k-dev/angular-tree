@@ -23,7 +23,7 @@ readonly #generatedId = `table-${Table.nextId++}`;
 _id = computed(() => this.tableId() || this.#generatedId);
 ```
 
-- `linkedSignal()` only when the value is genuinely _writable but derived-by-default_. If nothing ever writes it, it's a `computed()` — downgrade it.
+- `linkedSignal()` only when the value is genuinely _writable but derived-by-default_. If nothing ever writes it, it's a `computed()` — downgrade it. **One more legitimate use**: previous-preserving derivations, where the `computation` needs its `previous` value (e.g. keep the last mapped dataset on screen while a `resource()` reload is in flight) — `computed()` can't see its previous value.
 - Guard-style helpers (`hasData`, `isCaseReferred`) are standalone pure functions or arrow fields; they take values, not `this` state, so they're testable in isolation.
 
 ## Dependency Injection
@@ -32,6 +32,14 @@ _id = computed(() => this.tableId() || this.#generatedId);
 - Services live in **ECMAScript `#private` fields**: `#dialog = inject(MatDialog)`. Never mix with TypeScript `private` for injected services — one convention, enforced in review.
 - **Exception:** Angular query members (`contentChildren`, `viewChild`, …) cannot be ES-private (NG1053) — use TS `private readonly` there, with a comment naming the exception.
 - Scoped/session-like services acquired in initializers (`#upload = inject(Upload).session(...)`), released in `ngOnDestroy`.
+
+## Feature Engines (collaborator classes)
+
+- **Functions for derivation, classes only for lifecycle.** Anything that computes a value from values is a standalone pure function or a `computed()` — never a method reading `this`. A class is justified only where a *process* owns timers, listeners, rAF loops, or in-flight state that needs DI-scoped teardown (`DestroyRef`).
+- Big components split **by feature, not by code kind** (`TreeFocusEngine`, `TreeDragSession` — never a `helpers.ts` grab bag): bug hunts navigate by feature. Each engine is a `@Service()` provided on the host component (the `TreeController` pattern); component inputs/outputs it needs are handed over once via `connect()`.
+- An engine's pure core is exported standalone functions (testable without TestBed); the class stays a thin shell wiring signals to timers and DOM. A shell outgrowing its pure core is drift toward OOP — review flag.
+- Cross-engine coupling goes through controller signals or explicit `connect()` callbacks — never by reaching into another engine's privates. No `extends`, ever.
+- Each engine file opens with a header naming the CDK primitives it touches — the file is the unit of "how is CDK used here".
 
 ## Components
 
@@ -129,3 +137,4 @@ cpVisibleClause = signal<any>(undefined);
 - [ ] Any call site whose argument shape disagrees with the signature?
 - [ ] Any `console.log` standing in for a feature?
 - [ ] Any new `any` outside the LB3 boundary?
+- [ ] Any class method that could be a standalone pure function? Any engine shell outgrowing its pure core?

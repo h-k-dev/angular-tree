@@ -21,9 +21,13 @@ test.describe('lazy-load error → retry', () => {
     const flaky = rowByName(page, 'Flaky server');
     await flaky.locator('.node-toggle').click();
 
-    // Pending load: spinner via [data-loading]-driven CD, then the rejection
-    // lands (~800ms) and must surface as the projected Retry button.
-    await expect(flaky.locator('.node-icon--spin')).toBeVisible();
+    // No pre-error spinner assertion here: the flaky accessor's FIRST
+    // (rejecting) call is consumed by the flatten-time expandability probe
+    // (same node object ⇒ at most one accessor call — ROADMAP), so its 800ms
+    // rejection countdown starts at PAGE LOAD. A pre-error spinner is only
+    // visible when the click lands inside that window — a timing assumption
+    // page-setup growth broke. The zoneless data-loading repaint (matrix
+    // bug #5) stays pinned by the Retry-path spinner assertion below.
     const retry = flaky.locator('.node-retry');
     await expect(retry).toBeVisible();
     await expect(page.locator('.tree-node[data-error]')).toHaveCount(1);

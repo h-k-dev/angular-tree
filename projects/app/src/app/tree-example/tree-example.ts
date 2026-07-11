@@ -1,6 +1,20 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+
+  // Signals
+  input,
+  linkedSignal,
+  signal,
+} from '@angular/core';
+
+// CDK
 import { CdkMenuItem } from '@angular/cdk/menu';
 import { SelectionModel } from '@angular/cdk/collections';
+
+// Material
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -27,6 +41,7 @@ import {
   applyCopy,
   applyDelete,
   applyMove,
+  applyRename,
   DocNode,
   ExampleScale,
   FileExtension,
@@ -35,6 +50,16 @@ import {
   isFolder,
   isSmart,
 } from '../example-data';
+import { FileSize } from '../file-size';
+
+/** Per-extension Material icon — file "types" resolved in the consumer template. */
+const FILE_ICONS: Record<FileExtension, string> = {
+  pdf: 'picture_as_pdf',
+  docx: 'description',
+  xlsx: 'table_chart',
+  eml: 'mail',
+  png: 'image',
+};
 
 /**
  * The living example: a document tree exercising the full angular-tree
@@ -46,17 +71,27 @@ import {
 @Component({
   selector: 'app-tree-example',
   imports: [
+    // Material
     MatButtonModule,
     MatIconModule,
+
+    // CDK
+    CdkMenuItem,
+
+    // Angular Tree
     AngularTree,
     TreeContextMenu,
+
+    // Directives
     TreeEmptyDef,
     TreeLoadingDef,
     TreeNodeCheckbox,
     TreeNodeDef,
     TreeNodeEditInput,
     TreeNodeToggle,
-    CdkMenuItem,
+
+    // Pipes
+    FileSize,
   ],
   templateUrl: './tree-example.html',
   styleUrl: './tree-example.scss',
@@ -67,8 +102,10 @@ export class TreeExample {
 
   /** `xl` ≈ 110k nodes — virtualization smoke run (ROADMAP Phase 2). */
   readonly scale = input<ExampleScale>('standard');
+
   /** Matching child keeps its ancestor chain visible. */
   readonly searchTerm = input('');
+
   /** Root-level load flag → drives the projected `treeLoadingDef`. */
   readonly loading = input(false);
 
@@ -76,6 +113,7 @@ export class TreeExample {
 
   /** Writable (mutation intents apply here), re-derived when the scale switches. */
   roots = linkedSignal<DocNode[]>(() => this.#example().roots);
+
   /** Everything expanded on load so the viewport scrolls immediately. */
   defaultExpandedKeys = computed(() => this.#example().folderIds);
   nodeCount = computed(() => this.#example().nodeCount);
@@ -84,13 +122,17 @@ export class TreeExample {
   selectionModel = new SelectionModel<string>(/* multiple */ true);
 
   activeNode = signal<DocNode | null>(null);
+
   /** Last intent — the demo's "consumer applied it" proof, shown in the toolbar. */
   lastIntent = signal<string | null>(null);
 
   isFolder = isFolder;
   isSmart = isSmart;
+  isFile = isFile;
+
   /** Flaky folders already asked once — the next attempt (Retry) succeeds. */
   readonly #flakyTried = new Set<string>();
+
   /**
    * Lazy folders resolve after a delay — simulates a server fetch (Phase 3).
    * A flaky folder's FIRST load rejects: the only path in the demo that
@@ -109,8 +151,11 @@ export class TreeExample {
     }
     return node.children;
   };
+
   getKey = (node: DocNode) => node.id;
+
   nodeName = (node: DocNode) => node.name;
+
   matchesNode = (node: DocNode, term: string) => node.name.toLowerCase().includes(term.toLowerCase());
 
   /**
@@ -127,12 +172,19 @@ export class TreeExample {
       isFile(node) && node.dnd ? !parent?.accepts?.includes(node.dnd) : parent?.accepts != null,
     );
   };
+
   /** Saved searches don't move; `locked` nodes demo `disableDrag` (drops unaffected). */
   dragForbidden = (node: DocNode) => isSmart(node) || node.locked === true;
+
   /** …and its virtual entries can't join a selection either. */
   selectable = (node: DocNode) => !isSmart(node);
-  /** Folder names are fixed in this demo; files rename inline. */
-  editForbidden = (node: DocNode) => !isFile(node);
+
+  /**
+   * `disableEdit` guards the tree's INLINE editing state (`tree.edit`) only —
+   * the dialog path (`menuRename`) never enters editing state, so it isn't
+   * gated. Saved searches keep their names; everything else offers BOTH.
+   */
+  editForbidden = (node: DocNode) => isSmart(node);
 
   activate(node: DocNode) {
     this.activeNode.set(node);
@@ -155,12 +207,30 @@ export class TreeExample {
 
   /** Controlled pattern end-to-end: apply the rename to our data, tree re-renders. */
   onRename({ id, name }: RenameEvent<DocNode>) {
-    const rename = (nodes: DocNode[]): DocNode[] =>
-      nodes.map((node) =>
-        node.id === id ? { ...node, name } : isFile(node) ? node : { ...node, children: rename(node.children) },
-      );
-    this.roots.update(rename);
+    this.roots.update((roots) => applyRename(roots, id, name));
     this.lastIntent.set(`rename ${id} → "${name}"`);
+  }
+
+  /**
+   * The OTHER rename pattern (docs/RECIPES.md): a prefilled MatDialog instead
+   * of the inline input. The tree plays no part — no `tree.edit()`, no
+   * editing state; the dialog result is applied to `roots` directly, same as
+   * any other consumer mutation. The menu offers both: "Rename" goes inline
+   * (`tree.edit`), "Rename in dialog…" comes here.
+   */
+  async menuRename(node: DocNode) {
+    const { RenameDialog } = await import('../rename-dialog/rename-dialog');
+    const name = await firstValueFrom(
+      this.#dialog
+        .open<InstanceType<typeof RenameDialog>, { name: string }, string>(RenameDialog, {
+          data: { name: node.name },
+        })
+        .afterClosed(),
+    );
+    if (!name || name === node.name) return;
+
+    this.roots.update((roots) => applyRename(roots, node.id, name));
+    this.lastIntent.set(`rename ${node.id} → "${name}" (dialog)`);
   }
 
   onSelection(event: SelectEvent<DocNode>) {
@@ -206,24 +276,6 @@ export class TreeExample {
     this.lastIntent.set(`deleted ${ids.length} node(s)`);
   }
 
-  formatSize(bytes: number): string {
-    if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;
-    return `${Math.round(bytes / 1_000)} kB`;
-  }
-
-  /** Per-extension Material icon — file "types" resolved in the consumer template. */
-  fileIcon(ext: FileExtension): string {
-    switch (ext) {
-      case 'pdf':
-        return 'picture_as_pdf';
-      case 'docx':
-        return 'description';
-      case 'xlsx':
-        return 'table_chart';
-      case 'eml':
-        return 'mail';
-      case 'png':
-        return 'image';
-    }
-  }
+  /** Template indexes the record directly — a lookup, not a call (STYLE.md). */
+  fileIcons = FILE_ICONS;
 }

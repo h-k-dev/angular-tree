@@ -1,0 +1,95 @@
+<!-- Controls: repo switch (params change → loader re-runs), manual refresh,
+     and the resource's own status — the tree below keeps showing the
+     PREVIOUS repo's data while the next one loads (linkedSignal). -->
+<div class="resource-controls">
+  @for (candidate of repos; track candidate) {
+    <button matButton (click)="repo.set(candidate)" [attr.aria-pressed]="repo() === candidate">
+      {{ candidate }}
+    </button>
+  }
+
+  <button matButton (click)="rawData.reload()" [disabled]="rawData.isLoading()" [showProgress]="rawData.isLoading()">
+    <mat-progress-spinner mode="indeterminate" diameter="20" progressIndicator></mat-progress-spinner>
+    <mat-icon>refresh</mat-icon>
+    Refresh
+  </button>
+
+  <span class="resource-status">
+    @if (rawData.error(); as error) {
+      <mat-icon class="resource-error-icon">cloud_off</mat-icon>
+      <span class="resource-error">{{ error.message }}</span>
+    } @else {
+      {{ repo() }}
+    }
+  </span>
+</div>
+
+<!-- Pure data display: no context menu, no lazy loading, no selection —
+     children come back synchronously from the mapped nodes. -->
+<section class="resource-card" aria-label="Resource example">
+  <!-- View switcher (PrimeNG-style): the code tabs render this example's REAL
+       source files, fetched as assets and highlighted with Shiki — zero drift.
+       The Data tab is the git-trees→nodes mapping the tree consumes. -->
+  <header class="demo-card-bar">
+    <nav class="demo-tabs" aria-label="Example view">
+      @for (tab of viewTabs; track tab.id) {
+        <button class="demo-tab" [attr.aria-selected]="view() === tab.id" (click)="showView(tab.id)">
+          {{ tab.label }}
+        </button>
+      }
+    </nav>
+  </header>
+
+  <angular-tree
+    aria-label="Repository files"
+    [class.demo-hidden]="view() !== 'preview'"
+    [dataSource]="nodes()"
+    [childrenAccessor]="children"
+    [expansionKey]="path"
+    [typeaheadText]="nodeName"
+    [itemSize]="32"
+    [indentGuides]="true"
+  >
+    <!-- Folder def — type-guard `when` narrows to GitFolder -->
+    <ng-container *treeNodeDef="let node; when: isFolder; let isExpanded = isExpanded">
+      <button treeNodeToggle class="node-toggle" [attr.aria-label]="'Toggle ' + node.name">
+        <mat-icon>{{ isExpanded ? 'expand_more' : 'chevron_right' }}</mat-icon>
+      </button>
+      <mat-icon class="node-icon node-icon--folder">{{ isExpanded ? 'folder_open' : 'folder' }}</mat-icon>
+      <span class="node-name">{{ node.name }}</span>
+      <span class="node-meta">{{ node.children.length }}</span>
+    </ng-container>
+
+    <!-- File def — the undecorated fallback (untyped by design; contrast with
+         the All-In-1 example, where every def carries a type guard) -->
+    <ng-template treeNodeDef let-node>
+      <span class="node-toggle-spacer"></span>
+      <mat-icon class="node-icon">draft</mat-icon>
+      <span class="node-name">{{ node.name }}</span>
+      <span class="node-meta">{{ node.size | fileSize }}</span>
+    </ng-template>
+
+    <!-- First load has no previous tree to preserve — only then is this slot
+         visible (later loads keep the previous data on screen instead). -->
+    <ng-template treeEmptyDef>
+      <div class="resource-empty">
+        @if (rawData.error(); as error) {
+          <mat-icon>cloud_off</mat-icon>
+          <p>{{ error.message }}</p>
+          <button matButton (click)="rawData.reload()">Retry</button>
+        } @else {
+          <mat-icon class="resource-spin">progress_activity</mat-icon>
+          <p>Fetching {{ repo() }}…</p>
+        }
+      </div>
+    </ng-template>
+  </angular-tree>
+
+  @if (view() !== 'preview') {
+    @if (exampleSource()[view()]; as code) {
+      <div class="demo-code" [innerHTML]="code"></div>
+    } @else {
+      <div class="demo-code demo-code--loading">Loading…</div>
+    }
+  }
+</section>

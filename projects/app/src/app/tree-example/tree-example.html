@@ -44,6 +44,7 @@
       when: isFolder;
       let level = level;
       let isExpanded = isExpanded;
+      let isEditing = isEditing;
       let isLoading = isLoading;
       let hasError = hasError;
       let checkState = checkState
@@ -70,7 +71,11 @@
         }
       }
     </button>
-    <span class="node-name" [class.node-name--area]="level === 0">{{ node.name }}</span>
+    @if (isEditing) {
+      <input treeNodeEditInput class="node-rename" [value]="node.name" />
+    } @else {
+      <span class="node-name" [class.node-name--area]="level === 0">{{ node.name }}</span>
+    }
     <!-- DnD-rules showcase: the rule each row enforces, visible on the row -->
     @if (node.locked) {
       <mat-icon class="node-lock" aria-label="Drag disabled">lock</mat-icon>
@@ -90,8 +95,18 @@
     }
   </ng-container>
 
-  <!-- File fallback — explicit ng-template syntax (also supported; structural desugars to it) -->
-  <ng-template treeNodeDef let-node let-level="level" let-isEditing="isEditing" let-checkState="checkState">
+  <!-- File def — explicit ng-template syntax (also supported; structural
+       desugars to it). The type-guard `when` narrows node to FileNode, so
+       `node.ext` safely indexes the FILE_ICONS record below. An undecorated
+       def would still work as the untyped fallback. -->
+  <ng-template
+    treeNodeDef
+    [treeNodeDefWhen]="isFile"
+    let-node
+    let-level="level"
+    let-isEditing="isEditing"
+    let-checkState="checkState"
+  >
     <!-- Parentless files sit flush left — the toggle stand-in spacer only
          makes sense under an expanded ancestor (level from the context;
          CSS alternative: [aria-level='1']). -->
@@ -104,7 +119,7 @@
       @if (checkState === 'checked') {
         <mat-icon class="node-icon node-icon--selected">check_box</mat-icon>
       } @else {
-        <mat-icon class="node-icon" [class]="'node-icon--' + node.ext">{{ fileIcon(node.ext) }}</mat-icon>
+        <mat-icon class="node-icon" [class]="'node-icon--' + node.ext">{{ fileIcons[node.ext] }}</mat-icon>
       }
     </button>
     @if (isEditing) {
@@ -129,7 +144,7 @@
         <mat-icon class="node-lock" aria-label="Drag disabled">lock</mat-icon>
       }
     }
-    <span class="node-meta">{{ formatSize(node.size) }}</span>
+    <span class="node-meta">{{ node.size | fileSize }}</span>
   </ng-template>
 
   <!-- Built-in context menu (treeContextMenu): the tree owns trigger,
@@ -139,6 +154,11 @@
   <ng-template treeContextMenu let-node let-ids="ids">
     @switch (node.kind) {
       @case ('folder') {
+        <!-- Both rename patterns, side by side: "Rename" flips the tree's
+             editing state (inline treeNodeEditInput); "Rename in dialog…"
+             opens a prefilled MatDialog — the tree never enters editing state. -->
+        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.edit(node)">Rename</button>
+        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="menuRename(node)">Rename in dialog…</button>
         <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.expandDescendants(node)">
           Expand subtree
         </button>
@@ -155,6 +175,7 @@
       }
       @default {
         <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="tree.edit(node)">Rename</button>
+        <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="menuRename(node)">Rename in dialog…</button>
         <button class="doc-menu-item" cdkMenuItem (cdkMenuItemTriggered)="menuToggleStar(node)">
           {{ node.starred ? 'Unstar' : 'Star' }}
         </button>
