@@ -61,7 +61,6 @@ function hueFromId(id: string): number {
   imports: [MatIconModule, AngularTree, TreeNodeDef, TreeNodeToggle],
   templateUrl: './static-example.html',
   styleUrl: './static-example.scss',
-  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class StaticExample {
   readonly #sanitizer = inject(DomSanitizer);

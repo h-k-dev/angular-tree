@@ -9,7 +9,6 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   selector: 'app-api-reference',
   templateUrl: './api-reference.html',
   styleUrl: './api-reference.scss',
-  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class ApiReference {
   /** Mirrors docs/THEMING.md § Tokens. */

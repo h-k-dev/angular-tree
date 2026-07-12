@@ -64,7 +64,6 @@ const CODE_TABS = [
   ],
   templateUrl: './lazy-load-example.html',
   styleUrl: './lazy-load-example.scss',
-  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class LazyLoadExample {
   readonly #sanitizer = inject(DomSanitizer);

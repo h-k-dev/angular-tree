@@ -29,7 +29,6 @@ import { MatToolbarModule } from '@angular/material/toolbar';
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush, // Note: Eager was deprecated/removed, standard is OnPush
   host: {
     '[class.dark-mode]': "theme() === 'dark'",
   },

@@ -12,7 +12,6 @@ import { MatIconModule } from '@angular/material/icon';
   imports: [MatIconModule, RouterLink, RouterLinkActive, RouterOutlet],
   templateUrl: './playground.html',
   styleUrl: './playground.scss',
-  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class Playground {
   /** The aside's example list — grows with each new example page. */

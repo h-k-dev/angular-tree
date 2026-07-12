@@ -57,7 +57,6 @@ const CODE_TABS = [
   imports: [MatIconModule, AngularTree, TreeNodeDef, TreeNodeEditInput],
   templateUrl: './vscode-example.html',
   styleUrl: './vscode-example.scss',
-  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class VscodeExample {
   readonly #sanitizer = inject(DomSanitizer);

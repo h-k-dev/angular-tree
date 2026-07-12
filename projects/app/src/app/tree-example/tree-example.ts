@@ -94,7 +94,6 @@ const FILE_ICONS: Record<FileExtension, string> = {
   ],
   templateUrl: './tree-example.html',
   styleUrl: './tree-example.scss',
-  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class TreeExample {
   readonly #dialog = inject(MatDialog);
@@ -119,7 +118,9 @@ export class TreeExample {
    * re-derives (linkedSignal resets on its source), user toggles write back.
    * Snapshot/restore is just this signal — no imperative API needed.
    */
-  expandedKeys = linkedSignal<readonly string[]>(() => this.#example().folderIds);
+  expandedKeys = linkedSignal<readonly string[]>(
+    () => this.#example().folderIds,
+  );
   nodeCount = computed(() => this.#example().nodeCount);
 
   /**

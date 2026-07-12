@@ -29,7 +29,6 @@ import { MatInputModule } from '@angular/material/input';
   ],
   templateUrl: './rename-dialog.html',
   styleUrl: './rename-dialog.scss',
-  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class RenameDialog {
   readonly #ref = inject<MatDialogRef<RenameDialog, string>>(MatDialogRef);

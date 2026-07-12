@@ -12,7 +12,6 @@ import { MatButtonModule } from '@angular/material/button';
   imports: [MatDialogModule, MatButtonModule],
   templateUrl: './confirm-delete.html',
   styleUrl: './confirm-delete.scss',
-  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class ConfirmDelete {
   protected readonly data = inject<{ count: number }>(MAT_DIALOG_DATA);

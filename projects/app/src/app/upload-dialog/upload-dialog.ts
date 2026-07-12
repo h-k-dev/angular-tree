@@ -45,8 +45,7 @@ import {
     TreeContextMenu,
     TreeNodeDef,
     TreeNodeToggle,
-  ],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  ]
   templateUrl: './upload-dialog.html',
   styleUrl: './upload-dialog.scss',
 })

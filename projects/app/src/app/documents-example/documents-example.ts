@@ -28,7 +28,6 @@ type ExampleView = 'preview' | 'html' | 'ts' | 'scss';
   imports: [DecimalPipe, MatButtonModule, MatIconModule, TreeExample],
   templateUrl: './documents-example.html',
   styleUrl: './documents-example.scss',
-  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class DocumentsExample {
   readonly #dialog = inject(MatDialog);

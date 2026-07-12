@@ -74,7 +74,6 @@ const CODE_TABS = [
   ],
   templateUrl: './media-example.html',
   styleUrl: './media-example.scss',
-  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class MediaExample {
   readonly #sanitizer = inject(DomSanitizer);
