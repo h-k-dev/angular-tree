@@ -1,12 +1,11 @@
 import { polyfillJsdomScrolling } from './jsdom-polyfills.spec-helper';
 
-import { Component, viewChild } from '@angular/core';
+import { Component, signal, viewChild } from '@angular/core';
 
 polyfillJsdomScrolling();
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { CdkMenuItem } from '@angular/cdk/menu';
-import { SelectionModel } from '@angular/cdk/collections';
 import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 
 import { AngularTree } from './angular-tree';
@@ -50,7 +49,7 @@ const DATA: DemoNode[] = [
       [dataSource]="data"
       [childrenAccessor]="children"
       [expansionKey]="key"
-      [selection]="selection"
+      [(selectedKeys)]="selected"
       [multi]="true"
       [defaultExpandedKeys]="['a']"
       (renamed)="renames.push($event)"
@@ -86,7 +85,7 @@ class MenuHost {
   data = DATA;
   children = (node: DemoNode) => node.children;
   key = (node: DemoNode) => node.id;
-  selection = new SelectionModel<string>(true);
+  selected = signal<readonly string[]>([]);
   renames: RenameEvent<DemoNode>[] = [];
   readonly tree = viewChild.required<AngularTree<DemoNode>>(AngularTree);
 }
@@ -185,8 +184,7 @@ describe('AngularTree built-in context menu', () => {
   });
 
   it('context carries the post-reconciliation selection ids', async () => {
-    const { selection } = fixture.componentInstance;
-    selection.select('a1', 'a2');
+    fixture.componentInstance.selected.set(['a1', 'a2']);
     await fixture.whenStable();
 
     rightClick(rowEl('a1')); // inside the multi-selection → selection intact

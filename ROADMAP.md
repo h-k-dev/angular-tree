@@ -222,7 +222,7 @@ Guiding principle: **DX over raw API minimalism, Material muscle memory over rea
   [dataSource]="files()"
   [childrenAccessor]="getChildren"
   [expansionKey]="getId"
-  [selection]="selectionModel"
+  [(selectedKeys)]="selectedKeys"
   [multi]="true"
   [checkboxSelection]="true"
   [itemSize]="32"
@@ -334,6 +334,7 @@ interface MoveEvent<T> {
 - **Typed node classification** — `T` may be a discriminated union; `when` predicates are typed as _type guards_ (`(node: T) => node is S`) and `TreeNodeDef<T, S>` + static `ngTemplateContextGuard` narrows the template context to `S` under `strictTemplates` (better than CDK Table, whose `when` doesn't narrow). Needs a type-inference spike in Phase 0
 - **Behavior per type via predicates, not templates** — `disableDrag(node)`, `disableDrop(ctx)`, `disableEdit(node)`, `isSelectable(node)` all receive the typed node. The tree never interprets a type field itself — no `nodeType` input or registry; classification stays a consumer concept expressed through guards
 - **Selection: CDK `SelectionModel` input**, but the tree drives ctrl/shift-range semantics (only it knows visible flat order); naming aligned with `@angular/aria/tree` (`multi`, `selectionMode`)
+  - _Superseded 2026-07-12 (user call, pre-release — ROADMAP2 decision 7)_: the `[selection]` `SelectionModel` input is **removed** in favor of the signal-first `[(selectedKeys)]` model input. Rationale: zero published consumers made back-compat free to drop; the model wasn't signal-reactive (needed a bridge effect), emitted `changed` twice per replace, duplicated `multi` in its constructor flag, and forced dual write paths through every selection funnel. `selectedIds` is now a `linkedSignal` over the controlled input (external writes synchronous, echoes identity-preserved). Consumers who want a `SelectionModel` bridge it in their own component — docs/RECIPES.md
 - **Checkbox interaction: Gmail semantics (decided)** — checkbox and row click coexist: plain row click _activates_ (never mutates selection), checkbox click toggles selection, Shift+checkbox range-selects over visible order. Keyboard mirrors it: `Space` toggles check on the focused row, `Enter` activates. Ctrl/Shift+row-click stay as power-user selection shortcuts (no conflict with activation on plain click)
   - _Amendment proposed and **withdrawn** 2026-07-06_: a `rowClickSelects` input (plain click toggling leaf selection) was implemented, then reverted at the user's call — plain-click-activates stays locked with no opt-out; leaf selection goes through the icon-as-checkbox (`treeNodeCheckbox`) instead
 - **Indent guides ("threadlines") are tree-owned opt-in UI (settled 2026-07-06)** — `[indentGuides]` input renders guide lines; _clicking a guide collapses (and focuses) that ancestor group_ (JetBrains/VS Code affordance). Guides are pointer sugar — keyboard equivalent is ArrowLeft-to-parent, so guides stay `aria-hidden`. Token: `--tree-guide` → `--mat-sys-outline-variant`

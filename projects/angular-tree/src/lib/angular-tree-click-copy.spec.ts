@@ -4,7 +4,6 @@ import { Component, signal, viewChild } from '@angular/core';
 
 polyfillJsdomScrolling();
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { SelectionModel } from '@angular/cdk/collections';
 
 import { AngularTree } from './angular-tree';
 import { TreeNodeDef } from './tree-node-def';
@@ -35,7 +34,7 @@ const DATA: DemoNode[] = [
       [dataSource]="data"
       [childrenAccessor]="children"
       [expansionKey]="key"
-      [selection]="selection"
+      [(selectedKeys)]="selected"
       [multi]="true"
       [clickAction]="clickAction()"
       (activated)="activations.push($event)"
@@ -49,7 +48,7 @@ class Host {
   data = DATA;
   children = (node: DemoNode) => node.children;
   key = (node: DemoNode) => node.id;
-  selection = new SelectionModel<string>(true);
+  selected = signal<readonly string[]>([]);
   clickAction = signal<'activate' | 'select'>('activate');
   activations: DemoNode[] = [];
   moves: MoveEvent<DemoNode>[] = [];
@@ -82,7 +81,7 @@ describe('AngularTree v2 — clickAction & copy dropEffect', () => {
     it('plain click activates and never mutates selection', () => {
       rowEl('b').click();
       expect(host.activations.map((node) => node.id)).toEqual(['b']);
-      expect(host.selection.selected).toEqual([]);
+      expect(host.selected()).toEqual([]);
     });
   });
 
@@ -94,10 +93,10 @@ describe('AngularTree v2 — clickAction & copy dropEffect', () => {
 
     it('plain click replaces the selection and does not activate', () => {
       rowEl('a').click();
-      expect(host.selection.selected).toEqual(['a']);
+      expect(host.selected()).toEqual(['a']);
 
       rowEl('b').click();
-      expect(host.selection.selected).toEqual(['b']); // replace, not add
+      expect(host.selected()).toEqual(['b']); // replace, not add
       expect(host.activations).toEqual([]);
     });
 
@@ -113,7 +112,7 @@ describe('AngularTree v2 — clickAction & copy dropEffect', () => {
       rowEl('b').dispatchEvent(
         new MouseEvent('click', { bubbles: true, ctrlKey: true }),
       );
-      expect([...host.selection.selected].sort()).toEqual(['a', 'b']); // additive, unlike plain
+      expect([...host.selected()].sort()).toEqual(['a', 'b']); // additive, unlike plain
     });
   });
 

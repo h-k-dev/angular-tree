@@ -1,7 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { Directionality } from '@angular/cdk/bidi';
-import { SelectionModel } from '@angular/cdk/collections';
 import {
   CdkDrag,
   CdkDragMove,
@@ -26,6 +25,7 @@ import {
   inject,
   Injector,
   input,
+  model,
   output,
   Signal,
   signal,
@@ -158,11 +158,15 @@ export class AngularTree<T> {
   readonly collapseBehavior = input<'keep' | 'invalidate'>('keep');
 
   /**
-   * Consumer-owned CDK `SelectionModel` over node keys. The tree drives
-   * range/cascade semantics (only it knows the visible flat order) but never
-   * owns the model — changes flow both ways through the bridge effect.
+   * Controlled selection over node keys (v2, Phase 15). Unbound
+   * (`undefined`) = the tree owns selection state internally. Bound:
+   * external value changes replace the selection (set-equality guarded, so
+   * writing our own emission back never echoes); tree interactions — which
+   * the tree drives, only it knows the visible flat order — update the model
+   * → `(selectedKeysChange)`. `[(selectedKeys)]` shares state; one-way
+   * `[selectedKeys]` + write-back is the strictly controlled shape.
    */
-  readonly selection = input<SelectionModel<string> | undefined>(undefined);
+  selectedKeys = model<readonly string[] | undefined>(undefined);
 
   /** Multi-selection (naming aligned with `@angular/aria/tree`). */
   readonly multi = input(false);
@@ -377,6 +381,7 @@ export class AngularTree<T> {
       expansionKey: this.expansionKey,
       defaultExpandedKeys: this.defaultExpandedKeys,
       defaultFocusedKey: this.defaultFocusedKey,
+      selectedKeys: this.selectedKeys,
       searchTerm: this.searchTerm,
       searchMatch: this.searchMatch,
     });
@@ -441,21 +446,6 @@ export class AngularTree<T> {
         if (count != null)
           this.#announce((messages) => messages.searchResults?.(count, term));
       });
-    });
-
-    // SelectionModel bridge: the model stays the consumer's source of truth;
-    // the controller holds a Set mirror so reads are signal-reactive.
-    effect((onCleanup) => {
-      const model = this.selection();
-      if (!model) {
-        this.#controller.selectedIds.set(new Set());
-        return;
-      }
-      this.#controller.selectedIds.set(new Set(model.selected));
-      const subscription = model.changed.subscribe(() => {
-        this.#controller.selectedIds.set(new Set(model.selected));
-      });
-      onCleanup(() => subscription.unsubscribe());
     });
   }
 
@@ -820,10 +810,7 @@ export class AngularTree<T> {
       this.#writeSelection([row.key], 'replace');
     }
 
-    const model = this.selection();
-    const selected = [
-      ...(model ? model.selected : this.#controller.selectedIds()),
-    ];
+    const selected = [...this.#controller.selectedIds()];
     const ids = selected.length > 0 ? selected : [row.key];
     const rect = rowElement(this.#host, row.key)?.getBoundingClientRect();
     const at = position ?? { x: rect?.left ?? 0, y: rect?.bottom ?? 0 };
@@ -932,19 +919,14 @@ export class AngularTree<T> {
   }
 
   #writeSelection(keys: readonly string[], mode: 'add' | 'replace') {
-    const model = this.selection();
-    if (model) {
-      if (mode === 'replace') model.clear();
-      if (keys.length > 0) model.select(...keys);
-    } else {
-      this.#controller.selectedIds.update((current) => {
-        const next = mode === 'replace' ? new Set<string>() : new Set(current);
-        for (const key of keys) next.add(key);
-        return next;
-      });
-    }
+    this.#controller.selectedIds.update((current) => {
+      const next = mode === 'replace' ? new Set<string>() : new Set(current);
+      for (const key of keys) next.add(key);
+      return next;
+    });
+    this.#syncControlledKeys();
 
-    const ids = [...(model ? model.selected : this.#controller.selectedIds())];
+    const ids = [...this.#controller.selectedIds()];
     this.selectionChange.emit({
       ids,
       nodes: this.#controller.nodesForKeys(ids),
@@ -1176,9 +1158,8 @@ export class AngularTree<T> {
   }
 
   /**
-   * Checkbox/row selection toggle. Writes go through the consumer's
-   * `SelectionModel` when present (the bridge mirrors them back); the
-   * controller's Set is only written directly in model-less mode.
+   * Checkbox/row selection toggle — writes the controller's Set, then syncs
+   * the controlled `selectedKeys` input when bound.
    */
   #toggleSelection(key: string, node: T, range = false) {
     if (this.isSelectable()?.(node) === false) return;
@@ -1198,27 +1179,27 @@ export class AngularTree<T> {
     this.#selectionAnchor = key;
     const cascade = this.checkboxSelection() && this.multi();
     const { keys, select } = this.#controller.checkToggleDelta(key, cascade);
-    const model = this.selection();
 
-    if (model) {
-      if (!this.multi()) model.clear();
-      if (select) model.select(...keys);
-      else model.deselect(...keys);
-    } else {
-      this.#controller.selectedIds.update((current) => {
-        const next = this.multi() ? new Set(current) : new Set<string>();
-        for (const k of keys) {
-          if (select) next.add(k);
-          else next.delete(k);
-        }
-        return next;
-      });
-    }
+    this.#controller.selectedIds.update((current) => {
+      const next = this.multi() ? new Set(current) : new Set<string>();
+      for (const k of keys) {
+        if (select) next.add(k);
+        else next.delete(k);
+      }
+      return next;
+    });
+    this.#syncControlledKeys();
 
-    const ids = [...(model ? model.selected : this.#controller.selectedIds())];
+    const ids = [...this.#controller.selectedIds()];
     this.selectionChange.emit({
       ids,
       nodes: this.#controller.nodesForKeys(ids),
     });
+  }
+
+  /** Tree-initiated write → the controlled input, when bound (→ selectedKeysChange). */
+  #syncControlledKeys() {
+    if (this.selectedKeys() !== undefined)
+      this.selectedKeys.set([...this.#controller.selectedIds()]);
   }
 }

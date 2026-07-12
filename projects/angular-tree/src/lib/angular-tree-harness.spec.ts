@@ -1,11 +1,10 @@
 import { polyfillJsdomScrolling } from './jsdom-polyfills.spec-helper';
 
-import { Component, viewChild } from '@angular/core';
+import { Component, signal, viewChild } from '@angular/core';
 
 polyfillJsdomScrolling();
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { SelectionModel } from '@angular/cdk/collections';
 import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { HarnessLoader } from '@angular/cdk/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
@@ -45,7 +44,7 @@ const DATA: DemoNode[] = [
       [dataSource]="data"
       [childrenAccessor]="children"
       [expansionKey]="key"
-      [selection]="selection"
+      [(selectedKeys)]="selected"
       [multi]="true"
       [checkboxSelection]="true"
       [typeaheadText]="text"
@@ -66,7 +65,7 @@ class Host {
   data = DATA;
   children = (node: DemoNode) => node.children;
   key = (node: DemoNode) => node.id;
-  selection = new SelectionModel<string>(true);
+  selected = signal<readonly string[]>([]);
   text = (node: DemoNode) => node.name;
   moves: MoveEvent<DemoNode>[] = [];
   activations: DemoNode[] = [];
@@ -187,7 +186,7 @@ describe('TreeHarness', () => {
     expect(
       fixture.componentInstance.activations.map((node) => node.id),
     ).toEqual(['b']);
-    expect(fixture.componentInstance.selection.isEmpty()).toBe(true);
+    expect(fixture.componentInstance.selected()).toEqual([]);
   });
 
   it('dragTo inside a folder emits the moved intent with that parent', async () => {

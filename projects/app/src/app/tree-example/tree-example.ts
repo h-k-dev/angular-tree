@@ -12,7 +12,6 @@ import {
 
 // CDK
 import { CdkMenuItem } from '@angular/cdk/menu';
-import { SelectionModel } from '@angular/cdk/collections';
 
 // Material
 import { MatButtonModule } from '@angular/material/button';
@@ -118,8 +117,11 @@ export class TreeExample {
   defaultExpandedKeys = computed(() => this.#example().folderIds);
   nodeCount = computed(() => this.#example().nodeCount);
 
-  /** Consumer-owned selection over node keys (controlled — ROADMAP settled). */
-  selectionModel = new SelectionModel<string>(/* multiple */ true);
+  /**
+   * Consumer-owned selection over node keys (v2 Phase 15): `[(selectedKeys)]`
+   * — set it to select from outside, read it anywhere a signal works.
+   */
+  selectedKeys = signal<readonly string[]>([]);
 
   activeNode = signal<DocNode | null>(null);
 

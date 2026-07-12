@@ -42,7 +42,7 @@ here it's the identity everything hangs off — selection, expansion, focus).
 | `[value]="nodes"`                                      | `[dataSource]="nodes"` + accessors — your objects, not `TreeNode`                                                                                |
 | `pTemplate="type"` per node type                       | `*treeNodeDef="…; when: isType"` — `when` is a _type guard_, the template context narrows                                                        |
 | `selectionMode="multiple"` `[metaKeySelection]="true"` | `[multi]="true"` `clickAction="select"` (plain click selects, dblclick activates)                                                                |
-| `[(selection)]="TreeNode[]"`                           | `[selection]="SelectionModel<string>"` (keys) + `(selectionChange)` carries `nodes`                                                              |
+| `[(selection)]="TreeNode[]"`                           | `[(selectedKeys)]="keys"` (two-way, keys) — `(selectionChange)` additionally carries `nodes`                                                     |
 | `(onNodeSelect)`                                       | `(selectionChange)` / `(activated)` depending on what it drove                                                                                   |
 | `(onNodeDoubleClick)`                                  | `(activated)` under `clickAction="select"`                                                                                                       |
 | `(onNodeExpand)` + fetched-flag lazy load              | async `childrenAccessor`; per-row `isLoading`/`hasError` context; refresh via `tree.invalidateChildren(node)` or `collapseBehavior="invalidate"` |
@@ -68,7 +68,7 @@ handlers, drop-validation revert logic.
 | `delete_node`                 | consumer-side: context-menu item mutates your data (no delete intent — deletion is an app concept)                                                    |
 | `move_node`                   | `(moved)` with `dropEffect: 'move'`                                                                                                                   |
 | `copy_node` (modifier-drag)   | `(moved)` with `dropEffect: 'copy'` — ⌥ on macOS, Ctrl elsewhere; keyboard `Ctrl/Cmd+C` + `V`                                                         |
-| `check_node` / `uncheck_node` | `[checkboxSelection]` + `SelectionModel` — cascade + tri-state derived                                                                                |
+| `check_node` / `uncheck_node` | `[checkboxSelection]` + `[(selectedKeys)]` — cascade + tri-state derived                                                                              |
 | `state.opened` restore        | `[defaultExpandedKeys]` / `tree.expandedKeys()` snapshot                                                                                              |
 | `$.jstree.defaults.dnd.*`     | `disableDrag` / `disableDrop` predicates                                                                                                              |
 

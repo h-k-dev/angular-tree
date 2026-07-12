@@ -4,7 +4,6 @@ import { Component, signal, viewChild } from '@angular/core';
 
 polyfillJsdomScrolling();
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { SelectionModel } from '@angular/cdk/collections';
 
 import { AngularTree } from './angular-tree';
 import { TreeNodeCheckbox } from './tree-node-checkbox';
@@ -46,7 +45,7 @@ const flushMicrotasks = () => new Promise((resolve) => setTimeout(resolve));
       [dataSource]="data"
       [childrenAccessor]="children"
       [expansionKey]="key"
-      [selection]="selection"
+      [(selectedKeys)]="selected"
       [multi]="true"
       [checkboxSelection]="true"
       [searchTerm]="term()"
@@ -66,7 +65,7 @@ class Host {
   children = (node: DemoNode) =>
     node.lazy ? Promise.resolve(LAZY_CHILDREN[node.id] ?? []) : node.children;
   key = (node: DemoNode) => node.id;
-  selection = new SelectionModel<string>(true);
+  selected = signal<readonly string[]>([]);
   term = signal('');
   match = (node: DemoNode, term: string) =>
     node.name.toLowerCase().includes(term.toLowerCase());
@@ -114,13 +113,13 @@ describe('AngularTree v2 — Phase 9 sweep', () => {
       await fixture.whenStable();
 
       checkboxOf('a1').click(); // anchor
-      expect(host.selection.selected).toEqual(['a1']);
+      expect(host.selected()).toEqual(['a1']);
 
       checkboxOf('b').dispatchEvent(
         new MouseEvent('click', { bubbles: true, shiftKey: true }),
       );
       // Visible order a, a1, a2, b, c → range a1..b, additive.
-      expect([...host.selection.selected].sort()).toEqual(['a1', 'a2', 'b']);
+      expect([...host.selected()].sort()).toEqual(['a1', 'a2', 'b']);
     });
   });
 

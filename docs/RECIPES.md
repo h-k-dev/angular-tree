@@ -98,6 +98,29 @@ activate/select semantics; `tabindex="-1"` keeps the checkbox out of the tab
 order (docs/ACCESSIBILITY.md); `Space` on the focused row is the keyboard
 toggle either way.
 
+## Keep a CDK `SelectionModel` (consumer-side bridge)
+
+Selection is signal-first: `[(selectedKeys)]` is the only tree input (the
+`SelectionModel` input was removed pre-release, 2026-07-12 — one write path
+instead of three). If surrounding code still wants a `SelectionModel`, bridge
+it in your component; the tree never needs to know:
+
+```ts
+readonly model = new SelectionModel<string>(true);
+readonly selectedKeys = signal<readonly string[]>([]);
+
+constructor() {
+  // tree → model
+  effect(() => this.model.setSelection(...this.selectedKeys()));
+  // model → tree (external writes elsewhere in your app)
+  this.model.changed
+    .pipe(takeUntilDestroyed())
+    .subscribe(() => this.selectedKeys.set([...this.model.selected]));
+}
+```
+
+`setSelection` no-ops on identical content, so the round-trip terminates.
+
 ## Loading mask over existing content
 
 `treeLoadingDef` covers the _initial_ load. For PrimeNG-style

@@ -20,7 +20,7 @@ export interface TreeNodeContext<S> {
   isExpanded: boolean;
   /** Index within the visible flat array. */
   index: number;
-  /** Row is in the `SelectionModel` (checkbox or ctrl/shift semantics). */
+  /** Row is in the selection set (checkbox or ctrl/shift semantics). */
   isSelected: boolean;
   /** Row is being renamed — consumer renders its input (tree owns state only). */
   isEditing: boolean;

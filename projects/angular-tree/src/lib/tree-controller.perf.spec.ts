@@ -42,6 +42,7 @@ function createController() {
     expansionKey: signal((node: PerfNode) => node.id),
     defaultExpandedKeys: signal<readonly string[]>([]),
     defaultFocusedKey: signal<string | undefined>(undefined),
+    selectedKeys: signal<readonly string[] | undefined>(undefined),
     searchTerm,
     searchMatch: signal((node: PerfNode, term: string) =>
       node.name.includes(term),

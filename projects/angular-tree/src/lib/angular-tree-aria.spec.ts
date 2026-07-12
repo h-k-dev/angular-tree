@@ -5,7 +5,6 @@ import { Component, signal, viewChild } from '@angular/core';
 polyfillJsdomScrolling();
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { SelectionModel } from '@angular/cdk/collections';
 import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import * as axe from 'axe-core';
 
@@ -39,7 +38,7 @@ const DATA: DemoNode[] = [
       [dataSource]="data"
       [childrenAccessor]="children"
       [expansionKey]="key"
-      [selection]="selection"
+      [(selectedKeys)]="selected"
       [multi]="true"
       [checkboxSelection]="checkbox()"
       [selectionMode]="mode()"
@@ -56,7 +55,7 @@ class AriaHost {
   data = DATA;
   children = (node: DemoNode) => node.children;
   key = (node: DemoNode) => node.id;
-  selection = new SelectionModel<string>(true);
+  selected = signal<readonly string[]>([]);
   checkbox = signal(false);
   mode = signal<'explicit' | 'follow'>('explicit');
   focus = signal<'roving' | 'activedescendant'>('roving');
@@ -153,18 +152,18 @@ describe('AngularTree ARIA', () => {
       target.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
 
     beforeEach(async () => {
-      fixture.componentInstance.selection.select('a1', 'b');
+      fixture.componentInstance.selected.set(['a1', 'b']);
       await fixture.whenStable();
     });
 
     it('a pointer-down outside the tree clears the selection (default on)', () => {
       pointerdown(document.body);
-      expect(fixture.componentInstance.selection.selected).toEqual([]);
+      expect(fixture.componentInstance.selected()).toEqual([]);
     });
 
     it('a pointer-down on empty viewport space clears too (file-manager semantics)', () => {
       pointerdown(viewportEl());
-      expect(fixture.componentInstance.selection.selected).toEqual([]);
+      expect(fixture.componentInstance.selected()).toEqual([]);
     });
 
     it('rows, indent guides, and CDK overlays never clear — their actions use the selection', () => {
@@ -177,7 +176,7 @@ describe('AngularTree ARIA', () => {
       pointerdown(menuItem);
       overlay.remove();
 
-      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+      expect(new Set(fixture.componentInstance.selected())).toEqual(
         new Set(['a1', 'b']),
       );
     });
@@ -186,14 +185,14 @@ describe('AngularTree ARIA', () => {
       fixture.componentInstance.deselect.set(false);
       await fixture.whenStable();
       pointerdown(document.body);
-      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+      expect(new Set(fixture.componentInstance.selected())).toEqual(
         new Set(['a1', 'b']),
       );
     });
   });
 
   it('binds aria-selected in plain mode, tri-state aria-checked in checkbox mode', async () => {
-    fixture.componentInstance.selection.select('a1');
+    fixture.componentInstance.selected.set(['a1']);
     await fixture.whenStable();
     expect(rowEl('a1')!.getAttribute('aria-selected')).toBe('true');
     expect(rowEl('a1')!.hasAttribute('aria-checked')).toBe(false);
@@ -225,22 +224,22 @@ describe('AngularTree ARIA', () => {
     await fixture.whenStable();
 
     keydown({ key: 'ArrowDown' }); // a1
-    expect(fixture.componentInstance.selection.selected).toEqual(['a1']);
+    expect(fixture.componentInstance.selected()).toEqual(['a1']);
     keydown({ key: 'ArrowDown' }); // a2
-    expect(fixture.componentInstance.selection.selected).toEqual(['a2']);
+    expect(fixture.componentInstance.selected()).toEqual(['a2']);
   });
 
   it('Shift+Arrow extends, Ctrl+click toggles, Shift+click ranges over visible order', async () => {
     keydown({ key: ' ' }); // select a (anchor)
     keydown({ key: 'ArrowDown', shiftKey: true }); // extend to a1
-    expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+    expect(new Set(fixture.componentInstance.selected())).toEqual(
       new Set(['a', 'a1']),
     );
 
     rowEl('a1')!.dispatchEvent(
       new MouseEvent('click', { bubbles: true, ctrlKey: true }),
     );
-    expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+    expect(new Set(fixture.componentInstance.selected())).toEqual(
       new Set(['a']),
     );
 
@@ -248,7 +247,7 @@ describe('AngularTree ARIA', () => {
       new MouseEvent('click', { bubbles: true, shiftKey: true }),
     );
     // range anchor (a1, last explicit toggle) → b over visible order
-    expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+    expect(new Set(fixture.componentInstance.selected())).toEqual(
       new Set(['a', 'a1', 'a2', 'b']),
     );
   });
@@ -294,12 +293,12 @@ describe('AngularTree ARIA', () => {
 
   it('plain row click never mutates selection (Gmail semantics, locked)', () => {
     rowEl('a1')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    expect(fixture.componentInstance.selection.selected).toEqual([]);
+    expect(fixture.componentInstance.selected()).toEqual([]);
   });
 
   it('exposes checkState through the template context (icon-as-checkbox driver)', async () => {
     fixture.componentInstance.checkbox.set(true);
-    fixture.componentInstance.selection.select('a1');
+    fixture.componentInstance.selected.set(['a1']);
     await fixture.whenStable();
 
     const rows = fixture.componentInstance.tree().visibleRows();
@@ -315,7 +314,7 @@ describe('AngularTree ARIA', () => {
   });
 
   describe('context menu contract', () => {
-    it('right-click on an unselected row replaces the selection first (OS convention)', () => {
+    it('right-click on an unselected row replaces the selection first (OS convention)', async () => {
       const events: {
         ids: readonly string[];
         position: { x: number; y: number };
@@ -323,7 +322,8 @@ describe('AngularTree ARIA', () => {
       fixture.componentInstance
         .tree()
         .contextRequested.subscribe((e) => events.push(e));
-      fixture.componentInstance.selection.select('b');
+      fixture.componentInstance.selected.set(['b']);
+      await fixture.whenStable();
 
       rowEl('a1')!.dispatchEvent(
         new MouseEvent('contextmenu', {
@@ -333,24 +333,25 @@ describe('AngularTree ARIA', () => {
         }),
       );
 
-      expect(fixture.componentInstance.selection.selected).toEqual(['a1']);
+      expect(fixture.componentInstance.selected()).toEqual(['a1']);
       expect(events).toEqual([
         expect.objectContaining({ ids: ['a1'], position: { x: 40, y: 60 } }),
       ]);
     });
 
-    it('right-click inside a multi-selection keeps it intact and reports all ids', () => {
+    it('right-click inside a multi-selection keeps it intact and reports all ids', async () => {
       const events: { ids: readonly string[] }[] = [];
       fixture.componentInstance
         .tree()
         .contextRequested.subscribe((e) => events.push(e));
-      fixture.componentInstance.selection.select('a1', 'b');
+      fixture.componentInstance.selected.set(['a1', 'b']);
+      await fixture.whenStable();
 
       rowEl('b')!.dispatchEvent(
         new MouseEvent('contextmenu', { bubbles: true }),
       );
 
-      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+      expect(new Set(fixture.componentInstance.selected())).toEqual(
         new Set(['a1', 'b']),
       );
       expect(new Set(events[0].ids)).toEqual(new Set(['a1', 'b']));

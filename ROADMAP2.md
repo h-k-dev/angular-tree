@@ -81,6 +81,30 @@ The concrete driver for this library: replace **two** engines in `iusta-core-fro
 
 Exit criteria: `document-tree` and `core-dnd-tree` reimplemented on angular-tree in a branch, feature-matched (incl. the trash/category/document drop rules and lazy document loading), passing their existing specs.
 
+## Phase 15 — Consumer feedback round 1 (iusta `document-tree` in production, 2026-07-12)
+
+First real-consumer feedback: the Phase 14 driver migrated `document-tree` off PrimeNG `p-tree` and filed six requests, ranked. Common theme of 1–3: they are the only reasons the consumer still carries `effect()` + `viewChild` plumbing — a signals-first library should own that sync. All six accepted 2026-07-12 (user call) with two design corrections (#5, #6 below); everything is additive, every default preserves current behavior. Implementation order = the consumer's priority order.
+
+1. **Controlled selection — `selectedKeys` model input** (decision 7) ✅ **implemented 2026-07-12, amended same day (user call): the `SelectionModel` input is REMOVED, not kept for back-compat** — pre-release with zero published consumers, back-compat protected nobody, and keeping it meant dual write paths in every selection funnel plus a bridge effect for a model that isn't signal-reactive (and emits `changed` twice per replace-select, and duplicates `multi` in its constructor flag). Final shape: `model<readonly string[] | undefined>()`, default `undefined` = tree-owned state; `selectedIds` in the controller is a `linkedSignal` over the input — external writes are synchronous, echoes (the consumer writing our emission back) return the previous Set identity so the controlled round-trip is churn-free by construction; interaction writes go `.update()` + model sync → `(selectedKeysChange)`. `selectionChange` (ids + nodes) unchanged. Consumers who want a `SelectionModel` bridge it consumer-side (docs/RECIPES.md). ROADMAP.md v1 settled entry annotated. All five SelectionModel spec hosts migrated; 132 lib + 41 app specs green
+2. **Controlled expansion — live `expandedKeys` model input** (decision 8 — explicitly reopens the v1 lock "expansion state internal + methods"). The lock's perf rationale (private state permits Phase 11's O(1) in-place Set mutation; a public model contract forces O(expanded) copies per toggle) is preserved for unbound consumers — only consumers who bind pay the copies, knowingly. Covers server-side-search auto-expand and state restore, whose write half is imperative-only today (`setExpanded`). `defaultExpandedKeys` and `(toggled)` unchanged
+3. **Declarative children-cache invalidation — `childrenDeps` input** (decision 9). `input<unknown>()`; a reference-unequal change behaves exactly like `invalidateChildren()` tree-wide (abort in-flight, expanded reload now, collapsed on next expand). Mirrors `resource({ params })`. Accessor signal auto-tracking rejected: the accessor is probed inside the `flat()` computed behind the WeakMap memo — consumer signal reads there would entangle the flatten graph. Headless line holds: the tree still never fetches, it only re-asks
+4. **`SelectEvent.trigger` + `added`/`removed`** (decision 10, additive). The issue's "re-click emits nothing" is factually wrong (under `clickAction='select'` a re-click emits unconditionally) but the real gap stands: a set-shaped event can't identify the interacted row, so "active row / preview pane" consumers guess with `nodes.at(-1)`. Both write funnels know their row — thread `trigger?: T` through, derive `added`/`removed` against the previous set. Follow-up candidate (not settled): a public `focusedNode` output — preview-follows-focus would also cover keyboard navigation, which `trigger` alone doesn't
+5. **Key-addressed API — `tree.byKey` facade** (decision 11 — the proposed `T | string` union rejected: `T` may itself be `string`, and the union weakens every signature). `tree.byKey.expand/collapse/toggle/isExpanded/edit/focus/scrollTo/openContextMenu/retryChildren/invalidateChildren(key)`; unknown key = no-op (`isExpanded` = false). Keys are the tree's identity currency (consumers naturally store `parentKey`); today they rebuild a key→node map the controller already owns
+6. **Per-node row styling — `rowClass` / `rowStyle` accessors** (decision 12 — mechanism corrected). Accessor-shaped like `disableDrag`; applied to the tree-owned row element where the `--tree-*` chains resolve at point of use. Correction: the consumer's headline use case (per-node guide tint) is unreachable by row-applied variables — guides are per-group overlay divs, *siblings* of the rows, so nothing set on a row inherits into them. Therefore the **group parent's** accessor result is additionally applied to that group's guide overlay: one accessor, both surfaces, documented. Ships-no-UI preserved
+
+**Demo example mapping** (each lands where it reads as a real-world pattern):
+
+| Fix | Example | Showcase |
+| --- | --- | --- |
+| 1 `selectedKeys` | All-In-1 (`/`) | Front page teaches the signal-first `[(selectedKeys)]` pattern; `SelectionModel` stays spec- and docs-covered |
+| 2 `expandedKeys` | All-In-1 | Search auto-expands folders with matches; clearing restores the previous expansion |
+| 3 `childrenDeps` | Lazy Load Only (`/lazy`) | A real fetch parameter (e.g. GitHub ref switcher) bound to `[childrenDeps]` — flip it, caches drop, expanded branches reload |
+| 4 `trigger` | Static (`/static`) | Layer-panel inspector driven by the last-clicked layer, incl. re-click of the already-selected row |
+| 5 `byKey` | Lazy Load Only | Post-move refresh via `tree.byKey.invalidateChildren(parentKey)` — the stored-parent-key scenario from the feedback |
+| 6 `rowStyle` | Static | Figma-faithful: component subtrees tinted (row + that group's guide) via one accessor |
+
+Status: #1 shipped 2026-07-12 (incl. the same-day `SelectionModel` removal + All-In-1 demo migration); 2–6 pending.
+
 ## Phase 13 — DX & Ecosystem
 
 - Documentation site (analog/ng-doc) with live StackBlitz examples per feature: lazy loading, DnD, checkbox trees, menus, theming, SSR
@@ -163,6 +187,48 @@ interface TreeAnnouncements<T> {
 
 // Keyboard map: PageUp / PageDown — viewport-height jumps (APG optional keys).
 // Escape during a pointer drag cancels it: drag state resets, no `moved`.
+
+// --- Phase 15 additions (sketched 2026-07-12, all additive) ---
+
+// Controlled state — model() two-way; undefined = unbound (tree-owned state).
+// [(selectedKeys)] / [(expandedKeys)] for shared state; one-way [x] + (xChange)
+// write-back is the strictly controlled shape. The [selection] SelectionModel
+// input is REMOVED (decision 7 amendment) — consumer-side bridge in RECIPES.md.
+selectedKeys: model<readonly string[] | undefined>();  // #1 ✅ 2026-07-12
+expandedKeys: model<readonly string[] | undefined>();  // #2 (decision 8; defaultExpandedKeys unchanged)
+
+// Declarative lazy invalidation, mirroring resource({ params }) — a
+// reference-unequal change ≙ invalidateChildren() tree-wide:
+childrenDeps: input<unknown>();                        // #3
+
+// SelectEvent — additive; `trigger` identifies the interacted row even when
+// the resulting set is unchanged (re-click of the selected row):
+interface SelectEvent<T> {
+  ids: readonly string[];
+  nodes: readonly T[];
+  trigger?: T;               // the row whose interaction caused this write
+  added?: readonly string[]; // vs the previous set
+  removed?: readonly string[];
+}
+
+// Key-addressed facade (decision 11) — unknown key = no-op:
+interface TreeApi<T> {
+  // …surface unchanged
+  readonly byKey: {
+    expand(key: string): void;    collapse(key: string): void;
+    toggle(key: string): void;    isExpanded(key: string): boolean;
+    edit(key: string): void;      focus(key: string): void;
+    scrollTo(key: string): void;  openContextMenu(key: string): void;
+    retryChildren(key: string): void;
+    invalidateChildren(key?: string): void;
+  };
+}
+
+// Per-node row styling (decision 12) — accessor-shaped like disableDrag;
+// applied to the row element AND (the group parent's result) to that group's
+// indent-guide overlay, since overlays are siblings of rows, not children:
+rowClass: input<((node: T) => string | readonly string[] | undefined) | undefined>();
+rowStyle: input<((node: T) => Record<string, string> | undefined) | undefined>();
 ```
 
 ## Settled decisions (v2)
@@ -175,6 +241,12 @@ interface TreeAnnouncements<T> {
 | 4   | `expandAll` over lazy subtrees                                             | Opt-in `expandAll({ loadLazy: true })`: batched `ensureChildren`, expanding batches as they resolve; default stays skip — a 100k lazy tree must never fetch-storm by accident                                        | 2026-07-07 |
 | 5   | `mat-checkbox` with `treeNodeCheckbox`                                     | Documented binding pattern (`[checked]`/`[indeterminate]` from `checkState`, `toggleSelection()` on change) — no Material coupling in the lib; the JSDoc "Phase 5 adapter" promise is amended                        | 2026-07-07 |
 | 6   | Row-internal interactive elements (a11y)                                   | Tree-shipped row directives leave the tab order (`tabindex="-1"` — keyboard equivalents exist: arrows, Space, F2, menu); arbitrary consumer buttons follow the same documented rule. No template-walking enforcement | 2026-07-07 |
+| 7   | Controlled selection surface (Phase 15) — amended same day                 | `selectedKeys` as `model<readonly string[] \| undefined>`; unbound = tree-owned state. **`[selection]` (`SelectionModel`) removed outright** (pre-release, zero consumers): one write path, no bridge effect — `selectedIds` is a `linkedSignal` over the input (echoes identity-preserved). Consumer-side bridge recipe in docs/RECIPES.md | 2026-07-12 |
+| 8   | Live `expandedKeys` (reopens the v1 "expansion internal + methods" lock)   | Opt-in model input; unbound consumers keep private state (and Phase 11's O(1) in-place-mutation option); bound consumers pay O(expanded) copies per toggle knowingly                                                 | 2026-07-12 |
+| 9   | Declarative lazy invalidation                                              | `childrenDeps: input<unknown>()` — reference change = `invalidateChildren()` tree-wide; accessor signal auto-tracking rejected (flatten-time probe must not track consumer signals)                                  | 2026-07-12 |
+| 10  | `SelectEvent` identifies the interaction                                   | Additive `trigger?: T` + `added`/`removed` threaded through the two existing write funnels; event shape otherwise unchanged                                                                                          | 2026-07-12 |
+| 11  | Key-addressed imperative API                                               | `tree.byKey.*` facade, unknown key = no-op; `T \| string` unions rejected (`T` may be `string`; weakens signatures)                                                                                                  | 2026-07-12 |
+| 12  | Per-node row styling                                                       | `rowClass`/`rowStyle` accessors on the row element **and** the group parent's result on that group's guide overlay (row-applied variables can't reach the sibling overlays)                                          | 2026-07-12 |
 
 ## Open questions (v2)
 

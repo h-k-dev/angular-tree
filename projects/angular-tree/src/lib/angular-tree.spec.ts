@@ -5,7 +5,6 @@ import { Component, signal, viewChild } from '@angular/core';
 polyfillJsdomScrolling();
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Directionality } from '@angular/cdk/bidi';
-import { SelectionModel } from '@angular/cdk/collections';
 import { Subject } from 'rxjs';
 
 import { AngularTree } from './angular-tree';
@@ -43,7 +42,7 @@ const flushMicrotasks = () => new Promise((resolve) => setTimeout(resolve));
       [dataSource]="data"
       [childrenAccessor]="children"
       [expansionKey]="key"
-      [selection]="selection"
+      [(selectedKeys)]="selected"
       [multi]="true"
       [checkboxSelection]="true"
       [searchTerm]="term()"
@@ -67,7 +66,7 @@ class Host {
   children = (node: DemoNode) =>
     node.lazy ? this.lazyResolver() : node.children;
   key = (node: DemoNode) => node.id;
-  selection = new SelectionModel<string>(true);
+  selected = signal<readonly string[]>([]);
   term = signal('');
   match = (node: DemoNode, term: string) =>
     node.name.toLowerCase().includes(term.toLowerCase());
@@ -127,11 +126,12 @@ describe('AngularTree', () => {
     expect(a2?.level).toBe(1);
   });
 
-  it('bridges the SelectionModel into reactive tree state', () => {
-    const { selection } = fixture.componentInstance;
+  it('mirrors the controlled selectedKeys input into reactive tree state', async () => {
+    const host = fixture.componentInstance;
     expect(tree.selectionActive()).toBe(false);
 
-    selection.select('a1');
+    host.selected.set(['a1']);
+    await fixture.whenStable();
     expect(tree.selectionActive()).toBe(true);
 
     tree.expand(DATA[0]);
@@ -139,20 +139,21 @@ describe('AngularTree', () => {
     expect(a1.context.isSelected).toBe(true);
   });
 
-  it('checkbox toggle cascades over the loaded subtree via the row handle', () => {
-    const { selection } = fixture.componentInstance;
+  it('checkbox toggle cascades over the loaded subtree via the row handle', async () => {
+    const host = fixture.componentInstance;
     const handle = tree
       .visibleRows()
       .find((row) => row.key === 'a')!
       .injector.get(TREE_NODE);
 
     handle.toggleSelection();
-    expect(new Set(selection.selected)).toEqual(
+    expect(new Set(host.selected())).toEqual(
       new Set(['a', 'a1', 'a2', 'a2x']),
     );
     expect(handle.checkState()).toBe('checked');
 
-    selection.deselect('a2x'); // external model write flows back in
+    host.selected.set(['a', 'a1', 'a2']); // external write flows back in
+    await fixture.whenStable();
     expect(handle.checkState()).toBe('indeterminate');
 
     handle.toggleSelection(); // indeterminate → select the whole subtree again
@@ -262,7 +263,7 @@ describe('AngularTree', () => {
 
     it('Space toggles selection with cascade semantics', () => {
       keydown(' ');
-      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+      expect(new Set(fixture.componentInstance.selected())).toEqual(
         new Set(['a', 'a1', 'a2', 'a2x']),
       );
     });
@@ -272,23 +273,23 @@ describe('AngularTree', () => {
       keydown('ArrowDown');
       keydown('ArrowDown'); // focus 'c'
       keydown(' ', { shiftKey: true });
-      const selected = new Set(fixture.componentInstance.selection.selected);
+      const selected = new Set(fixture.componentInstance.selected());
       expect(selected.has('b')).toBe(true);
       expect(selected.has('c')).toBe(true);
     });
 
     it('Ctrl+A selects all visible rows; Ctrl+A again clears (APG optional)', () => {
       keydown('a', { ctrlKey: true });
-      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+      expect(new Set(fixture.componentInstance.selected())).toEqual(
         new Set(['a', 'b', 'c']),
       );
       keydown('a', { ctrlKey: true });
-      expect(fixture.componentInstance.selection.selected).toEqual([]);
+      expect(fixture.componentInstance.selected()).toEqual([]);
     });
 
     it('Ctrl+Shift+End selects to the last node and moves focus there (APG optional)', () => {
       keydown('End', { ctrlKey: true, shiftKey: true });
-      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+      expect(new Set(fixture.componentInstance.selected())).toEqual(
         new Set(['a', 'b', 'c']),
       );
       expect(tabIndexes()['c']).toBe(0);
@@ -297,14 +298,14 @@ describe('AngularTree', () => {
     it('Ctrl+Shift+Home selects to the first node and moves focus there (APG optional)', () => {
       keydown('End'); // focus 'c' first
       keydown('Home', { ctrlKey: true, shiftKey: true });
-      expect(new Set(fixture.componentInstance.selection.selected)).toEqual(
+      expect(new Set(fixture.componentInstance.selected())).toEqual(
         new Set(['a', 'b', 'c']),
       );
       expect(tabIndexes()['a']).toBe(0);
     });
 
     it('tab target falls back to the first selected row before focus ever moves (APG)', async () => {
-      fixture.componentInstance.selection.select('b');
+      fixture.componentInstance.selected.set(['b']);
       await fixture.whenStable();
       expect(tabIndexes()).toEqual({ a: -1, b: 0, c: -1 });
     });
@@ -312,11 +313,11 @@ describe('AngularTree', () => {
     it('Escape clears the selection but never focus, and announces the clear', async () => {
       keydown(' '); // select 'a' (+ cascade), focus on 'a'
       expect(
-        fixture.componentInstance.selection.selected.length,
+        fixture.componentInstance.selected().length,
       ).toBeGreaterThan(0);
 
       const escape = keydown('Escape');
-      expect(fixture.componentInstance.selection.selected).toEqual([]);
+      expect(fixture.componentInstance.selected()).toEqual([]);
       expect(escape.defaultPrevented).toBe(true);
       expect(tabIndexes()['a']).toBe(0); // focus stays put — clear, not defocus
 
@@ -333,11 +334,11 @@ describe('AngularTree', () => {
 
       keydown('Escape'); // layer 1: unmark, selection intact
       expect(
-        fixture.componentInstance.selection.selected.length,
+        fixture.componentInstance.selected().length,
       ).toBeGreaterThan(0);
 
       keydown('Escape'); // layer 2: clear selection
-      expect(fixture.componentInstance.selection.selected).toEqual([]);
+      expect(fixture.componentInstance.selected()).toEqual([]);
 
       // Nothing left to consume — the event must reach enclosing dialogs.
       expect(keydown('Escape').defaultPrevented).toBe(false);

@@ -25,6 +25,17 @@ export function dropZoneAt(offsetInRow: number, itemSize: number): DropZone {
   return ratio < 0.25 ? 'before' : ratio < 0.75 ? 'inside' : 'after';
 }
 
+/** True when `keys` describes exactly the entries of `current` (duplicates collapse). */
+function sameKeySet(
+  current: ReadonlySet<string>,
+  keys: readonly string[],
+): boolean {
+  const next = new Set(keys);
+  return (
+    next.size === current.size && [...next].every((key) => current.has(key))
+  );
+}
+
 /**
  * One node of the internal flat model (react-arborist style). Internal —
  * consumers see only `T` and the template context.
@@ -57,6 +68,8 @@ export interface TreeControllerInputs<T> {
   expansionKey: Signal<TreeExpansionKey<T>>;
   defaultExpandedKeys: Signal<readonly string[]>;
   defaultFocusedKey: Signal<string | undefined>;
+  /** Controlled selection (`[(selectedKeys)]`); `undefined` = unbound. */
+  selectedKeys: Signal<readonly string[] | undefined>;
   searchTerm: Signal<string>;
   searchMatch: Signal<((node: T, term: string) => boolean) | undefined>;
 }
@@ -83,8 +96,25 @@ export class TreeController<T> {
   readonly expandedIds = linkedSignal<ReadonlySet<string>>(
     () => new Set(this.#inputs.defaultExpandedKeys()),
   );
-  /** Mirror of the consumer's `SelectionModel` (bridged by the component). */
-  readonly selectedIds = signal<ReadonlySet<string>>(new Set());
+  /**
+   * Derived from the controlled `selectedKeys` input; interaction writes land
+   * via `.set`/`.update` and stand until the input changes again. Unbound
+   * (`undefined`) never resets. Echoes (the consumer writing our own emission
+   * back) return the previous Set identity, so downstream computeds see no
+   * change — the controlled round-trip is churn-free by construction.
+   */
+  readonly selectedIds = linkedSignal<
+    readonly string[] | undefined,
+    ReadonlySet<string>
+  >({
+    source: () => this.#inputs.selectedKeys(),
+    computation: (keys, previous) => {
+      if (keys === undefined) return previous?.value ?? new Set();
+      return previous !== undefined && sameKeySet(previous.value, keys)
+        ? previous.value
+        : new Set(keys);
+    },
+  });
   readonly editingId = signal<string | null>(null);
   /** Derived from `defaultFocusedKey` until the first focus write (v2). */
   readonly focusedId = linkedSignal<string | null>(
@@ -446,7 +476,7 @@ export class TreeController<T> {
   });
 
   // ---------------------------------------------------------------------------
-  // Mutations (the component bridges selection to the consumer's SelectionModel)
+  // Mutations (the component syncs interaction writes back into `selectedKeys`)
   // ---------------------------------------------------------------------------
 
   setExpanded(key: string, value: boolean) {

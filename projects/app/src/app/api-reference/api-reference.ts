@@ -157,7 +157,7 @@ export class ApiReference {
       payload: 'SelectEvent<T> { ids, nodes }',
       fires:
         'Any selection interaction: click modifiers, Space, Ctrl/Cmd+A, checkbox cascade, Escape / outside-click clear',
-      job: 'Sync app state — your SelectionModel already holds the keys',
+      job: 'Sync app state — or skip it and bind [(selectedKeys)] two-way',
     },
     {
       name: '(toggled)',
