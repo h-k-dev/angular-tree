@@ -17,8 +17,23 @@
   display: flex;
   flex: 0 0 auto;
   flex-wrap: wrap;
+  gap: 0.25rem 1rem;
   align-items: center;
   justify-content: flex-end;
+}
+
+// GitHub ref switcher — the [childrenDeps] parameter, opposite the view tabs.
+// margin-inline-end pushes it flush left; the bar's flex-wrap drops it to its
+// own line on narrow screens.
+.lazy-refs {
+  margin-inline-end: auto;
+  align-items: center;
+}
+
+.lazy-refs-label {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-medium);
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', monospace;
 }
 
 .demo-tabs {

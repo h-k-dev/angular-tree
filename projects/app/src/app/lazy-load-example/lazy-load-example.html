@@ -1,6 +1,25 @@
 <!-- View switcher (PrimeNG-style): code tabs render this example's REAL source
      files, Shiki-highlighted from the copied `source/` assets — zero drift. -->
 <header class="demo-card-bar">
+  <!-- The [childrenDeps] parameter: switching the ref drops every cached child
+       list (tree side) while switchGithubRef resets the written-back graft
+       (consumer side) — expanded GitHub dirs refetch pinned to the new ref. -->
+  <nav
+    class="demo-tabs lazy-refs"
+    aria-label="GitHub branch"
+    [class.demo-hidden]="view() !== 'preview'"
+  >
+    <span class="lazy-refs-label">nodejs/node&#64;</span>
+    @for (ref of githubRefs; track ref) {
+      <button
+        class="demo-tab"
+        [attr.aria-selected]="githubRef() === ref"
+        (click)="switchGithubRef(ref)"
+      >
+        {{ ref }}
+      </button>
+    }
+  </nav>
   <nav class="demo-tabs" aria-label="Example view">
     @for (tab of viewTabs; track tab.id) {
       <button
@@ -35,6 +54,7 @@
     [dataSource]="roots()"
     [childrenAccessor]="children"
     [expansionKey]="key"
+    [childrenDeps]="githubRef()"
     [typeaheadText]="nodeName"
     [itemSize]="28"
     [indentGuides]="true"

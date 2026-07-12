@@ -21,6 +21,7 @@ import {
   applyMove,
   attachChildren,
   fetchChildren,
+  GITHUB_REFS,
   isBranch,
   LazyNode,
   rootNodes,
@@ -70,6 +71,16 @@ export class LazyLoadExample {
   /** The owned, progressively-loaded tree (fetches + moves write here). */
   readonly roots = signal<readonly LazyNode[]>(rootNodes());
 
+  /**
+   * Consumer-side fetch parameter (`[childrenDeps]`, Phase 15 #3): the GitHub
+   * accessor closes over it, so every cached child list under that root is
+   * stale the moment it changes. The binding hands the tree half of the
+   * refresh over declaratively — drop caches, abort in flight, refetch
+   * expanded dirs — no `viewChild` + `invalidateChildren()` plumbing.
+   */
+  readonly githubRef = signal<(typeof GITHUB_REFS)[number]>('main');
+  readonly githubRefs = GITHUB_REFS;
+
   /** Per-root Material icon — the five sources at a glance (string-keyed so the
    *  untyped template context can index it without a strict-index error). */
   readonly sourceIcon: Record<string, string> = {
@@ -112,17 +123,49 @@ export class LazyLoadExample {
     const existing = this.#inflight.get(node.id);
     if (existing) return existing;
 
-    const task = fetchChildren(node)
+    const task: Promise<readonly LazyNode[]> = fetchChildren(node, {
+      githubRef: this.githubRef(),
+    })
       .then((children) => {
         // Identity-preserving write-back: only this node + its ancestors get new
         // objects, so sibling branches keep their memoized accessor result.
-        this.roots.update((roots) => attachChildren(roots, node.id, children));
+        // Guarded: a ref switch deregisters GitHub tasks below, so a late
+        // resolve of the OLD ref can't graft stale children over the reset.
+        if (this.#inflight.get(node.id) === task)
+          this.roots.update((roots) =>
+            attachChildren(roots, node.id, children),
+          );
         return children;
       })
-      .finally(() => this.#inflight.delete(node.id)); // clear so Retry re-fetches
+      .finally(() => {
+        // Clear so Retry re-fetches — but never a successor's registration.
+        if (this.#inflight.get(node.id) === task)
+          this.#inflight.delete(node.id);
+      });
 
     this.#inflight.set(node.id, task);
     return task;
+  }
+
+  /**
+   * The consumer half of the `[childrenDeps]` refresh: the tree drops ITS
+   * caches on the binding change, but the written-back graft lives in OUR
+   * `roots` — reset the GitHub subtree so the re-asked accessor fetches
+   * instead of returning the stale graft, and deregister in-flight GitHub
+   * tasks so their write-backs are dead on arrival.
+   */
+  switchGithubRef(ref: (typeof GITHUB_REFS)[number]) {
+    if (ref === this.githubRef()) return;
+    this.githubRef.set(ref);
+    for (const key of [...this.#inflight.keys()])
+      if (key.startsWith('github')) this.#inflight.delete(key);
+    this.roots.update((roots) =>
+      roots.map((root) =>
+        root.source === 'github'
+          ? { ...root, children: undefined, meta: `GitHub repo @ ${ref}` }
+          : root,
+      ),
+    );
   }
 
   /**

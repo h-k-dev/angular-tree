@@ -163,6 +163,18 @@ export class AngularTree<T> {
   readonly collapseBehavior = input<'keep' | 'invalidate'>('keep');
 
   /**
+   * Declarative children-cache invalidation (v2, Phase 15 — mirrors
+   * `resource({ params })`): bind the parameters your `childrenAccessor`
+   * reads (filters, refs, locale). Whenever the value changes (reference
+   * equality, like any input), the tree behaves exactly like
+   * `invalidateChildren()` — resolved children drop, in-flight loads abort,
+   * expanded nodes re-run the accessor now, collapsed ones on their next
+   * expand — so a cached child list can never outlive the parameters it was
+   * fetched with. The tree still never fetches; it only re-asks YOUR accessor.
+   */
+  readonly childrenDeps = input<unknown>(undefined);
+
+  /**
    * Controlled selection over node keys (v2, Phase 15). Unbound
    * (`undefined`) = the tree owns selection state internally. Bound:
    * external value changes replace the selection (set-equality guarded, so
@@ -441,6 +453,20 @@ export class AngularTree<T> {
         true,
       ),
     );
+
+    // childrenDeps (v2 Phase 15): an effect, not a derivation — invalidation
+    // is a process (abort in-flight, drop overlays, re-run the accessor for
+    // expanded nodes). The first run sees the INITIAL value, not a change:
+    // nothing is stale yet, so it must not invalidate.
+    let depsSeen = false;
+    effect(() => {
+      this.childrenDeps();
+      if (!depsSeen) {
+        depsSeen = true;
+        return;
+      }
+      untracked(() => this.invalidateChildren());
+    });
 
     // Search announcements (v2): result counts reach screen readers as the
     // term or the data changes; the count is true matches, not the ancestor

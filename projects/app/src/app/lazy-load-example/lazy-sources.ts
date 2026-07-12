@@ -77,11 +77,27 @@ export function rootNodes(): LazyNode[] {
   ];
 }
 
+/**
+ * Consumer-side fetch parameters — the `[childrenDeps]` payload (Phase 15 #3).
+ * Cached child lists must never outlive these: the tree drops its caches when
+ * the bound value changes, and `LazyLoadExample` resets its written-back graft.
+ */
+export interface LazyParams {
+  /** Branch/tag the GitHub contents API pins every level to. */
+  readonly githubRef: string;
+}
+
+/** Branches offered by the demo's ref switcher. */
+export const GITHUB_REFS = ['main', 'v22.x', 'v20.x'] as const;
+
 /** Dispatches to the right backend — the tree calls this via the accessor. */
-export function fetchChildren(node: LazyNode): Promise<readonly LazyNode[]> {
+export function fetchChildren(
+  node: LazyNode,
+  params: LazyParams,
+): Promise<readonly LazyNode[]> {
   switch (node.source) {
     case 'github':
-      return fetchGithub(node);
+      return fetchGithub(node, params.githubRef);
     case 'gbif':
       return fetchGbif(node);
     case 'hackernews':
@@ -103,11 +119,14 @@ export function fetchChildren(node: LazyNode): Promise<readonly LazyNode[]> {
 
 const REPO = 'nodejs/node';
 
-/** GitHub contents API — one directory level per request. */
-async function fetchGithub(node: LazyNode): Promise<LazyNode[]> {
+/** GitHub contents API — one directory level per request, pinned to `ref`. */
+async function fetchGithub(node: LazyNode, ref: string): Promise<LazyNode[]> {
   const entries = await getJson<
     { name: string; path: string; type: string; size: number }[]
-  >(`https://api.github.com/repos/${REPO}/contents/${node.ref}`, 'GitHub');
+  >(
+    `https://api.github.com/repos/${REPO}/contents/${node.ref}?ref=${encodeURIComponent(ref)}`,
+    'GitHub',
+  );
   return entries
     .map((entry) => ({
       id: `github:${entry.path}`,
