@@ -56,9 +56,17 @@ export class StaticExample {
   readonly figma = FIGMA_LAYERS;
   readonly framer = FRAMER_LAYERS;
 
-  /** Layer panels open fully expanded — tool convention. */
-  readonly figmaExpanded = containerIds(FIGMA_LAYERS);
-  readonly framerExpanded = containerIds(FRAMER_LAYERS);
+  /**
+   * Layer panels open fully expanded — tool convention. `[(expandedKeys)]`
+   * (v2 Phase 15) makes the set a two-way signal: the bar's log renders it
+   * live, so collapsing a group visibly drops its key from the output value.
+   */
+  readonly figmaExpanded = signal<readonly string[]>(
+    containerIds(FIGMA_LAYERS),
+  );
+  readonly framerExpanded = signal<readonly string[]>(
+    containerIds(FRAMER_LAYERS),
+  );
 
   /** Widened for the untyped fallback def (`node.kind` is `any` there). */
   readonly icons: Record<string, string> = DESIGN_ICONS;

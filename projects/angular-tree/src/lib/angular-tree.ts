@@ -112,15 +112,8 @@ interface FlatRow<T> {
     CdkMenu,
   ],
   providers: [TreeController, TreeFocusEngine, TreeMenuHost, TreeDragSession],
-  // The built-in context-menu trigger (ROADMAP 2026-07-06). TreeMenuHost
-  // drives it explicitly (threading the triggering event so it can't
-  // self-close); the trigger stays disabled at rest so its own contextmenu
-  // listener never opens a stale menu. Inert without a projected treeContextMenu.
   hostDirectives: [CdkContextMenuTrigger],
   host: {
-    // Row height, republished as a read-only CSS variable: consumer templates
-    // size their row content (toggle targets, spacers) from the SAME source
-    // as the scroll strategy instead of repeating the number in CSS.
     '[style.--tree-row-height]': 'itemSize() + "px"',
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -144,8 +137,20 @@ export class AngularTree<T> {
   /** Fixed row height in px — required for virtualization. */
   readonly itemSize = input(32);
 
-  /** Keys expanded on first render (restore-on-load, ROADMAP settled). */
+  /** Keys expanded on first render; inert while `[expandedKeys]` is bound. */
   readonly defaultExpandedKeys = input<readonly string[]>([]);
+
+  /**
+   * Controlled expansion over node keys (v2, Phase 15 — supersedes the
+   * `expandedKeys()` snapshot method). Unbound (`undefined`) = the tree owns
+   * expansion state (seeded by `defaultExpandedKeys`). Bound: external value
+   * changes replace the expansion set (set-equality guarded — write-backs
+   * never echo) and `defaultExpandedKeys` is inert; every tree-initiated
+   * expansion write (toggle, expandAll/collapseAll, expandDescendants,
+   * setExpanded) updates the model → `(expandedKeysChange)`. `(toggled)`
+   * stays the per-node intent; this is the whole-set state channel.
+   */
+  expandedKeys = model<readonly string[] | undefined>(undefined);
 
   /** Initial roving-tabindex target (v2) — unknown keys fall back to row 1. */
   readonly defaultFocusedKey = input<string | undefined>(undefined);
@@ -381,6 +386,7 @@ export class AngularTree<T> {
       expansionKey: this.expansionKey,
       defaultExpandedKeys: this.defaultExpandedKeys,
       defaultFocusedKey: this.defaultFocusedKey,
+      expandedKeys: this.expandedKeys,
       selectedKeys: this.selectedKeys,
       searchTerm: this.searchTerm,
       searchMatch: this.searchMatch,
@@ -966,6 +972,7 @@ export class AngularTree<T> {
   /** Expands `node` and every (sync-loaded) descendant beneath it. */
   expandDescendants(node: T) {
     this.#controller.expandWithDescendants(this.expansionKey()(node));
+    this.#syncControlledExpansion();
   }
 
   /**
@@ -977,6 +984,7 @@ export class AngularTree<T> {
    */
   expandAll(options?: { loadLazy?: boolean }) {
     this.#controller.expandAll();
+    this.#syncControlledExpansion();
     if (options?.loadLazy) void this.#expandLazyFrontier();
   }
 
@@ -1003,20 +1011,19 @@ export class AngularTree<T> {
       // No wave resolved anything (all errors/noops) → stop rather than spin.
       if (!results.some((result) => result.status === 'loaded')) return;
       this.#controller.expandAll();
+      this.#syncControlledExpansion();
     }
   }
 
   collapseAll() {
     this.#controller.collapseAll();
+    this.#syncControlledExpansion();
   }
 
-  /** Lazily materialized snapshot for persistence — hot paths never pay for it. */
-  expandedKeys(): ReadonlySet<string> {
-    return new Set(this.#controller.expandedIds());
-  }
-
+  /** Bulk-set for unbound trees; a bound `[(expandedKeys)]` covers this reactively. */
   setExpanded(keys: Iterable<string>) {
     this.#controller.expandedIds.set(new Set(keys));
+    this.#syncControlledExpansion();
   }
 
   /**
@@ -1088,6 +1095,7 @@ export class AngularTree<T> {
     if (this.isExpanded(node) === value) return;
     const key = this.expansionKey()(node);
     this.#controller.setExpanded(key, value);
+    this.#syncControlledExpansion();
     this.toggled.emit({ id: key, node, expanded: value });
 
     // Expand intent triggers the lazy load — rendering never does (ROADMAP:
@@ -1201,5 +1209,11 @@ export class AngularTree<T> {
   #syncControlledKeys() {
     if (this.selectedKeys() !== undefined)
       this.selectedKeys.set([...this.#controller.selectedIds()]);
+  }
+
+  /** Same as `#syncControlledKeys`, for expansion (→ expandedKeysChange). */
+  #syncControlledExpansion() {
+    if (this.expandedKeys() !== undefined)
+      this.expandedKeys.set([...this.#controller.expandedIds()]);
   }
 }

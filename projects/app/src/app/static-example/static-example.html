@@ -28,7 +28,7 @@
       [dataSource]="figma"
       [childrenAccessor]="children"
       [expansionKey]="key"
-      [defaultExpandedKeys]="figmaExpanded"
+      [(expandedKeys)]="figmaExpanded"
       [typeaheadText]="nodeName"
       [itemSize]="28"
       [indentGuides]="true"
@@ -66,6 +66,15 @@
         </span>
       </ng-template>
     </angular-tree>
+    <!-- Design-tool status bar (the VS Code example's pattern): the live
+         [(expandedKeys)] output value — collapse a group and its key drops
+         out of the array in place. -->
+    <footer class="tool-statusbar">
+      <span class="tool-statusbar-label">[(expandedKeys)]</span>
+      <code class="tool-statusbar-value"
+        >[{{ figmaExpanded().join(', ') }}]</code
+      >
+    </footer>
   </section>
 
   <section class="tool-panel tool-panel--framer" aria-labelledby="framer-title">
@@ -78,7 +87,7 @@
       [dataSource]="framer"
       [childrenAccessor]="children"
       [expansionKey]="key"
-      [defaultExpandedKeys]="framerExpanded"
+      [(expandedKeys)]="framerExpanded"
       [typeaheadText]="nodeName"
       [itemSize]="28"
       [indentGuides]="true"
@@ -116,6 +125,12 @@
         </span>
       </ng-template>
     </angular-tree>
+    <footer class="tool-statusbar">
+      <span class="tool-statusbar-label">[(expandedKeys)]</span>
+      <code class="tool-statusbar-value"
+        >[{{ framerExpanded().join(', ') }}]</code
+      >
+    </footer>
   </section>
 </div>
 

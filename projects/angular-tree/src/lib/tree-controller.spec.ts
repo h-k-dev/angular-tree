@@ -55,6 +55,7 @@ function createController(
     expansionKey: signal((node: DemoNode) => node.id),
     defaultExpandedKeys: signal<readonly string[]>([]),
     defaultFocusedKey: signal<string | undefined>(undefined),
+    expandedKeys: signal<readonly string[] | undefined>(undefined),
     selectedKeys: signal<readonly string[] | undefined>(undefined),
     searchTerm,
     searchMatch: signal<

@@ -46,7 +46,7 @@ here it's the identity everything hangs off — selection, expansion, focus).
 | `(onNodeSelect)`                                       | `(selectionChange)` / `(activated)` depending on what it drove                                                                                   |
 | `(onNodeDoubleClick)`                                  | `(activated)` under `clickAction="select"`                                                                                                       |
 | `(onNodeExpand)` + fetched-flag lazy load              | async `childrenAccessor`; per-row `isLoading`/`hasError` context; refresh via `tree.invalidateChildren(node)` or `collapseBehavior="invalidate"` |
-| `(onNodeCollapse)` / expanded bookkeeping on nodes     | `(toggled)` intent; state via `tree.expandedKeys()` / `[defaultExpandedKeys]` — nodes never mutated                                              |
+| `(onNodeCollapse)` / expanded bookkeeping on nodes     | `(toggled)` intent; whole-set state via `[(expandedKeys)]` — nodes never mutated                                                                 |
 | `[loading]` `loadingMode="mask"`                       | `[loading]` + `treeLoadingDef` (initial); operation masks: RECIPES.md                                                                            |
 | `[contextMenu]="cm"` + `<p-contextmenu>`               | `<ng-template treeContextMenu let-node let-ids="ids">` — items only, the tree owns trigger/position/keyboard/close-on-scroll                     |
 | `[draggableNodes]`/`[droppableNodes]` + `(onNodeDrop)` | always draggable unless `disableDrag`; validate with `disableDrop(ctx)` _before_ the drop lands; apply `(moved)` yourself                        |
@@ -69,7 +69,7 @@ handlers, drop-validation revert logic.
 | `move_node`                   | `(moved)` with `dropEffect: 'move'`                                                                                                                   |
 | `copy_node` (modifier-drag)   | `(moved)` with `dropEffect: 'copy'` — ⌥ on macOS, Ctrl elsewhere; keyboard `Ctrl/Cmd+C` + `V`                                                         |
 | `check_node` / `uncheck_node` | `[checkboxSelection]` + `[(selectedKeys)]` — cascade + tri-state derived                                                                              |
-| `state.opened` restore        | `[defaultExpandedKeys]` / `tree.expandedKeys()` snapshot                                                                                              |
+| `state.opened` restore        | `[(expandedKeys)]` two-way (or `[defaultExpandedKeys]` for load-only restore)                                                                         |
 | `$.jstree.defaults.dnd.*`     | `disableDrag` / `disableDrop` predicates                                                                                                              |
 
 ### Create-node recipe

@@ -163,7 +163,7 @@ export class ApiReference {
       name: '(toggled)',
       payload: 'ToggleEvent<T> { id, node, expanded }',
       fires: 'Node expanded or collapsed',
-      job: 'Optional: persist expansion (pair with expandedKeys() / defaultExpandedKeys)',
+      job: 'Optional side-channel — [(expandedKeys)] already carries the whole set',
     },
     {
       name: '(childrenLoaded)',

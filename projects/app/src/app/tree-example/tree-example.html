@@ -4,7 +4,7 @@
   [dataSource]="roots()"
   [childrenAccessor]="getChildren"
   [expansionKey]="getKey"
-  [defaultExpandedKeys]="defaultExpandedKeys()"
+  [(expandedKeys)]="expandedKeys"
   [itemSize]="40"
   [(selectedKeys)]="selectedKeys"
   [multi]="true"

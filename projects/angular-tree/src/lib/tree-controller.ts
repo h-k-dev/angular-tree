@@ -68,6 +68,8 @@ export interface TreeControllerInputs<T> {
   expansionKey: Signal<TreeExpansionKey<T>>;
   defaultExpandedKeys: Signal<readonly string[]>;
   defaultFocusedKey: Signal<string | undefined>;
+  /** Controlled expansion (`[(expandedKeys)]`); `undefined` = unbound. */
+  expandedKeys: Signal<readonly string[] | undefined>;
   /** Controlled selection (`[(selectedKeys)]`); `undefined` = unbound. */
   selectedKeys: Signal<readonly string[] | undefined>;
   searchTerm: Signal<string>;
@@ -92,10 +94,27 @@ export class TreeController<T> {
   // Core state
   // ---------------------------------------------------------------------------
 
-  /** Derived from `defaultExpandedKeys` until the first expand/collapse write. */
-  readonly expandedIds = linkedSignal<ReadonlySet<string>>(
-    () => new Set(this.#inputs.defaultExpandedKeys()),
-  );
+  /**
+   * Derived from the controlled `expandedKeys` input; interaction writes land
+   * via `.set` and stand until the input changes again. While UNBOUND
+   * (`undefined`), derives from `defaultExpandedKeys` instead — reading it
+   * only then keeps a later default change resetting unbound trees (the v1
+   * linkedSignal behavior) while a bound tree ignores it entirely. Echoes
+   * return the previous Set identity (see `selectedIds`).
+   */
+  readonly expandedIds = linkedSignal<
+    readonly string[] | undefined,
+    ReadonlySet<string>
+  >({
+    source: () => this.#inputs.expandedKeys(),
+    computation: (keys, previous) => {
+      if (keys === undefined)
+        return new Set(this.#inputs.defaultExpandedKeys());
+      return previous !== undefined && sameKeySet(previous.value, keys)
+        ? previous.value
+        : new Set(keys);
+    },
+  });
   /**
    * Derived from the controlled `selectedKeys` input; interaction writes land
    * via `.set`/`.update` and stand until the input changes again. Unbound

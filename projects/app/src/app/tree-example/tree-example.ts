@@ -113,8 +113,13 @@ export class TreeExample {
   /** Writable (mutation intents apply here), re-derived when the scale switches. */
   roots = linkedSignal<DocNode[]>(() => this.#example().roots);
 
-  /** Everything expanded on load so the viewport scrolls immediately. */
-  defaultExpandedKeys = computed(() => this.#example().folderIds);
+  /**
+   * Controlled expansion (v2 Phase 15): `[(expandedKeys)]` — everything
+   * expanded on load so the viewport scrolls immediately; a scale switch
+   * re-derives (linkedSignal resets on its source), user toggles write back.
+   * Snapshot/restore is just this signal — no imperative API needed.
+   */
+  expandedKeys = linkedSignal<readonly string[]>(() => this.#example().folderIds);
   nodeCount = computed(() => this.#example().nodeCount);
 
   /**

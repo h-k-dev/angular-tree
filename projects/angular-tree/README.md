@@ -96,7 +96,8 @@ The most-used surface — the [live demo](https://h-k-dev.github.io/angular-tree
 | `selectedKeys`, `multi`, `checkboxSelection`                | Controlled selection — `[(selectedKeys)]` two-way over keys; optional cascade |
 | `searchTerm`, `searchMatch`                                 | Filtering; matches keep their ancestor chain visible                      |
 | `disableDrag`, `disableDrop`, `disableEdit`, `isSelectable` | Per-node behavior predicates — type rules live in your code, not the tree |
-| `defaultExpandedKeys`, `loading`, `indentGuides`            | Initial expansion, root-level loading state, clickable guide lines        |
+| `expandedKeys`, `defaultExpandedKeys`                       | Controlled expansion — `[(expandedKeys)]` two-way; or initial-only keys      |
+| `loading`, `indentGuides`                                   | Root-level loading state, clickable guide lines                              |
 
 | Output                                  | Fires when                                                           |
 | --------------------------------------- | -------------------------------------------------------------------- |
