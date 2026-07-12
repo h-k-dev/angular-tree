@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 import {
   AngularTree,
+  SelectEvent,
   TreeNodeDef,
   TreeNodeToggle,
 } from '@h-k-dev/angular-tree';
@@ -74,6 +75,26 @@ export class StaticExample {
   children = (node: DesignNode) => node.children;
   key = (node: DesignNode) => node.id;
   nodeName = (node: DesignNode) => node.name;
+
+  /**
+   * The last raw `(selectionChange)` — the inspector strip renders it as-is
+   * (Phase 15 #4): `trigger` names the clicked layer even when the set didn't
+   * change, so re-clicking the selected layer still advances the counter —
+   * the "preview pane refocus" case a set-shaped event can't express.
+   */
+  readonly lastSelect = signal<{
+    panel: 'figma' | 'framer';
+    event: SelectEvent<DesignNode>;
+    count: number;
+  } | null>(null);
+
+  onSelect(panel: 'figma' | 'framer', event: SelectEvent<DesignNode>) {
+    this.lastSelect.update((last) => ({
+      panel,
+      event,
+      count: (last?.count ?? 0) + 1,
+    }));
+  }
 
   // ---------------------------------------------------------------------------
   // Example view tabs (PrimeNG-style): preview ↔ the example's real sources

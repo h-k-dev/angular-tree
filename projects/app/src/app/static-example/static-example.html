@@ -33,6 +33,7 @@
       [itemSize]="28"
       [indentGuides]="true"
       [clickAction]="'select'"
+      (selectionChange)="onSelect('figma', $event)"
     >
       <ng-template
         treeNodeDef
@@ -92,6 +93,7 @@
       [itemSize]="28"
       [indentGuides]="true"
       [clickAction]="'select'"
+      (selectionChange)="onSelect('framer', $event)"
     >
       <ng-template
         treeNodeDef
@@ -133,6 +135,38 @@
     </footer>
   </section>
 </div>
+
+<!-- Inspector strip (Phase 15 #4): the last raw (selectionChange) event.
+     `trigger` names the clicked layer even when the set is unchanged — re-click
+     the selected layer and the counter still advances with empty deltas.
+     Set-level writes (Ctrl+A, Escape / outside-click clear) carry no trigger. -->
+<aside
+  class="inspector"
+  aria-label="Last selectionChange event"
+  [class.demo-hidden]="view() !== 'preview'"
+>
+  @if (lastSelect(); as last) {
+    <span class="inspector-count">#{{ last.count }}</span>
+    <span class="inspector-panel">{{ last.panel }}</span>
+    @if (last.event.trigger; as trigger) {
+      <mat-icon class="inspector-icon">{{ icons[trigger.kind] }}</mat-icon>
+      <span class="inspector-name">{{ trigger.name }}</span>
+      <span class="inspector-kind">{{ trigger.kind }}</span>
+    } @else {
+      <span class="inspector-kind">no trigger — set-level write</span>
+    }
+    <code class="inspector-deltas"
+      >+[{{ last.event.added.join(', ') }}] −[{{
+        last.event.removed.join(', ')
+      }}]</code
+    >
+  } @else {
+    <span class="inspector-kind"
+      >Click a layer — (selectionChange) lands here: trigger · added ·
+      removed.</span
+    >
+  }
+</aside>
 
 @if (view() !== 'preview') {
   @if (exampleSource()[view()]; as code) {

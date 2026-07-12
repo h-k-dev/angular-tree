@@ -839,7 +839,7 @@ export class AngularTree<T> {
   #prepareContext(row: FlatRow<T>, position?: { x: number; y: number }) {
     if (!row.context.isSelected && this.isSelectable()?.(row.node) !== false) {
       this.#selectionAnchor = row.key;
-      this.#writeSelection([row.key], 'replace');
+      this.#writeSelection([row.key], 'replace', row.node);
     }
 
     const selected = [...this.#controller.selectedIds()];
@@ -912,13 +912,13 @@ export class AngularTree<T> {
   #followFocus(row: FlatRow<T>) {
     if (this.isSelectable()?.(row.node) === false) return;
     this.#selectionAnchor = row.key;
-    this.#writeSelection([row.key], 'replace');
+    this.#writeSelection([row.key], 'replace', row.node);
   }
 
   /** Shift+Arrow: the newly focused row joins the selection (APG tree pattern). */
   #extendSelection(row: FlatRow<T>) {
     if (this.isSelectable()?.(row.node) === false) return;
-    this.#writeSelection([row.key], 'add');
+    this.#writeSelection([row.key], 'add', row.node);
   }
 
   /** Shift+click: additive range over the *visible* flat order. */
@@ -933,7 +933,8 @@ export class AngularTree<T> {
       .slice(lo, hi + 1)
       .filter((row) => this.isSelectable()?.(row.node) !== false)
       .map((row) => row.key);
-    this.#writeSelection(keys, 'add');
+    // The range ends where the gesture landed — that row is the trigger.
+    this.#writeSelection(keys, 'add', rows[to].node);
   }
 
   /**
@@ -950,18 +951,31 @@ export class AngularTree<T> {
     this.#writeSelection(allSelected ? [] : keys, 'replace');
   }
 
-  #writeSelection(keys: readonly string[], mode: 'add' | 'replace') {
+  #writeSelection(
+    keys: readonly string[],
+    mode: 'add' | 'replace',
+    trigger?: T,
+  ) {
+    const previous = this.#controller.selectedIds();
     this.#controller.selectedIds.update((current) => {
       const next = mode === 'replace' ? new Set<string>() : new Set(current);
       for (const key of keys) next.add(key);
       return next;
     });
     this.#syncControlledKeys();
+    this.#emitSelection(previous, trigger);
+  }
 
-    const ids = [...this.#controller.selectedIds()];
+  /** One event shape for both funnels — deltas against the pre-write set. */
+  #emitSelection(previous: ReadonlySet<string>, trigger: T | undefined) {
+    const current = this.#controller.selectedIds();
+    const ids = [...current];
     this.selectionChange.emit({
       ids,
       nodes: this.#controller.nodesForKeys(ids),
+      trigger,
+      added: ids.filter((key) => !previous.has(key)),
+      removed: [...previous].filter((key) => !current.has(key)),
     });
   }
 
@@ -1214,6 +1228,7 @@ export class AngularTree<T> {
     const cascade = this.checkboxSelection() && this.multi();
     const { keys, select } = this.#controller.checkToggleDelta(key, cascade);
 
+    const previous = this.#controller.selectedIds();
     this.#controller.selectedIds.update((current) => {
       const next = this.multi() ? new Set(current) : new Set<string>();
       for (const k of keys) {
@@ -1223,12 +1238,7 @@ export class AngularTree<T> {
       return next;
     });
     this.#syncControlledKeys();
-
-    const ids = [...this.#controller.selectedIds()];
-    this.selectionChange.emit({
-      ids,
-      nodes: this.#controller.nodesForKeys(ids),
-    });
+    this.#emitSelection(previous, node);
   }
 
   /** Tree-initiated write → the controlled input, when bound (→ selectedKeysChange). */

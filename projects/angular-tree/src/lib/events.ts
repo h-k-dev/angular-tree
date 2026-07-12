@@ -36,10 +36,28 @@ export interface RenameEvent<T> {
   readonly name: string;
 }
 
-/** Emitted when the selection set changes (checkbox or ctrl/shift semantics). */
+/**
+ * Emitted on every selection interaction (checkbox or ctrl/shift semantics).
+ * Fires even when the resulting set is unchanged — re-clicking the already
+ * selected row under `clickAction="select"` still identifies itself via
+ * `trigger` (`added`/`removed` empty), so "active row" consumers (preview
+ * panes) can refocus without guessing from the set.
+ */
 export interface SelectEvent<T> {
   readonly ids: readonly string[];
   readonly nodes: readonly T[];
+  /**
+   * The row whose interaction caused this write — present for row-addressed
+   * gestures (click, Shift/Ctrl-click, checkbox, Space, `'follow'`-mode focus
+   * moves, right-click reconciliation; ranges report the row the gesture
+   * ended on). Absent for set-level operations: Ctrl/Cmd+A and the Escape /
+   * outside-click clears.
+   */
+  readonly trigger?: T;
+  /** Keys that entered the set with this write (empty on a no-op re-click). */
+  readonly added: readonly string[];
+  /** Keys that left the set with this write. */
+  readonly removed: readonly string[];
 }
 
 /** Emitted when a node expands or collapses. */

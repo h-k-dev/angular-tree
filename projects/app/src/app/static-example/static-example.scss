@@ -173,6 +173,60 @@
   line-height: 1.4;
 }
 
+// Inspector strip below the panels: the last raw (selectionChange) event.
+// flex-wrap keeps it a single growing-down bar on narrow screens; the deltas
+// wrap mid-array like the status bars above.
+.inspector {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  align-items: center;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0.75rem;
+  background: var(--mat-sys-surface-container-low);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-small);
+}
+
+.inspector-count {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-small);
+}
+
+.inspector-panel {
+  padding: 0.05rem 0.5rem;
+  border-radius: 100vw;
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+  font: var(--mat-sys-label-small);
+}
+
+.inspector-icon {
+  flex: 0 0 auto;
+  font-size: 14px;
+  inline-size: 14px;
+  block-size: 14px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.inspector-name {
+  font: var(--mat-sys-label-large);
+}
+
+.inspector-kind {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.inspector-deltas {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', monospace;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+}
+
 .tool-panel-hint {
   color: var(--mat-sys-on-surface-variant);
   font: var(--mat-sys-body-small);
