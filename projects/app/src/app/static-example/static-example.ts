@@ -37,6 +37,18 @@ const CODE_TABS = [
 ] as const;
 
 /**
+ * Stable hue (0–359) hashed from a node id. DETERMINISTIC on purpose: a
+ * rowStyle accessor runs on every row render, so a `Math.random()` hue would
+ * flicker on each virtual-scroll recycle (and it's banned repo-wide). Same
+ * id ⇒ same hue, forever.
+ */
+function hueFromId(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  return ((hash % 360) + 360) % 360;
+}
+
+/**
  * The Static example: two design-tool layer panels (Figma-style and
  * Framer-style) over constant data — no fetching, no mutation, no context
  * menu. What it showcases: `clickAction: 'select'` (layer panels select on
@@ -75,6 +87,28 @@ export class StaticExample {
   children = (node: DesignNode) => node.children;
   key = (node: DesignNode) => node.id;
   nodeName = (node: DesignNode) => node.name;
+
+  /**
+   * Per-node guide tint (Phase 15 #6) — and a live PROOF the guide really is
+   * row-styled: every group's thread line gets its OWN oklch hue (hashed from
+   * the node id, so distinct per group but stable across recycles). The
+   * custom property lands on the row AND on that group's guide overlay (guides
+   * are row siblings, so only the tree can deliver it there); `--tree-guide`
+   * resolves at point of use. oklch fixes L/C so every hue reads at the same
+   * weight; `light-dark()` wraps two FULL oklch colors (its args are colors,
+   * not raw numbers — a lightness number won't parse there) to keep them
+   * legible on both panel surfaces.
+   */
+  figmaRowStyle = (node: DesignNode) => {
+    const hue = hueFromId(node.id);
+    return {
+      '--tree-guide': `light-dark(oklch(0.55 0.15 ${hue}), oklch(0.72 0.15 ${hue}))`,
+    };
+  };
+
+  /** rowClass lands on the tree-owned ROW element — def content can't reach it. */
+  framerRowClass = (node: DesignNode) =>
+    node.kind === 'instance' ? 'row-instance' : undefined;
 
   /**
    * The last raw `(selectionChange)` — the inspector strip renders it as-is

@@ -3,6 +3,7 @@ import {
   Component,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MatButtonModule } from '@angular/material/button';
@@ -67,6 +68,8 @@ const CODE_TABS = [
 })
 export class LazyLoadExample {
   readonly #sanitizer = inject(DomSanitizer);
+
+  readonly tree = viewChild.required<AngularTree<LazyNode>>(AngularTree);
 
   /** The owned, progressively-loaded tree (fetches + moves write here). */
   readonly roots = signal<readonly LazyNode[]>(rootNodes());
@@ -166,6 +169,9 @@ export class LazyLoadExample {
           : root,
       ),
     );
+    // Key-addressed (Phase 15 #5): the component holds the KEY constant —
+    // tree.byKey skips the key→node lookup consumers used to hand-roll.
+    this.tree().byKey.scrollTo('github');
   }
 
   /**

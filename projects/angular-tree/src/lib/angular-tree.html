@@ -49,6 +49,8 @@
     [attr.data-loading]="row.context.isLoading || null"
     [attr.data-error]="row.context.hasError || null"
     [attr.tabindex]="focusMode() === 'roving' ? row.tabIndex() : -1"
+    [class]="rowClassFor(row)"
+    [style]="rowStyleFor(row)"
     [style.--tree-level]="row.level"
     [style.height.px]="itemSize()"
     (click)="onRowClick(row, $event)"
@@ -77,10 +79,13 @@
        hence aria-hidden. -->
   @if (indentGuides()) {
     @for (guide of guideOverlays(); track guide.key) {
+      <!-- Guides inherit their GROUP PARENT's rowStyle: they're siblings of
+           the rows, so a row-applied custom property can't reach them. -->
       <div
         class="tree-guide"
         aria-hidden="true"
         [attr.data-elbow]="guide.elbow || null"
+        [style]="guideStyleFor(guide.key)"
         [style.top.px]="guide.top"
         [style.height.px]="guide.height"
         [style.--tree-level]="guide.level"

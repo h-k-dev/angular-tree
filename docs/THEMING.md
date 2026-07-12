@@ -72,6 +72,15 @@ angular-tree .tree-node[data-move-source] {
 }
 ```
 
+### Per-node styling (`rowClass` / `rowStyle`)
+
+For styling that depends on your _data_ rather than tree state, the accessor inputs put classes and inline styles on the tree-owned row element (def content renders _inside_ the row and can't reach it). Because every `--tree-*` chain resolves at point of use, `rowStyle` is the per-node token override: return `{ '--tree-guide': node.color }` and that node's thread line tints — the tree additionally applies the **group parent's** `rowStyle` to that group's indent-guide overlay, since guides are siblings of the rows and would never inherit a row-applied variable on their own. `rowClass` stays row-only (classes designed for rows would wreck the overlay geometry). Tree-owned geometry (`height`, guide `top`, `--tree-level`) always wins over the consumer map.
+
+```ts
+rowStyle = (node: DocNode) =>
+  node.kind === 'category' ? { '--tree-guide': node.color } : undefined;
+```
+
 ## Consumer-template tokens (convention)
 
 The tree ships no toggle or checkbox UI, so it never _applies_ these — but consumer templates should consume them, keeping row-content geometry configurable through the same `--tree-*` vocabulary as everything else. Three sizes rule everything, in a strict derivation chain:

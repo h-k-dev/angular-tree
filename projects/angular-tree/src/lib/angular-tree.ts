@@ -268,6 +268,29 @@ export class AngularTree<T> {
    */
   readonly loading = input(false);
 
+  /**
+   * Per-node classes for the tree-owned row element (v2, Phase 15 — accessor
+   * -shaped like the behavior predicates). Def content renders *inside* the
+   * row, so consumer templates can't reach it; this can. Row element only —
+   * never the guide overlays (a row-designed class would wreck them).
+   */
+  readonly rowClass = input<
+    ((node: T) => string | readonly string[] | undefined) | undefined
+  >(undefined);
+
+  /**
+   * Per-node inline styles for the row element (v2, Phase 15) — the custom-
+   * property hook: `--tree-*` chains resolve at point of use, so returning
+   * e.g. `{ '--tree-guide': node.color }` retunes tokens per node. The GROUP
+   * PARENT's result is additionally applied to that group's indent-guide
+   * overlay — guides are siblings of rows, not children, so row-applied
+   * variables can never reach them on their own. `height` stays the tree's
+   * (fixed-row virtualization is a locked contract).
+   */
+  readonly rowStyle = input<
+    ((node: T) => Record<string, string> | undefined) | undefined
+  >(undefined);
+
   /// Behavior per type via predicates — the tree never interprets a type field.
   readonly disableDrag = input<((node: T) => boolean) | undefined>(undefined);
   readonly disableDrop = input<
@@ -1128,6 +1151,64 @@ export class AngularTree<T> {
         .ensureChildren(key)
         .then((result) => this.#emitLoad(key, entry.node, result));
     }
+  }
+
+  /**
+   * Key-addressed facade over the node-addressed TreeApi (v2, Phase 15 —
+   * decision 11: a facade, not `T | string` unions, since `T` may itself be
+   * `string`). Keys are the tree's identity currency — consumers naturally
+   * store `parentKey`/`id` strings for post-intent work; this resolves them
+   * through the internal flat model so nobody rebuilds a key→node map
+   * outside. A key that is unknown or not currently loaded is a no-op
+   * (`isExpanded` reports the raw expansion set, which may hold keys of
+   * not-yet-loaded nodes — e.g. a restore before the lazy branch resolves).
+   */
+  readonly byKey = {
+    expand: (key: string) => this.#withNode(key, (node) => this.expand(node)),
+    collapse: (key: string) =>
+      this.#withNode(key, (node) => this.collapse(node)),
+    toggle: (key: string) => this.#withNode(key, (node) => this.toggle(node)),
+    expandDescendants: (key: string) =>
+      this.#withNode(key, (node) => this.expandDescendants(node)),
+    isExpanded: (key: string): boolean =>
+      this.#controller.expandedIds().has(key),
+    edit: (key: string) => this.#withNode(key, (node) => this.edit(node)),
+    focus: (key: string) => this.#withNode(key, (node) => this.focus(node)),
+    scrollTo: (key: string) =>
+      this.#withNode(key, (node) => this.scrollTo(node)),
+    openContextMenu: (key: string) =>
+      this.#withNode(key, (node) => this.openContextMenu(node)),
+    retryChildren: (key: string) =>
+      this.#withNode(key, (node) => this.retryChildren(node)),
+    /** No argument = tree-wide, exactly like the node-addressed form. */
+    invalidateChildren: (key?: string) => {
+      if (key === undefined) this.invalidateChildren();
+      else this.#withNode(key, (node) => this.invalidateChildren(node));
+    },
+  };
+
+  /** Resolves a key through the flat model; unknown/unloaded keys no-op. */
+  #withNode(key: string, act: (node: T) => void): void {
+    const entry = this.#controller.flat().map.get(key);
+    if (entry) act(entry.node);
+  }
+
+  /// Per-node row styling (Phase 15) — template bindings for rows and guides.
+
+  protected rowClassFor(row: FlatRow<T>) {
+    return this.rowClass()?.(row.node);
+  }
+
+  protected rowStyleFor(row: FlatRow<T>) {
+    return this.rowStyle()?.(row.node);
+  }
+
+  /** A guide belongs to its group's PARENT — it carries that node's rowStyle. */
+  protected guideStyleFor(parentKey: string) {
+    const style = this.rowStyle();
+    if (!style) return undefined;
+    const entry = this.#controller.flat().map.get(parentKey);
+    return entry ? style(entry.node) : undefined;
   }
 
   /** Single write path for expansion — emits the `toggled` intent on change. */

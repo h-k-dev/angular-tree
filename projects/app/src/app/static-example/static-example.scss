@@ -126,6 +126,12 @@
   .layer-name--component {
     color: var(--mat-sys-tertiary);
   }
+
+  // rowClass demo (Phase 15 #6): the accessor tags the tree-owned row element,
+  // this stylesheet does the rest — instances get a Framer-accent inset bar.
+  .row-instance {
+    box-shadow: inset 2px 0 0 var(--mat-sys-tertiary);
+  }
 }
 
 .tool-panel-bar {
@@ -140,15 +146,11 @@
 }
 
 // Per-panel status bar (the VS Code example's accent-bar pattern): the live
-// [(expandedKeys)] output value in the panel's own accent role. Long arrays
-// wrap inside the bar (overflow-wrap) and the value drops under the label on
-// narrow screens (flex-wrap) — the bar grows down, never sideways.
+// [(expandedKeys)] output value in the panel's own accent role. The array
+// stays on ONE line and scrolls sideways — a fixed-height bar, never taller.
 .tool-statusbar {
   display: flex;
   flex: 0 0 auto;
-  flex-wrap: wrap;
-  gap: 0.125rem 0.5rem;
-  align-items: baseline;
   padding: 0.3rem 0.75rem;
   background: var(--mat-sys-primary);
   color: var(--mat-sys-on-primary);
@@ -159,15 +161,10 @@
   color: var(--mat-sys-on-tertiary);
 }
 
-.tool-statusbar-label {
-  flex: 0 0 auto;
-  font: var(--mat-sys-label-small);
-  opacity: 0.85;
-}
-
 .tool-statusbar-value {
   min-inline-size: 0;
-  overflow-wrap: anywhere;
+  overflow-x: auto;
+  white-space: nowrap;
   font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', monospace;
   font-size: 0.6875rem;
   line-height: 1.4;

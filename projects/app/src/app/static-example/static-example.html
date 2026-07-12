@@ -33,6 +33,7 @@
       [itemSize]="28"
       [indentGuides]="true"
       [clickAction]="'select'"
+      [rowStyle]="figmaRowStyle"
       (selectionChange)="onSelect('figma', $event)"
     >
       <ng-template
@@ -71,7 +72,6 @@
          [(expandedKeys)] output value — collapse a group and its key drops
          out of the array in place. -->
     <footer class="tool-statusbar">
-      <span class="tool-statusbar-label">[(expandedKeys)]</span>
       <code class="tool-statusbar-value"
         >[{{ figmaExpanded().join(', ') }}]</code
       >
@@ -93,6 +93,7 @@
       [itemSize]="28"
       [indentGuides]="true"
       [clickAction]="'select'"
+      [rowClass]="framerRowClass"
       (selectionChange)="onSelect('framer', $event)"
     >
       <ng-template
@@ -128,7 +129,6 @@
       </ng-template>
     </angular-tree>
     <footer class="tool-statusbar">
-      <span class="tool-statusbar-label">[(expandedKeys)]</span>
       <code class="tool-statusbar-value"
         >[{{ framerExpanded().join(', ') }}]</code
       >
