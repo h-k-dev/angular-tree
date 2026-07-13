@@ -32,6 +32,8 @@ Because the chains sit at point of use rather than being declared on the host el
 | `--tree-menu-shadow`       | `--mat-sys-level2`                    | `0 2px 8px rgb(0 0 0 / 0.25)`             | Context-menu shell elevation                                          |
 | `--tree-scrollbar-thumb`   | `--mat-sys-outline`                   | `#79747e`                                 | Viewport scrollbar thumb base color (all states derive from it)       |
 | `--tree-scrollbar-size`    | —                                     | `10px`                                    | Scrollbar width (Chromium/WebKit; Firefox is always `thin`)           |
+| `--tree-scrollbar-gutter`  | —                                     | `stable`                                  | `scrollbar-gutter` — reserves the track so content doesn't shift when the scrollbar appears |
+| `--tree-overscroll-behavior` | —                                   | `contain`                                 | `overscroll-behavior` — `contain` isolates tree scroll from the page (no chaining, pull-to-refresh, swipe-back); set `auto` to allow chaining |
 
 Indentation is applied as `padding-inline-start: calc(var(--tree-level) * var(--tree-indent, 1.5rem))` — logical properties, so RTL mirrors for free. `--tree-level` is set per row by the tree; treat it as read-only.
 

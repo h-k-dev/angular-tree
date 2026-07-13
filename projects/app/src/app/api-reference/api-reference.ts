@@ -119,6 +119,20 @@ export class ApiReference {
       alters: 'Scrollbar width (Chromium/WebKit; Firefox is always thin)',
     },
     {
+      name: '--tree-scrollbar-gutter',
+      system: null,
+      fallback: 'stable',
+      alters:
+        'scrollbar-gutter — reserves the track so content does not shift when the scrollbar appears',
+    },
+    {
+      name: '--tree-overscroll-behavior',
+      system: null,
+      fallback: 'contain',
+      alters:
+        'overscroll-behavior — contain isolates tree scroll from the page (no chaining, pull-to-refresh, swipe-back); set auto to allow chaining',
+    },
+    {
       name: '--tree-toggle-size',
       system: null,
       fallback: 'var(--tree-row-height)',

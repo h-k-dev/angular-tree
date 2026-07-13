@@ -144,6 +144,7 @@
     var(--mat-sys-outline, #79747e)
   );
 
+  overscroll-behavior: var(--tree-overscroll-behavior, contain);
   scrollbar-gutter: var(--tree-scrollbar-gutter, stable);
 }
 
