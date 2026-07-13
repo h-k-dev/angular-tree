@@ -168,6 +168,36 @@
   font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', monospace;
   font-size: 0.6875rem;
   line-height: 1.4;
+
+  scrollbar-gutter: stable;
+
+  // Stylish thin scrollbar on the accent bar — the native one is chunky and
+  // clashes with the primary/tertiary fill. currentColor is the panel's
+  // on-accent text colour (on-primary / on-tertiary), so one rule reads
+  // right on both bars. Webkit pill for Chromium; standard props scoped to
+  // Firefox (in Chromium a set scrollbar-color disables ::-webkit painting).
+  &::-webkit-scrollbar {
+    height: 5px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, currentColor 35%, transparent);
+    border-radius: 100vw;
+  }
+
+  &:hover::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, currentColor 60%, transparent);
+  }
+
+  @supports (-moz-appearance: none) {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, currentColor 35%, transparent)
+      transparent;
+  }
 }
 
 // Inspector strip below the panels: the last raw (selectionChange) event.
@@ -179,6 +209,11 @@
   flex-wrap: wrap;
   gap: 0.25rem 0.75rem;
   align-items: center;
+  // Reserve the populated row's line height (icon + chip are taller than the
+  // plain-text empty hint) so clicking a layer doesn't nudge the bar 4px —
+  // empty and populated now render at the same height. align-items: center
+  // keeps the single line centered in the reserved space.
+  min-block-size: 1.25rem;
   padding: 0.4rem 0.75rem;
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0.75rem;
