@@ -16,7 +16,7 @@ import { DocNode, isFolder } from './example-data';
  */
 @Component({
   selector: 'app-narrowing-spike',
-  imports: [AngularTree, TreeNodeDef]
+  imports: [AngularTree, TreeNodeDef],
   templateUrl: './narrowing-spike.html',
 })
 export class NarrowingSpike {

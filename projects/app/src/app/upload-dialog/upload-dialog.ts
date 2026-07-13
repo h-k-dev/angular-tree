@@ -45,7 +45,7 @@ import {
     TreeContextMenu,
     TreeNodeDef,
     TreeNodeToggle,
-  ]
+  ],
   templateUrl: './upload-dialog.html',
   styleUrl: './upload-dialog.scss',
 })
