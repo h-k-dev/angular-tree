@@ -89,17 +89,17 @@ export class Docs {
 
 The most-used surface — the [live demo](https://h-k-dev.github.io/angular-tree/) includes a full API reference page.
 
-| Input                                                       | Purpose                                                                   |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `dataSource`, `childrenAccessor`, `expansionKey`            | Your data, described by functions; async children = lazy loading          |
-| `itemSize`                                                  | Fixed row height in px — the virtualization contract                      |
+| Input                                                       | Purpose                                                                       |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `dataSource`, `childrenAccessor`, `expansionKey`            | Your data, described by functions; async children = lazy loading              |
+| `itemSize`                                                  | Fixed row height in px — the virtualization contract                          |
 | `selectedKeys`, `multi`, `checkboxSelection`                | Controlled selection — `[(selectedKeys)]` two-way over keys; optional cascade |
-| `searchTerm`, `searchMatch`                                 | Filtering; matches keep their ancestor chain visible                      |
-| `disableDrag`, `disableDrop`, `disableEdit`, `isSelectable` | Per-node behavior predicates — type rules live in your code, not the tree |
-| `rowClass`, `rowStyle`                                      | Per-node row styling accessors; `rowStyle` also reaches the group's guide   |
-| `childrenDeps`                                              | Declarative lazy-cache invalidation — bind what your accessor reads         |
-| `expandedKeys`, `defaultExpandedKeys`                       | Controlled expansion — `[(expandedKeys)]` two-way; or initial-only keys      |
-| `loading`, `indentGuides`                                   | Root-level loading state, clickable guide lines                              |
+| `searchTerm`, `searchMatch`                                 | Filtering; matches keep their ancestor chain visible                          |
+| `disableDrag`, `disableDrop`, `disableEdit`, `isSelectable` | Per-node behavior predicates — type rules live in your code, not the tree     |
+| `rowClass`, `rowStyle`                                      | Per-node row styling accessors; `rowStyle` also reaches the group's guide     |
+| `childrenDeps`                                              | Declarative lazy-cache invalidation — bind what your accessor reads           |
+| `expandedKeys`, `defaultExpandedKeys`                       | Controlled expansion — `[(expandedKeys)]` two-way; or initial-only keys       |
+| `loading`, `indentGuides`                                   | Root-level loading state, clickable guide lines                               |
 
 | Output                                  | Fires when                                                           |
 | --------------------------------------- | -------------------------------------------------------------------- |

@@ -123,8 +123,106 @@
   transition: none;
 }
 
+/*
+ * Scrollbar:
+ * - pill thumb,
+ * - invisible track,
+ * - staged presence (rest → viewport hover → thumb hover),
+ * - keyboard focus tints the thumb as a "you can scroll this" affordance.
+ * Painting it ourselves also detaches the scrollbar from the UA's
+ * `color-scheme` guess: the tokens flip with the theme, so a consumer who
+ * themes dark via tokens alone still gets a dark scrollbar. Escape hatch
+ * (docs/THEMING.md): a consumer setting any non-`auto` standard
+ * `scrollbar-width`/`scrollbar-color` on `.tree-viewport` switches Chromium
+ * to standard rendering — every `::-webkit-scrollbar-*` rule here is ignored.
+ */
 .tree-viewport {
   height: 100%;
+  /* Private base color — every state derives from this one token. */
+  --_scrollbar-thumb: var(
+    --tree-scrollbar-thumb,
+    var(--mat-sys-outline, #79747e)
+  );
+
+  scrollbar-gutter: var(--tree-scrollbar-gutter, stable);
+}
+
+/* Physical width/height are correct here: width IS the vertical scrollbar. */
+.tree-viewport::-webkit-scrollbar {
+  width: var(--tree-scrollbar-size, 10px);
+  height: var(--tree-scrollbar-size, 10px);
+}
+
+.tree-viewport::-webkit-scrollbar-track,
+.tree-viewport::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Inset gutter without knowing the background: transparent border, paint
+   clipped inside it. States below must override background-COLOR only —
+   the `background` shorthand would reset the clip and fill the border. */
+.tree-viewport::-webkit-scrollbar-thumb {
+  background-color: color-mix(
+    in srgb,
+    var(--_scrollbar-thumb),
+    transparent 50%
+  );
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: 1e3px;
+}
+
+@media (hover) {
+  .tree-viewport:hover::-webkit-scrollbar-thumb {
+    background-color: color-mix(
+      in srgb,
+      var(--_scrollbar-thumb),
+      transparent 25%
+    );
+  }
+
+  .tree-viewport::-webkit-scrollbar-thumb:hover,
+  .tree-viewport::-webkit-scrollbar-thumb:active {
+    background-color: var(--_scrollbar-thumb);
+  }
+}
+
+/* Keyboard focus anywhere in the tree (roving-tabindex row or the viewport
+   itself in activedescendant mode) tints the thumb. Last so it wins the
+   equal-specificity tie against the hover states. */
+.tree-viewport:is(
+    :focus-visible,
+    :has(:focus-visible)
+  )::-webkit-scrollbar-thumb {
+  background-color: var(--tree-focus-ring, var(--mat-sys-primary, #6750a4));
+}
+
+/* Firefox has no scrollbar pseudo-elements — the standard properties carry
+   the same color story (thin; no pill radius, platform limit). Scoped to
+   Firefox because in Chromium any non-auto standard value would switch OFF
+   the richer ::-webkit painting above. */
+@supports (-moz-appearance: none) {
+  .tree-viewport {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(
+        in srgb,
+        var(--_scrollbar-thumb),
+        transparent 50%
+      )
+      transparent;
+    transition: scrollbar-color 0.3s ease;
+  }
+
+  @media (hover) {
+    .tree-viewport:hover {
+      scrollbar-color: var(--_scrollbar-thumb) transparent;
+    }
+  }
+
+  .tree-viewport:is(:focus-visible, :has(:focus-visible)) {
+    scrollbar-color: var(--tree-focus-ring, var(--mat-sys-primary, #6750a4))
+      transparent;
+  }
 }
 
 .tree-node {

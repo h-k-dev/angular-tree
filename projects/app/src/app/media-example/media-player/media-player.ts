@@ -1,6 +1,5 @@
 import {
   afterNextRender,
-  ChangeDetectionStrategy,
   Component,
   DestroyRef,
   effect,
@@ -83,7 +82,6 @@ function loadIframeApi(): Promise<YtNamespace> {
   imports: [MatButtonModule, MatIconModule],
   templateUrl: './media-player.html',
   styleUrl: './media-player.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   // The parent hides the chrome after idle — fade this component's status
   // strip with it (a cross-origin iframe can't tell us its own hover state).
   host: { '[attr.data-chrome]': "chromeHidden() ? 'hidden' : null" },

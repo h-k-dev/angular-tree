@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Component } from '@angular/core';
 
 /**
  * The API reference page: theming tokens + intent events, owned by the page
@@ -104,6 +104,19 @@ export class ApiReference {
       system: '--mat-sys-level2',
       fallback: '0 2px 8px rgb(0 0 0 / 0.25)',
       alters: 'Context-menu shell elevation',
+    },
+    {
+      name: '--tree-scrollbar-thumb',
+      system: '--mat-sys-outline',
+      fallback: '#79747e',
+      alters:
+        'Viewport scrollbar thumb base color — rest/hover states derive from it; keyboard focus tints with --tree-focus-ring',
+    },
+    {
+      name: '--tree-scrollbar-size',
+      system: null,
+      fallback: '10px',
+      alters: 'Scrollbar width (Chromium/WebKit; Firefox is always thin)',
     },
     {
       name: '--tree-toggle-size',

@@ -116,8 +116,8 @@ describe('AngularTree controlled selection (selectedKeys)', () => {
     await fixture.whenStable();
 
     expect(host.events.length).toBe(emissions);
-    expect(tree.visibleRows().find((row) => row.key === 'b')!.context.isSelected).toBe(
-      true,
-    );
+    expect(
+      tree.visibleRows().find((row) => row.key === 'b')!.context.isSelected,
+    ).toBe(true);
   });
 });

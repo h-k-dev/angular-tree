@@ -70,7 +70,9 @@ describe('AngularTree SelectEvent trigger + deltas', () => {
       );
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [Host],
+    }).compileComponents();
     fixture = TestBed.createComponent(Host);
     host = fixture.componentInstance;
     await fixture.whenStable();

@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component } from '@angular/core';
 import { AngularTree, TreeNodeDef } from '@h-k-dev/angular-tree';
 
 import { DocNode, isFolder } from './example-data';

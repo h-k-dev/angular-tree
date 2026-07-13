@@ -14,7 +14,6 @@ import {
 } from '@angular/cdk/scrolling';
 import {
   afterNextRender,
-  ChangeDetectionStrategy,
   Component,
   computed,
   contentChild,
@@ -116,7 +115,6 @@ interface FlatRow<T> {
   host: {
     '[style.--tree-row-height]': 'itemSize() + "px"',
   },
-  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './angular-tree.html',
   styleUrl: './angular-tree.scss',
 })

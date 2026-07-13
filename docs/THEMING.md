@@ -30,12 +30,35 @@ Because the chains sit at point of use rather than being declared on the host el
 | `--tree-menu-bg`           | `--mat-sys-surface-container`         | `#f3edf7`                                 | Built-in context-menu shell background (`treeContextMenu`)            |
 | `--tree-menu-radius`       | —                                     | `8px`                                     | Context-menu shell corner radius                                      |
 | `--tree-menu-shadow`       | `--mat-sys-level2`                    | `0 2px 8px rgb(0 0 0 / 0.25)`             | Context-menu shell elevation                                          |
+| `--tree-scrollbar-thumb`   | `--mat-sys-outline`                   | `#79747e`                                 | Viewport scrollbar thumb base color (all states derive from it)       |
+| `--tree-scrollbar-size`    | —                                     | `10px`                                    | Scrollbar width (Chromium/WebKit; Firefox is always `thin`)           |
 
 Indentation is applied as `padding-inline-start: calc(var(--tree-level) * var(--tree-indent, 1.5rem))` — logical properties, so RTL mirrors for free. `--tree-level` is set per row by the tree; treat it as read-only.
 
 Two more read-only variables the tree _publishes_ (outputs, not inputs): `--tree-level` (above) and `--tree-row-height` on the host — the `[itemSize]` input republished so your row-content CSS (toggle targets, spacers, indent) can derive from the same number the scroll strategy uses. Row height itself is controlled ONLY via `[itemSize]`; see docs/VIRTUALIZATION.md.
 
 Indent guide lines are drawn at `calc(var(--tree-indent) / 2)` within the indent column, so they stay centered under the toggle column at any indent — set `--tree-indent` to your toggle's width (e.g. `32px`) for exact alignment.
+
+## Scrollbar
+
+The tree paints its viewport scrollbar (pill thumb, invisible track) instead of leaving it to the browser. Two reasons: the browser's own scrollbar follows the CSS `color-scheme` property — **not** your theme tokens — so an app that themes dark via tokens alone gets a light scrollbar; and the painted version gives affordance states the UA can't:
+
+- **Rest** — thumb at 50% strength (`color-mix` of `--tree-scrollbar-thumb`).
+- **Pointer over the tree** — 75%; **over/dragging the thumb** — full strength.
+- **Keyboard focus inside the tree** — thumb tints `--tree-focus-ring`, signalling that arrow keys scroll this region.
+
+All states derive from the single `--tree-scrollbar-thumb` token, so one override restyles the whole ladder. Firefox has no scrollbar pseudo-elements: it gets the same color story via the standard `scrollbar-color`/`scrollbar-width` properties (always `thin`, no pill radius — platform limit).
+
+**Escape hatch:** setting any non-`auto` standard `scrollbar-width`/`scrollbar-color` on `.tree-viewport` from a global stylesheet switches Chromium to standard rendering and disables the tree's `::-webkit-scrollbar-*` painting entirely:
+
+```css
+angular-tree .tree-viewport {
+  scrollbar-width: thin;
+  scrollbar-color: gray transparent;
+}
+```
+
+`scrollbar-color` is an inherited property, so plain `angular-tree { scrollbar-color: … }` in any stylesheet works too.
 
 ## Recipes
 

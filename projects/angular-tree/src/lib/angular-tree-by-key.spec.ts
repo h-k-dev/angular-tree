@@ -55,7 +55,9 @@ describe('AngularTree byKey facade', () => {
   const visibleKeys = () => tree.visibleRows().map((row) => row.key);
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [Host],
+    }).compileComponents();
     fixture = TestBed.createComponent(Host);
     await fixture.whenStable();
     tree = fixture.componentInstance.tree();
@@ -89,14 +91,14 @@ describe('AngularTree byKey facade', () => {
 
   it('edit respects the same guards as the node-addressed form', () => {
     tree.byKey.edit('b'); // disableEdit says no
-    expect(tree.visibleRows().find((row) => row.key === 'b')!.context.isEditing).toBe(
-      false,
-    );
+    expect(
+      tree.visibleRows().find((row) => row.key === 'b')!.context.isEditing,
+    ).toBe(false);
 
     tree.byKey.edit('a');
-    expect(tree.visibleRows().find((row) => row.key === 'a')!.context.isEditing).toBe(
-      true,
-    );
+    expect(
+      tree.visibleRows().find((row) => row.key === 'a')!.context.isEditing,
+    ).toBe(true);
   });
 
   it('expandDescendants walks the loaded subtree from a key', () => {

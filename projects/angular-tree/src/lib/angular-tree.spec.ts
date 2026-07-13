@@ -147,9 +147,7 @@ describe('AngularTree', () => {
       .injector.get(TREE_NODE);
 
     handle.toggleSelection();
-    expect(new Set(host.selected())).toEqual(
-      new Set(['a', 'a1', 'a2', 'a2x']),
-    );
+    expect(new Set(host.selected())).toEqual(new Set(['a', 'a1', 'a2', 'a2x']));
     expect(handle.checkState()).toBe('checked');
 
     host.selected.set(['a', 'a1', 'a2']); // external write flows back in
@@ -312,9 +310,7 @@ describe('AngularTree', () => {
 
     it('Escape clears the selection but never focus, and announces the clear', async () => {
       keydown(' '); // select 'a' (+ cascade), focus on 'a'
-      expect(
-        fixture.componentInstance.selected().length,
-      ).toBeGreaterThan(0);
+      expect(fixture.componentInstance.selected().length).toBeGreaterThan(0);
 
       const escape = keydown('Escape');
       expect(fixture.componentInstance.selected()).toEqual([]);
@@ -333,9 +329,7 @@ describe('AngularTree', () => {
       keydown('x', { ctrlKey: true }); // mark a move
 
       keydown('Escape'); // layer 1: unmark, selection intact
-      expect(
-        fixture.componentInstance.selected().length,
-      ).toBeGreaterThan(0);
+      expect(fixture.componentInstance.selected().length).toBeGreaterThan(0);
 
       keydown('Escape'); // layer 2: clear selection
       expect(fixture.componentInstance.selected()).toEqual([]);

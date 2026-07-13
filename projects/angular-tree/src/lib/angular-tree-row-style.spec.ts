@@ -98,7 +98,9 @@ describe('AngularTree rowClass / rowStyle', () => {
   }
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [Host],
+    }).compileComponents();
     fixture = TestBed.createComponent(Host);
     await fixture.whenStable();
     await forceViewportSize();
@@ -125,9 +127,7 @@ describe('AngularTree rowClass / rowStyle', () => {
     const guide: HTMLElement =
       fixture.nativeElement.querySelector('.tree-guide');
     expect(guide).toBeTruthy();
-    expect(guide.style.getPropertyValue('--tree-guide')).toBe(
-      'rgb(255, 0, 0)',
-    );
+    expect(guide.style.getPropertyValue('--tree-guide')).toBe('rgb(255, 0, 0)');
     // Tree-owned geometry bindings still win over the consumer map.
     expect(guide.style.top).not.toBe('');
   });

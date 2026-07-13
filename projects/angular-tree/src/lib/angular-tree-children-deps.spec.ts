@@ -68,7 +68,9 @@ describe('AngularTree childrenDeps (declarative invalidation)', () => {
   const visibleKeys = () => tree.visibleRows().map((row) => row.key);
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [Host],
+    }).compileComponents();
     fixture = TestBed.createComponent(Host);
     host = fixture.componentInstance;
     await fixture.whenStable();
