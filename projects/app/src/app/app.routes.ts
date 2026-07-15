@@ -50,6 +50,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./media-example/media-example').then((m) => m.MediaExample),
       },
+      {
+        path: 'wall',
+        loadComponent: () =>
+          import('./wall-example/wall-example').then((m) => m.WallExample),
+      },
     ],
   },
   {

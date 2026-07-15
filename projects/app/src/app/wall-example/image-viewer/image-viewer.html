@@ -1,0 +1,35 @@
+@if (artwork(); as art) {
+  <!-- Blurred backdrop: the same file, blown up behind the work, so portraits
+       and panoramas both fill the stage without bars. Decorative only. -->
+  <img class="viewer-backdrop" [src]="src()" alt="" aria-hidden="true" />
+
+  @if (isLoading()) {
+    <mat-spinner class="viewer-spinner" [diameter]="32" />
+  }
+
+  <figure class="viewer-figure">
+    <img
+      class="viewer-image"
+      [src]="src()"
+      [alt]="art.name + ' — ' + art.artist"
+      (load)="onLoad()"
+    />
+    <figcaption class="viewer-caption">
+      <h2 class="viewer-title">{{ art.name }}</h2>
+      <p class="viewer-artist">{{ art.artist }}</p>
+      <p class="viewer-meta">
+        @if (art.date) {
+          <span>{{ art.date }}</span>
+        }
+        @if (art.dimensions) {
+          <span class="viewer-dims">{{ art.dimensions }}</span>
+        }
+      </p>
+    </figcaption>
+  </figure>
+} @else {
+  <div class="viewer-empty">
+    <mat-icon>imagesmode</mat-icon>
+    <p>Pick an artwork from the wall to see it here.</p>
+  </div>
+}

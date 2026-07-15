@@ -124,6 +124,22 @@
                 "glob": "media-player.ts",
                 "input": "projects/app/src/app/media-example/media-player",
                 "output": "source"
+              },
+              {
+                "glob": "wall-example.*",
+                "input": "projects/app/src/app/wall-example",
+                "output": "source",
+                "ignore": ["*.spec.ts"]
+              },
+              {
+                "glob": "wall-data.ts",
+                "input": "projects/app/src/app/wall-example",
+                "output": "source"
+              },
+              {
+                "glob": "image-viewer.ts",
+                "input": "projects/app/src/app/wall-example/image-viewer",
+                "output": "source"
               }
             ],
             "styles": ["projects/app/src/styles.scss"]
