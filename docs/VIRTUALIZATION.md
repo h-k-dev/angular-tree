@@ -49,9 +49,27 @@ We deliberately do not wrap or re-export it. It estimates row heights while scro
 
 Practical guidance: keep the tree itself fixed-height and put variable-height content elsewhere (a detail panel, an expandable row _below_ the tree, a tooltip). Reach for autosize only when the product requirement is truly per-row variable height, and accept the trade-offs above knowingly.
 
+## Images in rows — never `loading="lazy"`
+
+Putting `loading="lazy"` on an `<img>` inside a node template is a reasonable instinct and a silent trap: **the images never load.** The row is plainly on screen, the `src` is valid, nothing errors and nothing warns — the image just stays blank forever (`complete === false`, `currentSrc === ''`).
+
+The cause is the viewport's geometry. Rows are attached to the DOM **first** and moved into place **afterwards**, by a `transform` on the content wrapper. Native lazy-loading decides whether to fetch from the image's position as it sees it at attach time — which is offscreen — and never revisits that decision once the transform slides the row into view. (Verified in Chromium: in-viewport rows stuck at `complete: false`, while an eager `new Image()` of the identical URL resolved in ~150ms.)
+
+```html
+<!-- ❌ silently blank, forever -->
+<img [src]="node.thumb" loading="lazy" />
+
+<!-- ✅ -->
+<img [src]="node.thumb" decoding="async" />
+```
+
+It is also redundant, which is the real point: **virtualization already _is_ the deferral.** Only the rows intersecting the viewport exist at all, so only their images are ever requested — a dozen or so, however large the dataset. A second deferral layered on top buys nothing and breaks the first. Keep `decoding="async"` if you want it; it schedules decoding rather than fetching, and is unaffected.
+
+The demo's **Wall** example is the worked case: one artwork image per row, ~a dozen `<img>` in the DOM at any moment.
+
 ## Interaction with lazy loading
 
-Virtualization and async `childrenAccessor` compose safely by design (see ROADMAP Phase 3):
+This section is about async `childrenAccessor` (a different sense of "lazy" from the images above). Virtualization and lazy child loading compose safely by design (see ROADMAP Phase 3):
 
 - A lazy load is triggered by the **expand intent**, never by a row rendering or unmounting.
 - In-flight loads are tracked in `TreeController` keyed by node key — scrolling the loading node out of view (destroying its DOM) does not cancel, duplicate, or lose the load.

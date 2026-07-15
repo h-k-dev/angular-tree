@@ -1,0 +1,179 @@
+<!-- View switcher (PrimeNG-style): code tabs render this example's REAL source
+     files, Shiki-highlighted — zero drift. -->
+<header class="demo-card-bar">
+  <mat-form-field class="wall-search" subscriptSizing="dynamic">
+    <mat-icon matPrefix>search</mat-icon>
+    <input
+      matInput
+      type="text"
+      [value]="query()"
+      (input)="this.query.set($event.target.value)"
+      placeholder="Search the Art Institute of Chicago…"
+      aria-label="Search artworks"
+    />
+    @if (results.isLoading()) {
+      <mat-spinner matSuffix [diameter]="18" />
+    }
+  </mat-form-field>
+
+  <!-- The virtualization proof: a few dozen cards mounted out of the whole
+       result set. -->
+  <p class="wall-hud" aria-live="polite">
+    <strong>{{ rendered() }}</strong> cards mounted ·
+    <strong>{{ total() }}</strong> artworks
+    @if (selectedCount(); as n) {
+      <button class="wall-hud-clear" (click)="clearSelection()">
+        {{ n }} selected — clear
+      </button>
+    }
+    @if (lastMove(); as move) {
+      <span class="wall-hud-move">{{ move }}</span>
+    }
+  </p>
+
+  <nav class="demo-tabs" aria-label="Example view">
+    @for (tab of viewTabs; track tab.id) {
+      <button
+        class="demo-tab"
+        [attr.aria-selected]="view() === tab.id"
+        (click)="showView(tab.id)"
+      >
+        {{ tab.label }}
+      </button>
+    }
+  </nav>
+</header>
+
+<!-- Fetch failed (rate limit, offline): the previous wall stays on screen; the
+     error rides here with a Retry. -->
+@if (results.error(); as error) {
+  <p class="wall-error" role="status">
+    <mat-icon>error</mat-icon>
+    <span>{{ error.message }}</span>
+    <button matButton (click)="retry()">Retry</button>
+  </p>
+}
+
+<!-- The stage: the viewer IS the canvas (full-bleed), and the tree floats over
+     it. Pointer proximity to the leading edge extends the panel with glass;
+     moving away tucks it back to a browsing strip. -->
+<section
+  class="wall-stage"
+  [class.demo-hidden]="view() !== 'preview'"
+  [attr.data-near]="near() ? '' : null"
+  (pointermove)="onStagePointer($event)"
+  (pointerleave)="near.set(false)"
+>
+  <app-image-viewer [artwork]="current()" />
+
+  <!-- Keyboard reveal is CSS (`:has(:focus-visible)`), not a handler: `near` is
+       rewritten by every pointer move, so a signal would hide the panel out from
+       under a focused row — and :focus-visible (not :focus-within) is what tells
+       keyboard focus from the focus a plain click puts on a roving-tabindex row. -->
+  <aside class="wall-panel" aria-label="Art wall index">
+    <!-- deselectOnOutsideClick=false: the CANVAS consumes the selection (it
+         paints whatever is picked), so the default file-manager "pointer-down on
+         no row clears it" would blank the artwork the moment you clicked it —
+         this is exactly the documented opt-out ("a toolbar outside the tree acts
+         on the selection"). Escape still clears; that one stays deliberate. -->
+    <angular-tree
+      #tree="angularTree"
+      class="wall-tree"
+      aria-label="Art wall"
+      [dataSource]="roots()"
+      [childrenAccessor]="children"
+      [expansionKey]="key"
+      [defaultExpandedKeys]="collectionIds()"
+      [typeaheadText]="nodeName"
+      [searchMatch]="matchesNode"
+      [itemSize]="120"
+      [clickAction]="'select'"
+      [multi]="true"
+      [selectionMode]="'follow'"
+      [isSelectable]="selectable"
+      [deselectOnOutsideClick]="false"
+      [(selectedKeys)]="selectedKeys"
+      [loading]="results.isLoading() && total() === 0"
+      (moved)="onMove($event)"
+    >
+      <!-- Collection def — a department band at the SAME 120px height, fronted
+           by a 2×2 cover mosaic of its artworks. NO toggle button: the whole row
+           toggles on click (departments aren't selectable — [isSelectable] — so
+           a click only expands/collapses). Keyboard still uses ←/→. -->
+      <ng-container
+        *treeNodeDef="let node; when: isCollection; let isExpanded = isExpanded"
+      >
+        <span class="wall-collection" (click)="tree.toggle(node)">
+          <span class="wall-cover" aria-hidden="true">
+            @for (imageId of node.cover; track imageId) {
+              <!-- NO loading="lazy": the tree's virtualization already defers
+                   off-screen rows, and native lazy-loading mis-fires inside the
+                   CDK viewport's transformed content (it reads the pre-translate
+                   offscreen position and never loads). Only ~a dozen imgs ever
+                   exist — eager is right. See docs/VIRTUALIZATION.md. -->
+              <img [src]="image(imageId, 120)" alt="" decoding="async" />
+            }
+          </span>
+
+          <span class="wall-collection-text">
+            <span class="wall-collection-name">{{ node.name }}</span>
+            <span class="wall-collection-count">{{ node.count }} works</span>
+          </span>
+          <mat-icon class="wall-collection-glyph" aria-hidden="true">{{
+            isExpanded ? 'expand_more' : 'chevron_right'
+          }}</mat-icon>
+        </span>
+      </ng-container>
+
+      <!-- Asset def (fallback) — the artwork card. `isSelected` drives the ring
+           + check overlay AND the viewer (the last-picked row is the canvas);
+           selection lives in the tree, not the row, so it survives recycling.
+           Date/medium live in the viewer now — the panel is a browsing strip. -->
+      <ng-template treeNodeDef let-node let-isSelected="isSelected">
+        <span class="wall-card" [class.wall-card--selected]="isSelected">
+          <span class="wall-thumb">
+            <!-- Eager (see the cover note): virtualization is the only deferral. -->
+            <img
+              [src]="image(node.imageId, 320)"
+              [alt]="node.name"
+              decoding="async"
+            />
+            @if (isSelected) {
+              <mat-icon class="wall-check" aria-hidden="true"
+                >check_circle</mat-icon
+              >
+            }
+          </span>
+          <span class="wall-card-text">
+            <span class="wall-card-name">{{ node.name }}</span>
+            <span class="wall-card-artist">{{ node.artist }}</span>
+          </span>
+        </span>
+      </ng-template>
+
+      <!-- Zero results for the current query (never while a previous wall shows). -->
+      <ng-template treeEmptyDef>
+        <div class="wall-empty">
+          <mat-icon>image_search</mat-icon>
+          <p>No artworks for “{{ query() }}”.</p>
+        </div>
+      </ng-template>
+
+      <!-- First load only (no previous wall to keep). -->
+      <ng-template treeLoadingDef>
+        <div class="wall-empty">
+          <mat-spinner [diameter]="28" />
+          <p>Searching the Art Institute…</p>
+        </div>
+      </ng-template>
+    </angular-tree>
+  </aside>
+</section>
+
+@if (view() !== 'preview') {
+  @if (exampleSource()[view()]; as code) {
+    <div class="demo-code" [innerHTML]="code"></div>
+  } @else {
+    <div class="demo-code demo-code--loading">Loading…</div>
+  }
+}

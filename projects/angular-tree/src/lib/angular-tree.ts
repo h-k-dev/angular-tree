@@ -136,7 +136,20 @@ export class AngularTree<T> {
   /** Fixed row height in px — required for virtualization. */
   readonly itemSize = input(32);
 
-  /** Keys expanded on first render; inert while `[expandedKeys]` is bound. */
+  /**
+   * Keys to expand; inert while `[expandedKeys]` is bound.
+   *
+   * NOT read only once: while `[expandedKeys]` is UNBOUND this input stays
+   * live, and any later change RE-SEEDS expansion — discarding whatever the
+   * user has toggled since. That is deliberate (a fresh dataset should open at
+   * its own defaults), but it makes array IDENTITY part of the contract: pass a
+   * stable reference, or a `computed()` that changes only when you actually
+   * intend to re-expand. The trap is a `computed()` derived from data you also
+   * mutate — e.g. `computed(() => roots().filter(isFolder).map(f => f.id))`
+   * re-runs on every drop and hands over a NEW array of the SAME keys, silently
+   * re-expanding the tree under the user. Derive it from the source that
+   * changes per dataset, not per edit; or bind `[(expandedKeys)]` and own it.
+   */
   readonly defaultExpandedKeys = input<readonly string[]>([]);
 
   /**

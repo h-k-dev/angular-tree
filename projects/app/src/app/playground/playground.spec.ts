@@ -36,6 +36,7 @@ describe('Playground', () => {
       'VS Code',
       'Lazy Load Only',
       'Media',
+      'Wall',
     ]);
   });
 });
