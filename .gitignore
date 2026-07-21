@@ -45,3 +45,6 @@ Thumbs.db
 
 .claude
 CLAUDE.md
+
+# Playwright run artifacts
+test-results/

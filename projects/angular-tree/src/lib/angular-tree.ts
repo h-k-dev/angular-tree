@@ -40,6 +40,7 @@ import type {
   LoadChildrenEvent,
   MoveEvent,
   RenameEvent,
+  SelectCause,
   SelectEvent,
   ToggleEvent,
   TreeAnnouncements,
@@ -460,7 +461,7 @@ export class AngularTree<T> {
         }
       }
       this.#selectionAnchor = null;
-      this.#writeSelection([], 'replace');
+      this.#writeSelection([], 'replace', undefined, 'pointer');
     };
     this.#host.ownerDocument.addEventListener(
       'pointerdown',
@@ -533,8 +534,10 @@ export class AngularTree<T> {
         isSelected,
         checkState,
         toggle: () => this.toggle(flat.node),
+        // Checkbox / consumer handle clicks are pointer-origin; keyboard Space
+        // goes through onKeydown → #toggleSelection with cause 'keyboard'.
         toggleSelection: (range?: boolean) =>
-          this.#toggleSelection(key, flat.node, range),
+          this.#toggleSelection(key, flat.node, 'pointer', range),
         beginEdit: () => this.edit(flat.node),
         commitEdit: (name) => this.#commitEdit(key, flat.node, name),
         cancelEdit: () => this.#cancelEdit(key),
@@ -612,22 +615,26 @@ export class AngularTree<T> {
     this.#controller.focusedId.set(row.key);
 
     if ((event.ctrlKey || event.metaKey) && this.multi()) {
-      this.#toggleSelection(row.key, row.node);
+      this.#toggleSelection(row.key, row.node, 'pointer');
       return;
     }
     if (event.shiftKey && this.multi()) {
-      this.#selectRange(this.#selectionAnchor ?? row.key, row.key);
+      this.#selectRange(
+        this.#selectionAnchor ?? row.key,
+        row.key,
+        'pointer',
+      );
       return;
     }
 
     if (this.clickAction() === 'select') {
       // Single replace-select with anchor — same write as 'follow' focus
       // (respects isSelectable); activation belongs to double-click here.
-      this.#followFocus(row);
+      this.#followFocus(row, 'pointer');
       return;
     }
 
-    if (this.selectionMode() === 'follow') this.#followFocus(row);
+    if (this.selectionMode() === 'follow') this.#followFocus(row, 'pointer');
     this.activated.emit(row.node);
   }
 
@@ -755,10 +762,10 @@ export class AngularTree<T> {
         this.#dnd.keyboardDrop(row, command.zone);
         break;
       case 'selectAllVisible':
-        this.#selectAllVisible();
+        this.#selectAllVisible('keyboard');
         break;
       case 'selectToEdge':
-        this.#selectRange(row.key, rows[command.index].key);
+        this.#selectRange(row.key, rows[command.index].key, 'keyboard');
         this.#focusIndex(command.index);
         break;
       case 'clearMoveMark':
@@ -766,14 +773,14 @@ export class AngularTree<T> {
         break;
       case 'clearSelection':
         this.#selectionAnchor = null;
-        this.#writeSelection([], 'replace');
+        this.#writeSelection([], 'replace', undefined, 'keyboard');
         this.#announce((messages) => messages.selectionCleared?.());
         break;
       case 'focusStep': {
         const focused = this.#focusIndex(command.index);
         if (!focused) break;
-        if (command.extend) this.#extendSelection(focused);
-        else if (command.follow) this.#followFocus(focused);
+        if (command.extend) this.#extendSelection(focused, 'keyboard');
+        else if (command.follow) this.#followFocus(focused, 'keyboard');
         break;
       }
       case 'focusIndex':
@@ -800,7 +807,7 @@ export class AngularTree<T> {
         this.edit(row.node);
         break;
       case 'toggleSelection':
-        this.#toggleSelection(row.key, row.node, command.range);
+        this.#toggleSelection(row.key, row.node, 'keyboard', command.range);
         break;
       case 'consume':
         break;
@@ -860,7 +867,9 @@ export class AngularTree<T> {
   #prepareContext(row: FlatRow<T>, position?: { x: number; y: number }) {
     if (!row.context.isSelected && this.isSelectable()?.(row.node) !== false) {
       this.#selectionAnchor = row.key;
-      this.#writeSelection([row.key], 'replace', row.node);
+      // Why = menu preparation, not the opening gesture (pointer vs keyboard
+      // vs TreeApi.openContextMenu) — preview panes filter on this.
+      this.#writeSelection([row.key], 'replace', row.node, 'contextmenu');
     }
 
     const selected = [...this.#controller.selectedIds()];
@@ -930,20 +939,20 @@ export class AngularTree<T> {
   /// Selection writes (Phase 6 interaction modes) — one funnel, one event.
 
   /** `'follow'` selection: focus movement replaces the selection (aria alignment). */
-  #followFocus(row: FlatRow<T>) {
+  #followFocus(row: FlatRow<T>, cause: SelectCause) {
     if (this.isSelectable()?.(row.node) === false) return;
     this.#selectionAnchor = row.key;
-    this.#writeSelection([row.key], 'replace', row.node);
+    this.#writeSelection([row.key], 'replace', row.node, cause);
   }
 
   /** Shift+Arrow: the newly focused row joins the selection (APG tree pattern). */
-  #extendSelection(row: FlatRow<T>) {
+  #extendSelection(row: FlatRow<T>, cause: SelectCause) {
     if (this.isSelectable()?.(row.node) === false) return;
-    this.#writeSelection([row.key], 'add', row.node);
+    this.#writeSelection([row.key], 'add', row.node, cause);
   }
 
-  /** Shift+click: additive range over the *visible* flat order. */
-  #selectRange(fromKey: string, toKey: string) {
+  /** Additive range over the *visible* flat order (Shift+click / Shift+Space / select-to-edge). */
+  #selectRange(fromKey: string, toKey: string, cause: SelectCause) {
     const rows = this.visibleRows();
     const from = rows.findIndex((row) => row.key === fromKey);
     const to = rows.findIndex((row) => row.key === toKey);
@@ -955,27 +964,28 @@ export class AngularTree<T> {
       .filter((row) => this.isSelectable()?.(row.node) !== false)
       .map((row) => row.key);
     // The range ends where the gesture landed — that row is the trigger.
-    this.#writeSelection(keys, 'add', rows[to].node);
+    this.#writeSelection(keys, 'add', rows[to].node, cause);
   }
 
   /**
    * Ctrl/Cmd+A (APG optional key): selects every visible selectable row —
    * or clears the selection when they're already all selected.
    */
-  #selectAllVisible() {
+  #selectAllVisible(cause: SelectCause) {
     const keys = this.visibleRows()
       .filter((row) => this.isSelectable()?.(row.node) !== false)
       .map((row) => row.key);
     const selected = this.#controller.selectedIds();
     const allSelected =
       keys.length > 0 && keys.every((key) => selected.has(key));
-    this.#writeSelection(allSelected ? [] : keys, 'replace');
+    this.#writeSelection(allSelected ? [] : keys, 'replace', undefined, cause);
   }
 
   #writeSelection(
     keys: readonly string[],
     mode: 'add' | 'replace',
-    trigger?: T,
+    trigger: T | undefined,
+    cause: SelectCause,
   ) {
     const previous = this.#controller.selectedIds();
     this.#controller.selectedIds.update((current) => {
@@ -984,17 +994,22 @@ export class AngularTree<T> {
       return next;
     });
     this.#syncControlledKeys();
-    this.#emitSelection(previous, trigger);
+    this.#emitSelection(previous, trigger, cause);
   }
 
   /** One event shape for both funnels — deltas against the pre-write set. */
-  #emitSelection(previous: ReadonlySet<string>, trigger: T | undefined) {
+  #emitSelection(
+    previous: ReadonlySet<string>,
+    trigger: T | undefined,
+    cause: SelectCause,
+  ) {
     const current = this.#controller.selectedIds();
     const ids = [...current];
     this.selectionChange.emit({
       ids,
       nodes: this.#controller.nodesForKeys(ids),
       trigger,
+      cause,
       added: ids.filter((key) => !previous.has(key)),
       removed: [...previous].filter((key) => !current.has(key)),
     });
@@ -1288,7 +1303,12 @@ export class AngularTree<T> {
    * Checkbox/row selection toggle — writes the controller's Set, then syncs
    * the controlled `selectedKeys` input when bound.
    */
-  #toggleSelection(key: string, node: T, range = false) {
+  #toggleSelection(
+    key: string,
+    node: T,
+    cause: SelectCause,
+    range = false,
+  ) {
     if (this.isSelectable()?.(node) === false) return;
 
     // Shift+checkbox (v2): additive range from the anchor over visible order —
@@ -1299,7 +1319,7 @@ export class AngularTree<T> {
       this.#selectionAnchor != null &&
       this.#selectionAnchor !== key
     ) {
-      this.#selectRange(this.#selectionAnchor, key);
+      this.#selectRange(this.#selectionAnchor, key, cause);
       return;
     }
 
@@ -1317,7 +1337,7 @@ export class AngularTree<T> {
       return next;
     });
     this.#syncControlledKeys();
-    this.#emitSelection(previous, node);
+    this.#emitSelection(previous, node, cause);
   }
 
   /** Tree-initiated write → the controlled input, when bound (→ selectedKeysChange). */

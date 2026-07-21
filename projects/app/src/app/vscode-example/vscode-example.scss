@@ -120,6 +120,22 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
+.vsc-workbench {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
+  min-block-size: 0;
+}
+
+.vsc-explorer {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  min-block-size: 0;
+  border-inline-end: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container-low);
+}
+
 // The Explorer tree: compact rows, chevron disclosure, indent guides. Tokens
 // tuned so guides centre under the chevron column (indent === twisty width).
 .vsc-tree {
@@ -138,6 +154,114 @@
   );
   --tree-focus-ring: var(--mat-sys-primary);
   --tree-guide: var(--mat-sys-outline-variant);
+}
+
+.vsc-editor {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  min-block-size: 0;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+}
+
+.vsc-editor-tab {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.4rem;
+  min-block-size: 2rem;
+  padding-inline: 0.75rem;
+  border-block-end: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container);
+  font: var(--mat-sys-body-small);
+}
+
+.vsc-preview-badge {
+  margin-inline-start: auto;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-small);
+  font-style: italic;
+}
+
+.vsc-breadcrumb {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.75rem;
+  overflow: hidden;
+  border-block-end: 1px solid var(--mat-sys-outline-variant);
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vsc-code {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  margin: 0;
+  padding: 1rem;
+  overflow: auto;
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', monospace;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  tab-size: 2;
+}
+
+.vsc-editor-empty {
+  display: grid;
+  flex: 1 1 auto;
+  place-content: center;
+  justify-items: center;
+  gap: 0.5rem;
+  max-inline-size: 28rem;
+  margin-inline: auto;
+  padding: 1.5rem;
+  color: var(--mat-sys-on-surface-variant);
+  text-align: center;
+  font: var(--mat-sys-body-small);
+
+  mat-icon {
+    inline-size: 2rem;
+    block-size: 2rem;
+    font-size: 2rem;
+    color: var(--mat-sys-primary);
+  }
+
+  strong {
+    color: var(--mat-sys-on-surface);
+    font: var(--mat-sys-title-small);
+  }
+}
+
+.vsc-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-inline-size: 8rem;
+  padding: 0.45rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+  text-align: start;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--mat-sys-surface-container-highest);
+  }
+
+  &[aria-disabled='true'] {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  mat-icon {
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+    font-size: 1.125rem;
+  }
 }
 
 // One flex wrapper per row (see the template comment): its own tight gap owns
@@ -248,4 +372,16 @@
 
 .demo-hidden {
   display: none !important;
+}
+
+@media (max-width: 42rem) {
+  .vsc-workbench {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .vsc-explorer {
+    border-inline-end: none;
+    border-block-end: 1px solid var(--mat-sys-outline-variant);
+  }
 }

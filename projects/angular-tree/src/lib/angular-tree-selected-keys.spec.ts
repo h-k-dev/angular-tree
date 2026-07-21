@@ -70,13 +70,14 @@ describe('AngularTree controlled selection (selectedKeys)', () => {
     tree = host.tree();
   });
 
-  it('an external set selects the named rows', async () => {
+  it('an external set selects the named rows without emitting selectionChange', async () => {
     host.selected.set(['b']);
     await fixture.whenStable();
 
     expect(tree.selectionActive()).toBe(true);
     const b = tree.visibleRows().find((row) => row.key === 'b')!;
     expect(b.context.isSelected).toBe(true);
+    expect(host.events).toHaveLength(0);
   });
 
   it('an external clear empties the selection', async () => {
@@ -100,6 +101,8 @@ describe('AngularTree controlled selection (selectedKeys)', () => {
 
     expect([...host.selected()]).toEqual(['b']);
     expect(host.events.at(-1)?.ids).toEqual(['b']);
+    // Checkbox / handle toggles are pointer-origin (keyboard Space uses the key map).
+    expect(host.events.at(-1)?.cause).toBe('pointer');
   });
 
   it('writing the emitted value back does not re-emit or loop', async () => {

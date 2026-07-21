@@ -37,11 +37,23 @@ export interface RenameEvent<T> {
 }
 
 /**
+ * Why a {@link SelectEvent} write occurred — the reason for the write, not
+ * the physical input device. Every path through context-menu preparation
+ * (right-click, Shift+F10 / ContextMenu key, `openContextMenu()`) reports
+ * `'contextmenu'`, so preview-pane consumers can ignore reconciliation:
+ * `if (event.trigger && event.cause !== 'contextmenu') …`.
+ */
+export type SelectCause = 'pointer' | 'keyboard' | 'contextmenu';
+
+/**
  * Emitted on every selection interaction (checkbox or ctrl/shift semantics).
  * Fires even when the resulting set is unchanged — re-clicking the already
  * selected row under `clickAction="select"` still identifies itself via
  * `trigger` (`added`/`removed` empty), so "active row" consumers (preview
  * panes) can refocus without guessing from the set.
+ *
+ * External `[(selectedKeys)]` writes update state but never emit — only
+ * tree-initiated interactions produce a {@link SelectEvent}.
  */
 export interface SelectEvent<T> {
   readonly ids: readonly string[];
@@ -54,6 +66,13 @@ export interface SelectEvent<T> {
    * outside-click clears.
    */
   readonly trigger?: T;
+  /**
+   * Why this write occurred. Always present on tree-emitted events (including
+   * set-level clears where `trigger` is absent). `'contextmenu'` covers every
+   * selection reconciliation that precedes a menu open — not only the pointer
+   * right-click path.
+   */
+  readonly cause: SelectCause;
   /** Keys that entered the set with this write (empty on a no-op re-click). */
   readonly added: readonly string[];
   /** Keys that left the set with this write. */

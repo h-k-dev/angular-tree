@@ -30,78 +30,127 @@
     <span class="vsc-title">angular-tree — Explorer</span>
   </header>
 
-  <span class="vsc-section-label" id="vsc-explorer-label">Explorer</span>
+  <div class="vsc-workbench">
+    <aside class="vsc-explorer" aria-labelledby="vsc-explorer-label">
+      <span class="vsc-section-label" id="vsc-explorer-label">Explorer</span>
 
-  <angular-tree
-    #tree="angularTree"
-    class="vsc-tree"
-    aria-labelledby="vsc-explorer-label"
-    [dataSource]="workspace()"
-    [childrenAccessor]="children"
-    [expansionKey]="key"
-    [defaultExpandedKeys]="defaultOpen"
-    [typeaheadText]="nodeName"
-    [itemSize]="22"
-    [indentGuides]="true"
-    [clickAction]="'select'"
-    [enterAction]="'edit'"
-    (renamed)="onRename($event)"
-    (activated)="openFile($event)"
-  >
-    <!-- Folder def — the whole label toggles on click (VS Code); because the
-         handler doesn't stop propagation, the row's `select` click still fires,
-         so a folder click BOTH toggles and highlights. A single `.vsc-label`
-         wrapper keeps row spacing identical to files (the tree's inter-child
-         gap only applies between top-level row children). -->
-    <ng-container
-      *treeNodeDef="
-        let node;
-        when: isDir;
-        let isExpanded = isExpanded;
-        let isEditing = isEditing
-      "
-    >
-      @if (isEditing) {
-        <span class="vsc-label">
-          <span class="vsc-twisty"></span>
-          <mat-icon class="vsc-icon vsc-icon--folder">{{
-            isExpanded ? 'folder_open' : 'folder'
-          }}</mat-icon>
-          <input treeNodeEditInput class="vsc-rename" [value]="node.name" />
-        </span>
-      } @else {
-        <span class="vsc-label" (click)="tree.toggle(node)">
-          <mat-icon class="vsc-twisty">{{
-            isExpanded ? 'expand_more' : 'chevron_right'
-          }}</mat-icon>
-          <mat-icon class="vsc-icon vsc-icon--folder">{{
-            isExpanded ? 'folder_open' : 'folder'
-          }}</mat-icon>
-          <span class="vsc-name">{{ node.name }}</span>
-        </span>
-      }
-    </ng-container>
-
-    <!-- File def — the undecorated fallback. No toggle; a click selects, a
-         double-click opens, Enter renames (enterAction). The leading spacer
-         aligns files with their folders' chevron column. -->
-    <ng-template treeNodeDef let-node let-isEditing="isEditing">
-      <span class="vsc-label">
-        <span class="vsc-twisty"></span>
-        <mat-icon
-          class="vsc-icon"
-          [class]="'vsc-icon--' + extensionOf(node.name)"
+      <angular-tree
+        #tree="angularTree"
+        class="vsc-tree"
+        aria-labelledby="vsc-explorer-label"
+        [dataSource]="workspace()"
+        [childrenAccessor]="children"
+        [expansionKey]="key"
+        [defaultExpandedKeys]="defaultOpen"
+        [typeaheadText]="nodeName"
+        [itemSize]="22"
+        [indentGuides]="true"
+        [clickAction]="'select'"
+        [enterAction]="'edit'"
+        (selectionChange)="onSelection($event)"
+        (renamed)="onRename($event)"
+        (activated)="openFile($event)"
+      >
+        <!-- Folder def — the whole label toggles on click (VS Code); because the
+             handler doesn't stop propagation, the row's `select` click still fires,
+             so a folder click BOTH toggles and highlights. A single `.vsc-label`
+             wrapper keeps row spacing identical to files (the tree's inter-child
+             gap only applies between top-level row children). -->
+        <ng-container
+          *treeNodeDef="
+            let node;
+            when: isDir;
+            let isExpanded = isExpanded;
+            let isEditing = isEditing
+          "
         >
-          {{ icons[extensionOf(node.name)] ?? 'draft' }}
-        </mat-icon>
-        @if (isEditing) {
-          <input treeNodeEditInput class="vsc-rename" [value]="node.name" />
-        } @else {
-          <span class="vsc-name">{{ node.name }}</span>
-        }
-      </span>
-    </ng-template>
-  </angular-tree>
+          @if (isEditing) {
+            <span class="vsc-label">
+              <span class="vsc-twisty"></span>
+              <mat-icon class="vsc-icon vsc-icon--folder">{{
+                isExpanded ? 'folder_open' : 'folder'
+              }}</mat-icon>
+              <input treeNodeEditInput class="vsc-rename" [value]="node.name" />
+            </span>
+          } @else {
+            <span class="vsc-label" (click)="tree.toggle(node)">
+              <mat-icon class="vsc-twisty">{{
+                isExpanded ? 'expand_more' : 'chevron_right'
+              }}</mat-icon>
+              <mat-icon class="vsc-icon vsc-icon--folder">{{
+                isExpanded ? 'folder_open' : 'folder'
+              }}</mat-icon>
+              <span class="vsc-name">{{ node.name }}</span>
+            </span>
+          }
+        </ng-container>
+
+        <!-- File def — the undecorated fallback. No toggle; a click selects, a
+             double-click opens, Enter renames (enterAction). The leading spacer
+             aligns files with their folders' chevron column. -->
+        <ng-template treeNodeDef let-node let-isEditing="isEditing">
+          <span class="vsc-label">
+            <span class="vsc-twisty"></span>
+            <mat-icon
+              class="vsc-icon"
+              [class]="'vsc-icon--' + extensionOf(node.name)"
+            >
+              {{ icons[extensionOf(node.name)] ?? 'draft' }}
+            </mat-icon>
+            @if (isEditing) {
+              <input treeNodeEditInput class="vsc-rename" [value]="node.name" />
+            } @else {
+              <span class="vsc-name">{{ node.name }}</span>
+            }
+          </span>
+        </ng-template>
+
+        <!-- One consumer-owned action. Right-click selection reconciliation
+             emits cause=contextmenu, so the editor stays put until this fires. -->
+        <ng-template treeContextMenu let-node>
+          <button
+            class="vsc-menu-item"
+            cdkMenuItem
+            [cdkMenuItemDisabled]="node.kind === 'dir'"
+            (cdkMenuItemTriggered)="previewFile(node)"
+          >
+            <mat-icon>visibility</mat-icon>
+            Preview
+          </button>
+        </ng-template>
+      </angular-tree>
+    </aside>
+
+    <main
+      class="vsc-editor"
+      aria-label="File preview"
+      [attr.data-preview-path]="preview()?.file?.path ?? null"
+    >
+      @if (preview(); as current) {
+        <header class="vsc-editor-tab">
+          <mat-icon
+            class="vsc-icon"
+            [class]="'vsc-icon--' + extensionOf(current.file.name)"
+          >
+            {{ current.icon }}
+          </mat-icon>
+          <span>{{ current.file.name }}</span>
+          <span class="vsc-preview-badge">Preview</span>
+        </header>
+        <div class="vsc-breadcrumb">{{ current.file.path }}</div>
+        <pre class="vsc-code"><code>{{ current.content }}</code></pre>
+      } @else {
+        <div class="vsc-editor-empty">
+          <mat-icon>preview</mat-icon>
+          <strong>Preview a file</strong>
+          <span
+            >Select a file, or right-click one and choose Preview. A plain
+            right-click selects the row without changing this pane.</span
+          >
+        </div>
+      }
+    </main>
+  </div>
 
   <!-- VS Code-style status bar: proof the controlled "open" intent landed. -->
   <footer class="vsc-statusbar">
@@ -110,7 +159,8 @@
       {{ path }}
     } @else {
       <span class="vsc-hint"
-        >Click a folder to toggle · Enter to rename · double-click to open</span
+        >Click a file to preview · right-click → Preview · double-click to
+        open</span
       >
     }
   </footer>

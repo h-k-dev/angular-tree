@@ -1,10 +1,19 @@
-import { Component, inject, linkedSignal, signal } from '@angular/core';
+import { CdkMenuItem } from '@angular/cdk/menu';
+import {
+  Component,
+  computed,
+  inject,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MatIconModule } from '@angular/material/icon';
 
 import {
   AngularTree,
   RenameEvent,
+  SelectEvent,
+  TreeContextMenu,
   TreeNodeDef,
   TreeNodeEditInput,
 } from '@h-k-dev/angular-tree';
@@ -13,6 +22,7 @@ import {
   DEFAULT_OPEN,
   extensionOf,
   FILE_ICONS,
+  FsFile,
   FsNode,
   isDir,
   WORKSPACE,
@@ -37,6 +47,43 @@ const CODE_TABS = [
   { id: 'data', label: 'Data', file: 'fs-data.ts', lang: 'angular-ts' },
 ] as const;
 
+/** Representative editor text — the example previews files without fetching. */
+function previewContent(file: FsFile): string {
+  switch (extensionOf(file.name)) {
+    case 'ts':
+      return `import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.html',
+})
+export class App {}`;
+    case 'html':
+      return `<main>
+  <h1>angular-tree</h1>
+  <router-outlet />
+</main>`;
+    case 'scss':
+    case 'css':
+      return `:host {
+  display: block;
+  color: var(--mat-sys-on-surface);
+}`;
+    case 'json':
+      return `{
+  "name": "@h-k-dev/angular-tree",
+  "private": true
+}`;
+    case 'md':
+      return `# angular-tree
+
+A high-performance Angular tree component.`;
+    default:
+      return `// Preview of ${file.name}
+// ${file.path}`;
+  }
+}
+
 /**
  * The VS Code example: the Explorer file tree in a macOS window, wired to that
  * editor's gestures with the tree's own inputs — `clickAction: 'select'` (a
@@ -48,7 +95,14 @@ const CODE_TABS = [
  */
 @Component({
   selector: 'app-vscode-example',
-  imports: [MatIconModule, AngularTree, TreeNodeDef, TreeNodeEditInput],
+  imports: [
+    CdkMenuItem,
+    MatIconModule,
+    AngularTree,
+    TreeContextMenu,
+    TreeNodeDef,
+    TreeNodeEditInput,
+  ],
   templateUrl: './vscode-example.html',
   styleUrl: './vscode-example.scss',
 })
@@ -61,6 +115,19 @@ export class VscodeExample {
 
   /** The row the user last opened (double-click activate) — shown in the status bar. */
   readonly openPath = signal<string | null>(null);
+
+  /** Ephemeral editor preview — independent from context-menu reconciliation. */
+  readonly previewedFile = signal<FsFile | null>(null);
+  readonly preview = computed(() => {
+    const file = this.previewedFile();
+    return file == null
+      ? null
+      : {
+          file,
+          icon: this.icons[extensionOf(file.name)] ?? 'draft',
+          content: previewContent(file),
+        };
+  });
 
   /// Accessors — the tree never learns the FsNode shape.
   children = (node: FsNode) => (isDir(node) ? node.children : undefined);
@@ -82,11 +149,29 @@ export class VscodeExample {
           : node;
       });
     this.workspace.update(rename);
+    this.previewedFile.update((file) =>
+      file?.path === id ? { ...file, name } : file,
+    );
   }
 
-  /** Double-click a file = "open" it (VS Code makes the preview tab permanent). */
+  /**
+   * Genuine selection previews a file. Context-menu reconciliation deliberately
+   * does not: the menu's explicit Preview item owns that intent.
+   */
+  onSelection({ trigger, cause }: SelectEvent<FsNode>) {
+    if (trigger != null && cause !== 'contextmenu') this.previewFile(trigger);
+  }
+
+  /** The one context-menu action — folders are rejected defensively. */
+  previewFile(node: FsNode) {
+    if (!isDir(node)) this.previewedFile.set(node);
+  }
+
+  /** Double-click a file = open it permanently and keep the editor coherent. */
   openFile(node: FsNode) {
-    if (!isDir(node)) this.openPath.set(node.path);
+    if (isDir(node)) return;
+    this.previewFile(node);
+    this.openPath.set(node.path);
   }
 
   // ---------------------------------------------------------------------------

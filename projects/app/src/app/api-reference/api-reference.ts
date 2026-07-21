@@ -180,10 +180,11 @@ export class ApiReference {
     },
     {
       name: '(selectionChange)',
-      payload: 'SelectEvent<T> { ids, nodes, trigger?, added, removed }',
+      payload:
+        "SelectEvent<T> { ids, nodes, trigger?, cause: 'pointer' | 'keyboard' | 'contextmenu', added, removed }",
       fires:
-        'Any selection interaction — incl. re-clicking the selected row (unchanged set, trigger identifies it): click modifiers, Space, Ctrl/Cmd+A, checkbox cascade, Escape / outside-click clear',
-      job: 'Drive an active-row preview from trigger; sync app state — or bind [(selectedKeys)] two-way',
+        'Any selection interaction — incl. re-clicking the selected row (unchanged set, trigger identifies it): click modifiers, Space, Ctrl/Cmd+A, checkbox cascade, Escape / outside-click clear, context-menu reconciliation',
+      job: 'Drive an active-row preview with `if (event.trigger && event.cause !== \'contextmenu\')` — cause separates genuine selections from menu prep; or bind [(selectedKeys)] two-way',
     },
     {
       name: '(toggled)',

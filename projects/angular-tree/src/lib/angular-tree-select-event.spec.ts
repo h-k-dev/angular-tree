@@ -27,7 +27,7 @@ const DATA: DemoNode[] = [
   { id: 'b', name: 'B' },
 ];
 
-/** The "active row / preview pane" consumer the trigger field exists for. */
+/** The "active row / preview pane" consumer the trigger + cause fields exist for. */
 @Component({
   imports: [AngularTree, TreeNodeDef],
   template: `
@@ -52,7 +52,7 @@ class Host {
   readonly tree = viewChild.required<AngularTree<DemoNode>>(AngularTree);
 }
 
-describe('AngularTree SelectEvent trigger + deltas', () => {
+describe('AngularTree SelectEvent trigger + cause + deltas', () => {
   let fixture: ComponentFixture<Host>;
   let host: Host;
 
@@ -68,6 +68,10 @@ describe('AngularTree SelectEvent trigger + deltas', () => {
       .dispatchEvent(
         new KeyboardEvent('keydown', { key, bubbles: true, ...init }),
       );
+  const contextmenu = (key: string) =>
+    rowEl(key).dispatchEvent(
+      new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 20 }),
+    );
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -78,12 +82,13 @@ describe('AngularTree SelectEvent trigger + deltas', () => {
     await fixture.whenStable();
   });
 
-  it('a click identifies the row and reports the deltas', () => {
+  it('a click identifies the row, reports pointer cause, and reports the deltas', () => {
     click('b');
     expect(host.events).toEqual([
       expect.objectContaining({
         ids: ['b'],
         trigger: DATA[1],
+        cause: 'pointer',
         added: ['b'],
         removed: [],
       }),
@@ -93,6 +98,7 @@ describe('AngularTree SelectEvent trigger + deltas', () => {
     expect(host.events.at(-1)).toEqual(
       expect.objectContaining({
         trigger: DATA[0].children![0],
+        cause: 'pointer',
         added: ['a1'],
         removed: ['b'],
       }),
@@ -108,44 +114,118 @@ describe('AngularTree SelectEvent trigger + deltas', () => {
       expect.objectContaining({
         ids: ['b'],
         trigger: DATA[1],
+        cause: 'pointer',
         added: [],
         removed: [],
       }),
     );
   });
 
-  it('Ctrl-click toggle off reports the row in removed', () => {
+  it('Ctrl-click toggle off reports the row in removed with pointer cause', () => {
     click('b', { ctrlKey: true });
     click('b', { ctrlKey: true });
 
     expect(host.events.at(-1)).toEqual(
-      expect.objectContaining({ trigger: DATA[1], added: [], removed: ['b'] }),
+      expect.objectContaining({
+        trigger: DATA[1],
+        cause: 'pointer',
+        added: [],
+        removed: ['b'],
+      }),
     );
   });
 
-  it('set-level operations carry no trigger (Ctrl+A, Escape clear)', () => {
+  it('a shift-click range reports the end row and pointer cause', () => {
+    click('a1'); // anchor
+    click('b', { shiftKey: true }); // range a1..b, additive
+
+    expect(host.events.at(-1)).toEqual(
+      expect.objectContaining({ trigger: DATA[1], cause: 'pointer' }),
+    );
+    expect(new Set(host.events.at(-1)!.added)).toEqual(new Set(['a2', 'b']));
+  });
+
+  it('Space toggle is keyboard-caused', () => {
+    click('b'); // focus + select
+    keydown(' '); // Space toggles off
+
+    expect(host.events.at(-1)).toEqual(
+      expect.objectContaining({
+        trigger: DATA[1],
+        cause: 'keyboard',
+        removed: ['b'],
+      }),
+    );
+  });
+
+  it('set-level operations carry no trigger but still report cause (Ctrl+A, Escape clear)', () => {
     keydown('a', { ctrlKey: true });
     expect(host.events.at(-1)!.trigger).toBeUndefined();
+    expect(host.events.at(-1)!.cause).toBe('keyboard');
     expect(new Set(host.events.at(-1)!.added)).toEqual(
       new Set(['a', 'a1', 'a2', 'b']),
     );
 
     keydown('Escape');
     expect(host.events.at(-1)).toEqual(
-      expect.objectContaining({ ids: [], trigger: undefined, added: [] }),
+      expect.objectContaining({
+        ids: [],
+        trigger: undefined,
+        cause: 'keyboard',
+        added: [],
+      }),
     );
     expect(new Set(host.events.at(-1)!.removed)).toEqual(
       new Set(['a', 'a1', 'a2', 'b']),
     );
   });
 
-  it('a shift-click range reports the row the gesture ended on', () => {
-    click('a1'); // anchor
-    click('b', { shiftKey: true }); // range a1..b, additive
+  it('outside-click clear is pointer-caused with no trigger', () => {
+    click('b');
+    document.body.dispatchEvent(
+      new MouseEvent('pointerdown', { bubbles: true }),
+    );
 
     expect(host.events.at(-1)).toEqual(
-      expect.objectContaining({ trigger: DATA[1] }),
+      expect.objectContaining({
+        ids: [],
+        trigger: undefined,
+        cause: 'pointer',
+        added: [],
+        removed: ['b'],
+      }),
     );
-    expect(new Set(host.events.at(-1)!.added)).toEqual(new Set(['a2', 'b']));
+  });
+
+  it('right-click reconciliation is contextmenu-caused (preview panes ignore it)', () => {
+    click('b');
+    contextmenu('a1'); // unselected → replace selection before the menu
+
+    expect(host.events.at(-1)).toEqual(
+      expect.objectContaining({
+        ids: ['a1'],
+        trigger: DATA[0].children![0],
+        cause: 'contextmenu',
+        added: ['a1'],
+        removed: ['b'],
+      }),
+    );
+  });
+
+  it('Shift+F10 reconciliation is also contextmenu (why = menu prep, not the key)', () => {
+    click('b');
+    // Focus a1 without selecting it — under clickAction 'select', arrow keys
+    // move focus without follow-selecting. Home → a, ArrowDown → a1.
+    keydown('Home');
+    keydown('ArrowDown');
+    keydown('F10', { shiftKey: true });
+
+    expect(host.events.at(-1)).toEqual(
+      expect.objectContaining({
+        ids: ['a1'],
+        trigger: DATA[0].children![0],
+        cause: 'contextmenu',
+      }),
+    );
   });
 });

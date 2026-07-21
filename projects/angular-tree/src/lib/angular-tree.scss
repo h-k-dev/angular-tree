@@ -163,11 +163,7 @@
    clipped inside it. States below must override background-COLOR only —
    the `background` shorthand would reset the clip and fill the border. */
 .tree-viewport::-webkit-scrollbar-thumb {
-  background-color: color-mix(
-    in srgb,
-    var(--_scrollbar-thumb),
-    transparent 50%
-  );
+  background-color: oklch(from var(--_scrollbar-thumb) l c h / 0.5);
   background-clip: padding-box;
   border: 2px solid transparent;
   border-radius: 1e3px;
@@ -175,11 +171,7 @@
 
 @media (hover) {
   .tree-viewport:hover::-webkit-scrollbar-thumb {
-    background-color: color-mix(
-      in srgb,
-      var(--_scrollbar-thumb),
-      transparent 25%
-    );
+    background-color: oklch(from var(--_scrollbar-thumb) l c h / 0.75);
   }
 
   .tree-viewport::-webkit-scrollbar-thumb:hover,

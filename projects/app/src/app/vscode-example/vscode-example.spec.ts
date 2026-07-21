@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { SelectEvent } from '@h-k-dev/angular-tree';
 
 import { VscodeExample } from './vscode-example';
 import { FsNode, isDir } from './fs-data';
@@ -11,6 +12,20 @@ function find(nodes: readonly FsNode[], path: string): FsNode | undefined {
     if (hit) return hit;
   }
   return undefined;
+}
+
+function selection(
+  node: FsNode,
+  cause: SelectEvent<FsNode>['cause'],
+): SelectEvent<FsNode> {
+  return {
+    ids: [node.path],
+    nodes: [node],
+    trigger: node,
+    cause,
+    added: [node.path],
+    removed: [],
+  };
 }
 
 describe('VscodeExample', () => {
@@ -48,10 +63,39 @@ describe('VscodeExample', () => {
     const file = find(component.workspace(), 'angular-tree/README.md')!;
     component.openFile(file);
     expect(component.openPath()).toBe('angular-tree/README.md');
+    expect(component.previewedFile()?.path).toBe('angular-tree/README.md');
 
     // A folder activation is inert — folders toggle, they don't "open".
     const folder = find(component.workspace(), 'angular-tree/src')!;
     component.openFile(folder);
     expect(component.openPath()).toBe('angular-tree/README.md');
+    expect(component.previewedFile()?.path).toBe('angular-tree/README.md');
+  });
+
+  it('previews genuine selections but ignores context-menu reconciliation', () => {
+    const first = find(component.workspace(), 'angular-tree/src/main.ts')!;
+    const second = find(component.workspace(), 'angular-tree/README.md')!;
+
+    component.onSelection(selection(first, 'pointer'));
+    expect(component.previewedFile()?.path).toBe('angular-tree/src/main.ts');
+
+    // OS convention still selects the right-clicked row; cause lets this
+    // consumer keep its preview stable until the explicit action is chosen.
+    component.onSelection(selection(second, 'contextmenu'));
+    expect(component.previewedFile()?.path).toBe('angular-tree/src/main.ts');
+
+    component.onSelection(selection(second, 'keyboard'));
+    expect(component.previewedFile()?.path).toBe('angular-tree/README.md');
+  });
+
+  it('the explicit Preview action accepts files and rejects folders', () => {
+    const file = find(component.workspace(), 'angular-tree/src/main.ts')!;
+    const folder = find(component.workspace(), 'angular-tree/src')!;
+
+    component.previewFile(file);
+    expect(component.previewedFile()?.path).toBe('angular-tree/src/main.ts');
+
+    component.previewFile(folder);
+    expect(component.previewedFile()?.path).toBe('angular-tree/src/main.ts');
   });
 });

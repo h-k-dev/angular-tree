@@ -10,6 +10,7 @@ import * as axe from 'axe-core';
 
 import { AngularTree } from './angular-tree';
 import { TreeNodeDef } from './tree-node-def';
+import type { SelectEvent } from './events';
 
 interface DemoNode {
   id: string;
@@ -319,9 +320,13 @@ describe('AngularTree ARIA', () => {
         ids: readonly string[];
         position: { x: number; y: number };
       }[] = [];
+      const selects: SelectEvent<DemoNode>[] = [];
       fixture.componentInstance
         .tree()
         .contextRequested.subscribe((e) => events.push(e));
+      fixture.componentInstance
+        .tree()
+        .selectionChange.subscribe((e) => selects.push(e));
       fixture.componentInstance.selected.set(['b']);
       await fixture.whenStable();
 
@@ -337,6 +342,10 @@ describe('AngularTree ARIA', () => {
       expect(events).toEqual([
         expect.objectContaining({ ids: ['a1'], position: { x: 40, y: 60 } }),
       ]);
+      // cause = why (menu prep), not the pointer — preview panes filter on this.
+      expect(selects.at(-1)).toEqual(
+        expect.objectContaining({ ids: ['a1'], cause: 'contextmenu' }),
+      );
     });
 
     it('right-click inside a multi-selection keeps it intact and reports all ids', async () => {
@@ -359,15 +368,22 @@ describe('AngularTree ARIA', () => {
 
     it('Shift+F10 and the ContextMenu key request a menu for the focused row', () => {
       const events: { node: DemoNode }[] = [];
+      const selects: SelectEvent<DemoNode>[] = [];
       fixture.componentInstance
         .tree()
         .contextRequested.subscribe((e) => events.push(e));
+      fixture.componentInstance
+        .tree()
+        .selectionChange.subscribe((e) => selects.push(e));
 
       keydown({ key: 'ArrowDown' }); // focus a1
       keydown({ key: 'F10', shiftKey: true });
       keydown({ key: 'ContextMenu' });
 
       expect(events.map((e) => e.node.id)).toEqual(['a1', 'a1']);
+      // First open reconciles selection; second finds a1 already selected → no write.
+      expect(selects).toHaveLength(1);
+      expect(selects[0].cause).toBe('contextmenu');
     });
   });
 
