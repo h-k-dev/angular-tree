@@ -105,6 +105,56 @@ describe('LazyLoadExample', () => {
     fetchSpy.mockRestore();
   });
 
+  it('cold restore re-fetches saved branches from expansion state alone (decision 14)', async () => {
+    // GitHub contents API, two levels: /contents/ → src (dir), /contents/src → a file.
+    const dir = { name: 'src', path: 'src', type: 'dir', size: 0 };
+    const file = {
+      name: 'node.cc',
+      path: 'src/node.cc',
+      type: 'file',
+      size: 1,
+    };
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation((input) =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify(
+              String(input).includes('/contents/src') ? [file] : [dir],
+            ),
+          ),
+        ),
+      );
+    const flush = async () => {
+      await new Promise((resolve) => setTimeout(resolve));
+      await fixture.whenStable();
+    };
+
+    // Both levels opened by WRITING the controlled model — never a toggle.
+    component.expanded.set(['github']);
+    await flush();
+    component.expanded.set(['github', 'github:src']);
+    await flush();
+    expect(component.roots()[0].children?.[0].children?.[0].id).toBe(
+      'github:src/node.cc',
+    );
+
+    component.saveExpansion();
+    component.restoreExpansion();
+    const callsAtRestore = fetchSpy.mock.calls.length;
+    await flush();
+    await flush(); // second wave: the re-fetched root materialises github:src
+
+    // The reset dropped every graft; the saved keys alone re-fetched both
+    // levels — root via the invalidate, the deeper wave via the reconciler.
+    expect(fetchSpy.mock.calls.length).toBe(callsAtRestore + 2);
+    expect(component.expanded()).toEqual(['github', 'github:src']); // never collapsed
+    expect(component.roots()[0].children?.[0].children?.[0].id).toBe(
+      'github:src/node.cc',
+    );
+    fetchSpy.mockRestore();
+  });
+
   it('confines drops to the same source, never the root or an unloaded branch', () => {
     const loadedGh = branch('github:src', 'github', []);
     const unloadedGh = branch('github:vm', 'github');

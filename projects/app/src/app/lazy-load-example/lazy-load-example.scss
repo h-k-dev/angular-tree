@@ -69,6 +69,13 @@
     background: var(--mat-sys-secondary-container);
     color: var(--mat-sys-on-secondary-container);
   }
+
+  // The snapshot pair (Save expansion / Cold restore) disables until it applies.
+  &[disabled] {
+    opacity: 0.4;
+    cursor: default;
+    pointer-events: none;
+  }
 }
 
 .lazy-hint {

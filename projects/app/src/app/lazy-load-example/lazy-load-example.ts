@@ -68,6 +68,18 @@ export class LazyLoadExample {
   readonly roots = signal<readonly LazyNode[]>(rootNodes());
 
   /**
+   * Controlled expansion (`[(expandedKeys)]`) — the reconciler's demo surface
+   * (decision 14): a key naming an unloaded lazy branch counts as load
+   * intent, so `restoreExpansion` below re-fetches saved branches from STATE
+   * alone, no toggle ever fired.
+   */
+  readonly expanded = signal<readonly string[]>([]);
+
+  /** Snapshot taken by "Save expansion" — node ids are API-stable, so the
+   *  saved keys stay valid across a cold reset. */
+  readonly savedExpansion = signal<readonly string[] | null>(null);
+
+  /**
    * Consumer-side fetch parameter (`[childrenDeps]`, Phase 15 #3): the GitHub
    * accessor closes over it, so every cached child list under that root is
    * stale the moment it changes. The binding hands the tree half of the
@@ -165,6 +177,44 @@ export class LazyLoadExample {
     // Key-addressed (Phase 15 #5): the component holds the KEY constant —
     // tree.byKey skips the key→node lookup consumers used to hand-roll.
     this.tree().byKey.scrollTo('github');
+  }
+
+  saveExpansion() {
+    this.savedExpansion.set(this.expanded());
+  }
+
+  /**
+   * Cold restore — the decision 14 showcase. Rebuilds the page's start state:
+   * our graft dropped, in-flight write-backs deregistered (dead on arrival —
+   * the `switchGithubRef` precedent), and the tree's keyed overlays
+   * invalidated (`invalidateChildren()` — they survive a `dataSource`
+   * replacement by design, decision 3, and an un-invalidated survivor would
+   * keep rendering the old children without ever re-fetching). Then the
+   * saved keys go back into the controlled model.
+   *
+   * Before the reconciler this was the dead state: every saved key below the
+   * roots rendered aria-expanded over nothing, and no gesture short of
+   * collapse/re-expand would ever fetch. Now expanded IS load intent — the
+   * reconciler revalidates the saved branches wave by wave as each level's
+   * write-back materialises the next. And since invalidation is
+   * stale-while-revalidate (decision 15), the old content stays on screen —
+   * row spinners, no blank frame — until each replacement lands.
+   */
+  restoreExpansion() {
+    const saved = this.savedExpansion();
+    if (!saved) return;
+
+    this.#inflight.clear();
+    const ref = this.githubRef();
+    this.roots.set(
+      rootNodes().map((root) =>
+        root.source === 'github' && ref !== 'main'
+          ? { ...root, meta: `GitHub repo @ ${ref}` }
+          : root,
+      ),
+    );
+    this.expanded.set(saved);
+    this.tree().invalidateChildren();
   }
 
   /**

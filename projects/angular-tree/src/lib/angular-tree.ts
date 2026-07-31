@@ -150,6 +150,10 @@ export class AngularTree<T> {
    * expansion write (toggle, expandAll/collapseAll, expandDescendants,
    * setExpanded) updates the model → `(expandedKeysChange)`. `(toggled)`
    * stays the per-node intent; this is the whole-set state channel.
+   *
+   * A key naming a lazy, not-yet-loaded node counts as load intent (decision
+   * 14): the reconciler runs the accessor exactly as a toggle would, so
+   * restores and external writes never render aria-expanded over nothing.
    */
   expandedKeys = model<readonly string[] | undefined>(undefined);
 
@@ -158,8 +162,9 @@ export class AngularTree<T> {
 
   /**
    * What collapse does to a lazy node's resolved children (v2): `'keep'`
-   * reuses them on re-expand; `'invalidate'` drops the overlay and aborts an
-   * in-flight load, so the next expand re-runs the accessor.
+   * reuses them on re-expand; `'invalidate'` marks them stale and aborts an
+   * in-flight load — the next expand shows the stale children immediately
+   * while the accessor re-runs and swaps them (decision 15).
    */
   readonly collapseBehavior = input<'keep' | 'invalidate'>('keep');
 
@@ -168,7 +173,8 @@ export class AngularTree<T> {
    * `resource({ params })`): bind the parameters your `childrenAccessor`
    * reads (filters, refs, locale). Whenever the value changes (reference
    * equality, like any input), the tree behaves exactly like
-   * `invalidateChildren()` — resolved children drop, in-flight loads abort,
+   * `invalidateChildren()` — resolved children go stale (kept on screen
+   * until their replacement resolves, decision 15), in-flight loads abort,
    * expanded nodes re-run the accessor now, collapsed ones on their next
    * expand — so a cached child list can never outlive the parameters it was
    * fetched with. The tree still never fetches; it only re-asks YOUR accessor.
@@ -505,6 +511,37 @@ export class AngularTree<T> {
       untracked(() => this.invalidateChildren());
     });
 
+    // Expanded ⇒ load intent, reconciled (v2, decision 14): a node flagged
+    // expanded whose lazy children are neither resolved nor resolving loads
+    // as if it had just been toggled open. Covers the states the toggle
+    // funnel can't reach: a controlled `expandedKeys` write naming a lazy
+    // node, `defaultExpandedKeys` over lazy roots, and a `dataSource`
+    // replacement re-minting node objects under keys still flagged open
+    // (post-refresh) — all previously rendered aria-expanded over nothing,
+    // with no gesture left that would ever fetch. A STALE key (decision 15)
+    // counts as unloaded here: its old children keep rendering, but an
+    // expanded stale node must revalidate even across a re-mint. Driven by
+    // expansion STATE, never by rendering (search's force-expansion bypasses
+    // `expandedIds`, virtualization can't start or cancel loads) and never
+    // re-fetching FRESH overlays (decision 3); `error` keys wait for
+    // `retryChildren`.
+    effect(() => {
+      const { list } = this.#controller.flat();
+      const expanded = this.#controller.expandedIds();
+      const states = this.#controller.loadStates();
+      const stale = this.#controller.staleChildren();
+      untracked(() => {
+        for (const entry of list) {
+          if (!entry.expandable) continue;
+          if (entry.loaded && !stale.has(entry.key)) continue;
+          if (!expanded.has(entry.key) || states.has(entry.key)) continue;
+          void this.#controller
+            .ensureChildren(entry.key)
+            .then((result) => this.#emitLoad(entry.key, entry.node, result));
+        }
+      });
+    });
+
     // Search announcements (v2): result counts reach screen readers as the
     // term or the data changes; the count is true matches, not the ancestor
     // chains rendered around them.
@@ -634,11 +671,7 @@ export class AngularTree<T> {
       return;
     }
     if (event.shiftKey && this.multi()) {
-      this.#selectRange(
-        this.#selectionAnchor ?? row.key,
-        row.key,
-        'pointer',
-      );
+      this.#selectRange(this.#selectionAnchor ?? row.key, row.key, 'pointer');
       return;
     }
 
@@ -1158,11 +1191,19 @@ export class AngularTree<T> {
   }
 
   /**
-   * Lazy invalidation (v2): drop resolved children and re-ask the accessor.
-   * Expanded nodes reload immediately (per-row `isLoading` shows while the
-   * subtree is gone); collapsed nodes reload on their next expand. No
-   * argument invalidates tree-wide. The tree still never fetches — it only
-   * re-runs *your* accessor; batching and caching stay on your side of it.
+   * Lazy invalidation (v2): mark resolved children stale and re-ask the
+   * accessor. Stale-while-revalidate (decision 15): the old subtree STAYS
+   * rendered — per-row `isLoading` alongside the stale rows — until the
+   * replacement resolves and swaps in; nothing blanks. Expanded nodes
+   * revalidate immediately; collapsed nodes on their next expand (showing
+   * their stale children instantly while the refetch runs). No argument
+   * invalidates tree-wide. The tree still never fetches — it only re-runs
+   * *your* accessor; batching and caching stay on your side of it.
+   *
+   * Nodes NOT materialised at call time — a resource-backed `dataSource`
+   * that flashes empty mid-refresh and re-mints objects under the same keys
+   * — are caught by the expanded⇒load reconciler once they appear (decision
+   * 14), so an open branch survives a refresh without collapsing.
    */
   invalidateChildren(node?: T): void {
     const keys =
@@ -1189,7 +1230,9 @@ export class AngularTree<T> {
    * through the internal flat model so nobody rebuilds a key→node map
    * outside. A key that is unknown or not currently loaded is a no-op
    * (`isExpanded` reports the raw expansion set, which may hold keys of
-   * not-yet-loaded nodes — e.g. a restore before the lazy branch resolves).
+   * not-yet-loaded nodes — e.g. a restore before the lazy branch resolves;
+   * such keys load via the expanded⇒load reconciler once their node
+   * materialises, decision 14).
    */
   readonly byKey = {
     expand: (key: string) => this.#withNode(key, (node) => this.expand(node)),
@@ -1318,12 +1361,7 @@ export class AngularTree<T> {
    * Checkbox/row selection toggle — writes the controller's Set, then syncs
    * the controlled `selectedKeys` input when bound.
    */
-  #toggleSelection(
-    key: string,
-    node: T,
-    cause: SelectCause,
-    range = false,
-  ) {
+  #toggleSelection(key: string, node: T, cause: SelectCause, range = false) {
     if (this.isSelectable()?.(node) === false) return;
 
     // Shift+checkbox (v2): additive range from the anchor over visible order —

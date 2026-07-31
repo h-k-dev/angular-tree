@@ -449,7 +449,7 @@ describe('TreeController', () => {
       expect(controller.flat().map.get('c')?.childKeys).toEqual(['c1']);
     });
 
-    it('drops the overlay so the accessor re-runs; tree-wide hits every lazy trace', async () => {
+    it('marks the overlay stale so the accessor re-runs; the old children stay rendered', async () => {
       let calls = 0;
       const accessor = (node: DemoNode) =>
         node.lazy ? ((calls += 1), Promise.resolve([child])) : node.children;
@@ -463,11 +463,16 @@ describe('TreeController', () => {
 
       const keys = controller.invalidateChildren();
       expect(keys).toEqual(['c']);
-      expect(controller.flat().map.get('c')?.loaded).toBe(false); // overlay gone
+      // Stale-while-revalidate (decision 15): the overlay is KEPT — the old
+      // subtree renders on — and only the stale mark reopens `ensureChildren`.
+      expect(controller.flat().map.get('c')?.loaded).toBe(true);
+      expect(controller.flat().map.get('c')?.childKeys).toEqual(['c1']);
+      expect(controller.staleChildren().has('c')).toBe(true);
 
       await controller.ensureChildren('c');
       expect(calls).toBe(2); // memo forgotten → fresh accessor run
       expect(controller.flat().map.get('c')?.childKeys).toEqual(['c1']);
+      expect(controller.staleChildren().has('c')).toBe(false); // fresh again
     });
 
     it('abortAll cancels in-flight fetches without touching state', () => {

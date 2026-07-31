@@ -20,6 +20,32 @@
       </button>
     }
   </nav>
+  <!-- Expanded ⇒ load intent (decision 14): "Cold restore" resets the tree to
+       its untouched page-load state, then writes the SAVED keys back into the
+       controlled [(expandedKeys)] — the reconciler re-fetches every saved
+       branch wave by wave, no toggle ever fired. -->
+  <nav
+    class="demo-tabs lazy-refs"
+    aria-label="Expansion snapshot"
+    [class.demo-hidden]="view() !== 'preview'"
+  >
+    <button
+      class="demo-tab"
+      [disabled]="expanded().length === 0"
+      (click)="saveExpansion()"
+    >
+      Save expansion
+    </button>
+    <button
+      class="demo-tab"
+      [disabled]="!savedExpansion()"
+      (click)="restoreExpansion()"
+    >
+      Cold restore{{
+        savedExpansion() ? ' (' + savedExpansion()!.length + ')' : ''
+      }}
+    </button>
+  </nav>
   <nav class="demo-tabs" aria-label="Example view">
     @for (tab of viewTabs; track tab.id) {
       <button
@@ -39,7 +65,11 @@
   GitHub repo, a GBIF taxonomy, a Hacker News thread, a Wikipedia category, and
   an npm package's files. Children load
   <strong>one level at a time, on open</strong>. Drag &amp; drop is sandboxed
-  per source: you can't drag across data sources.
+  per source: you can't drag across data sources. Open a few branches, hit
+  <strong>Save expansion</strong>, then <strong>Cold restore</strong>: the tree
+  re-fetches the saved branches <strong>from expansion state alone</strong>,
+  wave by wave — expanded is load intent — while the stale content stays on
+  screen until each replacement arrives. Nothing blanks.
 </p>
 
 <section
@@ -54,6 +84,7 @@
     [dataSource]="roots()"
     [childrenAccessor]="children"
     [expansionKey]="key"
+    [(expandedKeys)]="expanded"
     [childrenDeps]="githubRef()"
     [typeaheadText]="nodeName"
     [itemSize]="28"

@@ -149,6 +149,16 @@ export class TreeController<T> {
   readonly #loadedChildren = signal<ReadonlyMap<string, readonly T[]>>(
     new Map(),
   );
+  /**
+   * Stale-while-revalidate (decision 15): invalidation MARKS resolved
+   * children instead of dropping them, so the subtree stays rendered until
+   * the replacement resolves. A stale key re-runs the accessor despite
+   * `loaded`; ONLY an async resolve clears the mark — see the sync/leaf
+   * branch in `ensureChildren` for why a noop read must not.
+   */
+  readonly #staleChildren = signal<ReadonlySet<string>>(new Set());
+  /** The reconciler reads this: stale + expanded ⇒ revalidate. */
+  readonly staleChildren = this.#staleChildren.asReadonly();
   readonly #loadStates = signal<ReadonlyMap<string, 'loading' | 'error'>>(
     new Map(),
   );
@@ -217,15 +227,28 @@ export class TreeController<T> {
    */
   ensureChildren(key: string): Promise<LoadResult> {
     const entry = this.flat().map.get(key);
-    if (!entry || entry.loaded || !entry.expandable)
+    // Loaded blocks a re-run only while FRESH — a stale key revalidates
+    // (decision 15), its old children still rendering from the overlay.
+    if (
+      !entry ||
+      !entry.expandable ||
+      (entry.loaded && !this.#staleChildren().has(key))
+    )
       return Promise.resolve({ status: 'noop' });
 
     const pending = this.#inflight.get(key);
     if (pending) return pending;
 
     const raw = this.#childrenOf(entry.node, key);
-    if (raw == null || Array.isArray(raw))
+    if (raw == null || Array.isArray(raw)) {
+      // Sync/leaf reads keep their stale mark: this call may be running
+      // against a flat model the next change detection is about to replace
+      // (invalidate-then-swap consumers), and only an ASYNC resolve proves a
+      // revalidation happened. A mark lingering on a genuinely sync node is
+      // inert — this same branch noops every re-entry without touching any
+      // signal, so the reconciler settles.
       return Promise.resolve({ status: 'noop' });
+    }
 
     // Array.isArray doesn't narrow `readonly T[]` out of the union (TS quirk).
     const async = raw as Promise<readonly T[]> | Observable<readonly T[]>;
@@ -241,9 +264,13 @@ export class TreeController<T> {
     ).then(
       (children: readonly T[]): LoadResult => {
         if (!isCurrent()) return { status: 'noop' };
+        // Nullish resolves (typed away, still reachable in JS) count as "no
+        // children": a nullish overlay entry would read as never-loaded, and
+        // the expanded⇒load reconciler would re-fetch it forever.
         this.#loadedChildren.update((current) =>
-          new Map(current).set(key, children),
+          new Map(current).set(key, children ?? []),
         );
+        this.#clearStale(key); // the replacement landed — fresh again
         this.#setLoadState(key, undefined);
         return { status: 'loaded' };
       },
@@ -263,12 +290,14 @@ export class TreeController<T> {
   }
 
   /**
-   * Lazy invalidation (v2, ROADMAP2 Phase 12): drop the keyed children
-   * overlay, forget the memoized accessor result, abort any in-flight fetch,
-   * and clear load state — the next `ensureChildren` re-runs the accessor
-   * fresh. No key = tree-wide (every key with lazy traces). Returns the
-   * affected keys so the component can re-trigger loads for expanded nodes.
-   * The tree never fetches: refresh policy stays behind the accessor.
+   * Lazy invalidation (v2, ROADMAP2 Phase 12; stale-while-revalidate since
+   * decision 15): forget the memoized accessor result, abort any in-flight
+   * fetch, clear load state, and mark the keyed overlay STALE — kept, not
+   * dropped, so the old children stay rendered until the next
+   * `ensureChildren` resolves their replacement. No key = tree-wide (every
+   * key with lazy traces). Returns the affected keys so the component can
+   * re-trigger loads for expanded nodes. The tree never fetches: refresh
+   * policy stays behind the accessor.
    */
   invalidateChildren(key?: string): readonly string[] {
     const keys =
@@ -295,14 +324,18 @@ export class TreeController<T> {
         this.#rawChildren.delete(node);
       this.#setLoadState(invalidKey, undefined);
     }
-    // One overlay write for the batch — a tree-wide invalidate over many
-    // loaded subtrees must not re-flatten once per key.
-    this.#loadedChildren.update((current) => {
-      const next = new Map(current);
-      for (const invalidKey of keys) next.delete(invalidKey);
-      return next;
-    });
+    // One set write for the batch — a tree-wide invalidate over many loaded
+    // subtrees must not re-flatten once per key.
+    this.#staleChildren.update((current) => new Set([...current, ...keys]));
     return keys;
+  }
+
+  #clearStale(key: string) {
+    const current = this.#staleChildren();
+    if (!current.has(key)) return;
+    const next = new Set(current);
+    next.delete(key);
+    this.#staleChildren.set(next);
   }
 
   /** Destroy-time cancellation — abort everything, touch no state. */
