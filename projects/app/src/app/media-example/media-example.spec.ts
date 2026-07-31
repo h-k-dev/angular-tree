@@ -34,6 +34,7 @@ describe('media-data', () => {
       'spring',
       'coffee',
       'charge',
+      'agent327',
       'spidey',
     ]);
   });
@@ -41,7 +42,7 @@ describe('media-data', () => {
   it('nextVideo walks the playlist and wraps at the end (endless play)', () => {
     expect(nextVideo(MEDIA_LIBRARY, 'ed')?.id).toBe('bbb');
     expect(nextVideo(MEDIA_LIBRARY, 'tos')?.id).toBe('cosmos'); // crosses categories
-    expect(nextVideo(MEDIA_LIBRARY, 'charge')?.id).toBe('spidey'); // crosses top folders
+    expect(nextVideo(MEDIA_LIBRARY, 'charge')?.id).toBe('agent327'); // crosses top folders
     expect(nextVideo(MEDIA_LIBRARY, 'spidey')?.id).toBe('ed'); // wraps
   });
 

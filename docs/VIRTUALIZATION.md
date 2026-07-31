@@ -23,6 +23,38 @@ Two consequences worth internalizing:
 
 Design your node templates to a fixed height. Truncate long names (`text-overflow: ellipsis`) instead of wrapping. If you need visual breathing room, adjust `itemSize` — not per-row padding.
 
+### Truncation needs `labelOverflow: 'ellipsis'`
+
+The ellipsis CSS alone is **not sufficient** under virtualization. CDK's scroll-content wrapper is absolutely positioned and shrink-wraps to the widest row — its `min-width: 100%` is a floor, not a ceiling — so a `white-space: nowrap` label grows the scroll content past the viewport: the label never meets an edge to truncate against, and you get a horizontal scrollbar instead of an ellipsis.
+
+The tree owns the geometry fix (the wrapper lives inside the CDK component, out of reach of your styles):
+
+```html
+<angular-tree labelOverflow="ellipsis" …></angular-tree>
+```
+
+`'ellipsis'` caps rows at the visible viewport width (container-query units — the tree touches no CDK internals), which removes horizontal scrolling for that tree. The default `'scroll'` keeps today's behavior — deep hierarchies whose rows should scroll sideways stay on it.
+
+Your side of the contract, on the label element:
+
+```css
+.node-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-inline-size: 0; /* let the flex item shrink below its text width */
+}
+```
+
+If you'd rather style from outside the tree (or pin the wrapper yourself), plain **global** CSS reaches it — component-scoped styles don't, and `::ng-deep` is not needed in a global stylesheet:
+
+```css
+/* styles.css — scope to your tree's container */
+.my-tree .cdk-virtual-scroll-content-wrapper {
+  inline-size: 100%;
+}
+```
+
 The tree republishes the value as a **read-only CSS variable `--tree-row-height`** on its host, so row-content sizing derives from the same source instead of repeating the number in CSS:
 
 ```css

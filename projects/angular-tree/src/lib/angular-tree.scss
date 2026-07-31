@@ -218,6 +218,25 @@
   }
 }
 
+/*
+ * labelOverflow: 'ellipsis' — rows capped at the VIEWPORT's width so consumer
+ * `text-overflow: ellipsis` has an edge to truncate against. The CDK content
+ * wrapper is absolutely positioned and shrink-wraps to the widest nowrap row
+ * (its `min-width: 100%` is a floor, not a ceiling) — and it lives in the CDK
+ * component's template, out of reach of these scoped styles. `100cqw` resolves
+ * against the viewport container, skipping the circular shrink-wrap parent
+ * (`max-inline-size: 100%` would be a percentage of a parent sized by its
+ * children); capped rows stop the wrapper growing, so it lands exactly at
+ * `min-width: 100%`. Horizontal scrolling is deliberately gone in this mode.
+ */
+:host([data-label-overflow='ellipsis']) .tree-viewport {
+  container-type: inline-size;
+}
+
+:host([data-label-overflow='ellipsis']) .tree-node {
+  max-inline-size: 100cqw;
+}
+
 .tree-node {
   display: flex;
   align-items: center;

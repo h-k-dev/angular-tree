@@ -48,6 +48,7 @@ const flushMicrotasks = () => new Promise((resolve) => setTimeout(resolve));
       [searchTerm]="term()"
       [searchMatch]="match"
       [typeaheadText]="text"
+      [labelOverflow]="overflow()"
     >
       <ng-template treeNodeDef let-node let-hasError="hasError">
         {{ node.name }}
@@ -68,6 +69,7 @@ class Host {
   key = (node: DemoNode) => node.id;
   selected = signal<readonly string[]>([]);
   term = signal('');
+  overflow = signal<'scroll' | 'ellipsis'>('scroll');
   match = (node: DemoNode, term: string) =>
     node.name.toLowerCase().includes(term.toLowerCase());
   text = (node: DemoNode) => node.name;
@@ -90,6 +92,19 @@ describe('AngularTree', () => {
 
   it('should create', () => {
     expect(tree).toBeTruthy();
+  });
+
+  it('reflects labelOverflow as a host data attribute (the CSS hook)', async () => {
+    // jsdom has no layout, so the cqw geometry itself is pinned by
+    // e2e/label-overflow.spec.ts — here we pin the attribute contract.
+    const host = (fixture.nativeElement as HTMLElement).querySelector(
+      'angular-tree',
+    )!;
+    expect(host.hasAttribute('data-label-overflow')).toBe(false); // default 'scroll'
+
+    fixture.componentInstance.overflow.set('ellipsis');
+    await fixture.whenStable();
+    expect(host.getAttribute('data-label-overflow')).toBe('ellipsis');
   });
 
   it('renders only roots while collapsed', () => {

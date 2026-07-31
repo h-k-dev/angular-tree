@@ -122,6 +122,15 @@ export const MEDIA_LIBRARY: readonly MediaNode[] = [
     id: 'new-releases',
     name: 'New Releases',
     children: [
+      // Deliberately absurd title: the labelOverflow="ellipsis" seed. Without
+      // it every library name fits the 288px panel and truncation is dead code.
+      {
+        kind: 'video',
+        id: 'agent327',
+        name: 'Agent 327: Operation Barbershop — Official Teaser | Blender Animation Studio Open Movie (4K) — grease-pencil storyboards, Cycles lighting breakdowns, character rigs and the complete production pipeline explained frame by frame',
+        videoId: 'mN0zPOpADL4',
+        duration: '3:51',
+      },
       // Rickroll Easter egg 🎸 — the "trailer" loads Never Gonna Give You Up.
       {
         kind: 'video',

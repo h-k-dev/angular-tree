@@ -115,6 +115,8 @@ interface FlatRow<T> {
   hostDirectives: [CdkContextMenuTrigger],
   host: {
     '[style.--tree-row-height]': 'itemSize() + "px"',
+    '[attr.data-label-overflow]':
+      "labelOverflow() === 'ellipsis' ? 'ellipsis' : null",
   },
   templateUrl: './angular-tree.html',
   styleUrl: './angular-tree.scss',
@@ -259,6 +261,19 @@ export class AngularTree<T> {
 
   /** One guide line per ancestor level; clicking a guide collapses that group. */
   readonly indentGuides = input(false);
+
+  /**
+   * How rows behave when a nowrap label outgrows the viewport. Under `'scroll'`
+   * (default) the scroll content grows to the widest row — CDK's content
+   * wrapper shrink-wraps, its `min-width: 100%` is only a floor — so the tree
+   * scrolls horizontally and a consumer `text-overflow: ellipsis` never
+   * engages (the label never meets an edge). `'ellipsis'` caps rows at the
+   * visible viewport width so consumer label truncation works; horizontal
+   * scrolling is gone in that mode, so deep trees with wide rows should stay
+   * on `'scroll'`. The label CSS itself (`overflow: hidden; text-overflow:
+   * ellipsis; white-space: nowrap; min-inline-size: 0`) is the consumer's.
+   */
+  readonly labelOverflow = input<'scroll' | 'ellipsis'>('scroll');
 
   /**
    * Root-level load in flight — shows the projected `treeLoadingDef` over the
