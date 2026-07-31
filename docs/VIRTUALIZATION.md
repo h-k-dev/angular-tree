@@ -55,6 +55,25 @@ If you'd rather style from outside the tree (or pin the wrapper yourself), plain
 }
 ```
 
+### Middle ellipsis (macOS style)
+
+CSS truncation is end-only. For Finder-style `head…tail` — both ends of the name survive, the middle gives way — the library ships a zero-dependency `middleEllipsis` directive (canvas `measureText` + `Intl.Segmenter`, no layout thrash):
+
+```html
+<!-- the directive OWNS the text — leave the element empty -->
+<span class="node-name" [middleEllipsis]="node.name"></span>
+
+<!-- Finder's rule: the extension is never truncated -->
+<span [middleEllipsis]="file.name" middleEllipsisTail="extension"></span>
+```
+
+Its contract, in short:
+
+- Pair it with `labelOverflow: 'ellipsis'` — without capped rows the label's container grows with the text and nothing ever needs truncating.
+- Give the element a **content-independent inline size** (`flex: 1 1 auto; min-inline-size: 0`, or a fixed width). A shrink-to-content box resizes when its text is replaced, and re-truncation would chase its own output.
+- The full name stays reachable: `title` (hover tooltip) and `aria-label` always carry the untruncated string, and type-ahead matches against your `typeaheadText` accessor, never the rendered DOM.
+- It re-derives on rename, element resize, and web-font arrival; mixed-direction text is pinned in bidi isolates so the halves can't visually swap.
+
 The tree republishes the value as a **read-only CSS variable `--tree-row-height`** on its host, so row-content sizing derives from the same source instead of repeating the number in CSS:
 
 ```css

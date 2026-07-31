@@ -98,4 +98,22 @@ describe('VscodeExample', () => {
     component.previewFile(folder);
     expect(component.previewedFile()?.path).toBe('angular-tree/src/main.ts');
   });
+
+  it('the sash resizes the explorer via keyboard, clamped to its bounds', () => {
+    const key = (k: string) =>
+      component.onSashKey(new KeyboardEvent('keydown', { key: k }));
+
+    // jsdom has no layout: the measured pane width is 0, so the first step
+    // lands on the clamp floor — further steps move from the stored size.
+    key('ArrowRight');
+    expect(component.explorerSize()).toBe(component.explorerMin);
+    key('ArrowRight');
+    expect(component.explorerSize()).toBe(component.explorerMin + 16);
+    key('End');
+    expect(component.explorerSize()).toBe(component.explorerMax);
+    key('ArrowRight'); // clamped at the ceiling
+    expect(component.explorerSize()).toBe(component.explorerMax);
+    key('Home');
+    expect(component.explorerSize()).toBe(component.explorerMin);
+  });
 });

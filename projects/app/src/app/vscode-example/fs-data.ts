@@ -105,6 +105,13 @@ export const WORKSPACE: readonly FsNode[] = [
                 name: 'app.routes.ts',
                 kind: 'file',
               },
+              // The middleEllipsis seed: long enough to truncate at any panel
+              // width, with an extension for the Finder tail rule to protect.
+              {
+                path: 'angular-tree/src/app/virtualized-explorer-panel-with-inline-rename-and-drag-reordering.component.spec.ts',
+                name: 'virtualized-explorer-panel-with-inline-rename-and-drag-reordering.component.spec.ts',
+                kind: 'file',
+              },
             ],
           },
           { path: 'angular-tree/src/main.ts', name: 'main.ts', kind: 'file' },

@@ -8,18 +8,20 @@ import { scrollViewport, waitForTree } from './helpers';
  * CDK's shrink-wrapping content wrapper from outgrowing the viewport (the
  * wrapper's `min-width: 100%` is a floor — a nowrap label otherwise grows the
  * scroll content and ellipsis never engages) is only provable against a real
- * renderer. The Media library ships an absurdly long title as the seed.
+ * renderer. Seed: the Media library's absurdly long Agent 327 title, truncated
+ * by plain consumer CSS (`text-overflow: ellipsis`) — the untreated case the
+ * wrapper pin exists for.
  */
 
 test.describe('labelOverflow: ellipsis', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/media');
     await waitForTree(page);
-    // The long-titled row sits near the playlist's end — make sure it renders.
+    // The long-titled row sits near the playlist's end — bring it into range.
     await scrollViewport(page, 10_000);
   });
 
-  test('rows cap at the viewport: no horizontal overflow, label truncates', async ({
+  test('rows cap at the viewport: no horizontal overflow, CSS ellipsis engages', async ({
     page,
   }) => {
     const label = page.locator('.media-name', { hasText: 'Agent 327' });
@@ -51,7 +53,7 @@ test.describe('labelOverflow: ellipsis', () => {
     expect(geometry.viewportScrollWidth).toBe(geometry.viewportClientWidth);
     // The label is genuinely CLIPPED (text wider than its box), not merely
     // styled — with the wrapper unpinned this is where truncation silently
-    // degrades to a horizontal scrollbar (clientWidth grows to fit).
+    // degrades to a horizontal scrollbar (clientWidth grows to fit the text).
     expect(geometry.labelScrollWidth).toBeGreaterThan(
       geometry.labelClientWidth,
     );
@@ -61,8 +63,8 @@ test.describe('labelOverflow: ellipsis', () => {
   test('short labels keep their intrinsic width (capping is a ceiling)', async ({
     page,
   }) => {
-    const short = page.locator('.media-name', { hasText: 'Big Buck Bunny' });
     await scrollViewport(page, 0);
+    const short = page.locator('.media-name', { hasText: 'Big Buck Bunny' });
     await expect(short).toBeVisible();
     const clipped = await short.evaluate(
       (el) => el.scrollWidth > el.clientWidth,

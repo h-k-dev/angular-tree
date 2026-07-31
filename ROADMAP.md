@@ -290,6 +290,15 @@ indentGuides:     boolean;                            // guide line per ancestor
 labelOverflow:    'scroll' | 'ellipsis';              // default 'scroll'; 'ellipsis' caps rows at the viewport
                                                       // width (container-query units) so consumer label
                                                       // text-overflow engages — horizontal scroll gone in that mode
+
+// middleEllipsis — standalone label directive, ships in the main entry (ROADMAP2
+// decision 13, pulled forward pre-release; full sketch + design notes there).
+// OWNS the element's textContent (leave it empty); pair with labelOverflow:
+// 'ellipsis' + a content-independent label box (flex: 1 1 auto; min-inline-size: 0):
+//   <span [middleEllipsis]="node.name" middleEllipsisTail="extension"></span>
+middleEllipsis:     string;                           // required; full text — mirrored to title/aria-label
+middleEllipsisTail: 'balanced' | 'extension';         // default 'balanced'; 'extension' = balanced
+                                                      // STEM cut + the whole extension kept (Finder)
 loading:          boolean;                            // root-level load in flight → shows treeLoadingDef
 
 // Projection templates (tree owns the slot, consumer the content):

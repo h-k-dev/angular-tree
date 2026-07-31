@@ -123,8 +123,29 @@
 .vsc-workbench {
   display: grid;
   flex: 1 1 auto;
-  grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
+  // Middle column = the sash. --vsc-explorer-size is set while dragging;
+  // the var() fallback keeps the original responsive default until then.
+  grid-template-columns:
+    var(--vsc-explorer-size, minmax(15rem, 20rem))
+    auto minmax(0, 1fr);
   min-block-size: 0;
+}
+
+// The sash: a slim invisible grab strip straddling the explorer border
+// (the border itself stays the visible divider, VS Code-style).
+.vsc-sash {
+  cursor: col-resize;
+  inline-size: 6px;
+  margin-inline: -3px;
+  z-index: 1;
+  touch-action: none; // pointer-capture drags own the gesture on touch too
+
+  &:hover,
+  &:focus-visible,
+  &:active {
+    background: color-mix(in srgb, var(--mat-sys-primary) 45%, transparent);
+    outline: none;
+  }
 }
 
 .vsc-explorer {
@@ -314,9 +335,15 @@
 }
 
 .vsc-name {
+  // middleEllipsis contract: a content-INDEPENDENT box (grow + shrink) — a
+  // shrink-to-content span resizes when its text is replaced and the
+  // re-truncation loop would chase its own output. (overflow: hidden already
+  // zeroes the flex auto-min per spec; stated anyway to model the contract.)
+  flex: 1 1 auto;
+  min-inline-size: 0;
   overflow: hidden;
   font: var(--mat-sys-body-small);
-  text-overflow: ellipsis;
+  text-overflow: ellipsis; // fallback only — the directive emits fitting text
   white-space: nowrap;
 }
 
@@ -383,5 +410,10 @@
   .vsc-explorer {
     border-inline-end: none;
     border-block-end: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  // Stacked layout has no column to resize.
+  .vsc-sash {
+    display: none;
   }
 }

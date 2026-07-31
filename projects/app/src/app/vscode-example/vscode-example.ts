@@ -2,15 +2,18 @@ import { CdkMenuItem } from '@angular/cdk/menu';
 import {
   Component,
   computed,
+  ElementRef,
   inject,
   linkedSignal,
   signal,
+  viewChild,
 } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MatIconModule } from '@angular/material/icon';
 
 import {
   AngularTree,
+  MiddleEllipsis,
   RenameEvent,
   SelectEvent,
   TreeContextMenu,
@@ -99,6 +102,7 @@ A high-performance Angular tree component.`;
     CdkMenuItem,
     MatIconModule,
     AngularTree,
+    MiddleEllipsis,
     TreeContextMenu,
     TreeNodeDef,
     TreeNodeEditInput,
@@ -128,6 +132,70 @@ export class VscodeExample {
           content: previewContent(file),
         };
   });
+
+  // -------------------------------------------------------------------------
+  // Explorer sash — VS Code's draggable split, and the live proof that
+  // middleEllipsis re-truncates as the panel width changes.
+  // -------------------------------------------------------------------------
+
+  /** Explorer width in px while user-sized; null = the CSS responsive default. */
+  readonly explorerSize = signal<number | null>(null);
+  readonly explorerMin = 160;
+  readonly explorerMax = 520;
+
+  // TS-private, not #private: Angular query members must be compiler-visible (NG1053).
+  private readonly explorerPane =
+    viewChild<ElementRef<HTMLElement>>('explorerPane');
+
+  /** Drag origin: pointer x + explorer width at pointerdown; null = no drag. */
+  #sashStart: { x: number; width: number } | null = null;
+
+  #clampSash(width: number): number {
+    return Math.min(this.explorerMax, Math.max(this.explorerMin, width));
+  }
+
+  #paneWidth(): number {
+    return (
+      this.explorerSize() ??
+      this.explorerPane()?.nativeElement.getBoundingClientRect().width ??
+      0
+    );
+  }
+
+  onSashDown(event: PointerEvent) {
+    // Capture routes every further pointer event to the sash — the drag
+    // survives the cursor crossing the iframe-free editor pane.
+    (event.target as HTMLElement).setPointerCapture(event.pointerId);
+    this.#sashStart = { x: event.clientX, width: this.#paneWidth() };
+  }
+
+  onSashMove(event: PointerEvent) {
+    const start = this.#sashStart;
+    if (start === null) return;
+    this.explorerSize.set(
+      this.#clampSash(start.width + event.clientX - start.x),
+    );
+  }
+
+  onSashUp(event: PointerEvent) {
+    (event.target as HTMLElement).releasePointerCapture(event.pointerId);
+    this.#sashStart = null;
+  }
+
+  /** Keyboard resize (separator pattern): arrows step, Home/End jump. */
+  onSashKey(event: KeyboardEvent) {
+    const step = { ArrowLeft: -16, ArrowRight: 16 }[event.key];
+    if (step !== undefined) {
+      this.explorerSize.set(this.#clampSash(this.#paneWidth() + step));
+    } else if (event.key === 'Home') {
+      this.explorerSize.set(this.explorerMin);
+    } else if (event.key === 'End') {
+      this.explorerSize.set(this.explorerMax);
+    } else {
+      return;
+    }
+    event.preventDefault();
+  }
 
   /// Accessors — the tree never learns the FsNode shape.
   children = (node: FsNode) => (isDir(node) ? node.children : undefined);

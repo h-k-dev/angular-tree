@@ -460,6 +460,23 @@ describe('AngularTree', () => {
         vi.useRealTimers();
       }
     });
+
+    it('type-ahead reads typeaheadText from data, never the rendered DOM', () => {
+      vi.useFakeTimers();
+      try {
+        // A truncating label (middleEllipsis) rewrites the row's visible text;
+        // scramble every row the same way — matching must still work.
+        for (const row of Array.from(
+          (fixture.nativeElement as HTMLElement).querySelectorAll('.tree-node'),
+        )) {
+          row.textContent = '…';
+        }
+        keydown('b');
+        expect(tabIndexes()['b']).toBe(0);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 
   describe('lazy loading', () => {

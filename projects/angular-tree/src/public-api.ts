@@ -6,6 +6,7 @@ export * from './lib/angular-tree';
 export * from './lib/events';
 export * from './lib/tree-node-checkbox';
 export * from './lib/tree-node-def';
+export * from './lib/middle-ellipsis';
 export * from './lib/tree-node-drag-handle';
 export * from './lib/tree-node-edit-input';
 export * from './lib/tree-node-toggle';

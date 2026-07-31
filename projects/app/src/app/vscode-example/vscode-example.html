@@ -30,8 +30,17 @@
     <span class="vsc-title">angular-tree — Explorer</span>
   </header>
 
-  <div class="vsc-workbench">
-    <aside class="vsc-explorer" aria-labelledby="vsc-explorer-label">
+  <div
+    class="vsc-workbench"
+    [style.--vsc-explorer-size]="
+      explorerSize() !== null ? explorerSize() + 'px' : null
+    "
+  >
+    <aside
+      #explorerPane
+      class="vsc-explorer"
+      aria-labelledby="vsc-explorer-label"
+    >
       <span class="vsc-section-label" id="vsc-explorer-label">Explorer</span>
 
       <angular-tree
@@ -45,6 +54,7 @@
         [typeaheadText]="nodeName"
         [itemSize]="22"
         [indentGuides]="true"
+        [labelOverflow]="'ellipsis'"
         [clickAction]="'select'"
         [enterAction]="'edit'"
         (selectionChange)="onSelection($event)"
@@ -80,7 +90,8 @@
               <mat-icon class="vsc-icon vsc-icon--folder">{{
                 isExpanded ? 'folder_open' : 'folder'
               }}</mat-icon>
-              <span class="vsc-name">{{ node.name }}</span>
+              <!-- Middle ellipsis, balanced halves — folders have no extension. -->
+              <span class="vsc-name" [middleEllipsis]="node.name"></span>
             </span>
           }
         </ng-container>
@@ -100,7 +111,14 @@
             @if (isEditing) {
               <input treeNodeEditInput class="vsc-rename" [value]="node.name" />
             } @else {
-              <span class="vsc-name">{{ node.name }}</span>
+              <!-- Finder-style middle ellipsis: the extension always survives
+                   (the directive owns the text; title/aria keep the full name,
+                   and the rename input above still shows it untruncated). -->
+              <span
+                class="vsc-name"
+                [middleEllipsis]="node.name"
+                middleEllipsisTail="extension"
+              ></span>
             }
           </span>
         </ng-template>
@@ -120,6 +138,23 @@
         </ng-template>
       </angular-tree>
     </aside>
+
+    <!-- VS Code's sash: drag (pointer capture) or arrow keys resize the
+         explorer — and the middleEllipsis labels re-truncate live with it. -->
+    <div
+      class="vsc-sash"
+      role="separator"
+      aria-label="Resize explorer"
+      aria-orientation="vertical"
+      tabindex="0"
+      [attr.aria-valuemin]="explorerMin"
+      [attr.aria-valuemax]="explorerMax"
+      [attr.aria-valuenow]="explorerSize()"
+      (pointerdown)="onSashDown($event)"
+      (pointermove)="onSashMove($event)"
+      (pointerup)="onSashUp($event)"
+      (keydown)="onSashKey($event)"
+    ></div>
 
     <main
       class="vsc-editor"
