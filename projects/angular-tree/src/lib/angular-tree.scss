@@ -253,6 +253,7 @@
   );
   cursor: default;
   user-select: none;
+  border-radius: var(--tree-node-radius, 0px);
 }
 
 /* One continuous div per expanded group — segments per row would reveal
