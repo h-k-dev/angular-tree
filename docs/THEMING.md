@@ -26,6 +26,7 @@ Because the chains sit at point of use rather than being declared on the host el
 | `--tree-drag-preview-text` | `--mat-sys-on-surface`                | `#1d1b20`                                 | Drag preview text                                                     |
 | `--tree-badge-text`        | `--mat-sys-on-primary`                | `#ffffff`                                 | Multi-drag count badge text                                           |
 | `--tree-indent`            | —                                     | `1.5rem`                                  | Per-level indentation step                                            |
+| `--tree-row-inset`         | —                                     | `0px`                                     | One-off leading inset applied to rows, indent guides and the drop indicator alike — use this instead of padding your own row wrapper, which shifts the content but not the guides |
 | `--tree-guide`             | `--mat-sys-outline-variant`           | `#cac4d0`                                 | Indent guide lines (`[indentGuides]`); hover uses `--tree-focus-ring` |
 | `--tree-menu-bg`           | `--mat-sys-surface-container`         | `#f3edf7`                                 | Built-in context-menu shell background (`treeContextMenu`)            |
 | `--tree-menu-radius`       | —                                     | `8px`                                     | Context-menu shell corner radius                                      |
@@ -35,11 +36,13 @@ Because the chains sit at point of use rather than being declared on the host el
 | `--tree-scrollbar-gutter`  | —                                     | `stable`                                  | `scrollbar-gutter` — reserves the track so content doesn't shift when the scrollbar appears |
 | `--tree-overscroll-behavior` | —                                   | `contain`                                 | `overscroll-behavior` — `contain` isolates tree scroll from the page (no chaining, pull-to-refresh, swipe-back); set `auto` to allow chaining |
 
-Indentation is applied as `padding-inline-start: calc(var(--tree-level) * var(--tree-indent, 1.5rem))` — logical properties, so RTL mirrors for free. `--tree-level` is set per row by the tree; treat it as read-only.
+Indentation is applied as `padding-inline-start: calc(var(--tree-level) * var(--tree-indent, 1.5rem) + var(--tree-row-inset, 0px))` — logical properties, so RTL mirrors for free. `--tree-level` is set per row by the tree; treat it as read-only.
+
+**Row inset belongs to the tree, not your template.** The indent guides and the drop indicator are positioned in the same coordinate system as the rows — all three add `--tree-row-inset` so they shift together. A `padding-inline-start` on your own row-content wrapper moves the toggle column but leaves guides and the drop line behind by exactly that padding, at every depth. If your rows need breathing room from the tree's edge, set `--tree-row-inset` and keep your wrapper flush. Corollary for full-bleed row overlays: anything walking back to the tree edge with `calc(-1 * var(--tree-level) * var(--tree-indent))` must now also subtract `var(--tree-row-inset, 0px)`.
 
 Two more read-only variables the tree _publishes_ (outputs, not inputs): `--tree-level` (above) and `--tree-row-height` on the host — the `[itemSize]` input republished so your row-content CSS (toggle targets, spacers, indent) can derive from the same number the scroll strategy uses. Row height itself is controlled ONLY via `[itemSize]`; see docs/VIRTUALIZATION.md.
 
-Indent guide lines are drawn at `calc(var(--tree-indent) / 2)` within the indent column, so they stay centered under the toggle column at any indent — set `--tree-indent` to your toggle's width (e.g. `32px`) for exact alignment.
+Indent guide lines are drawn at `calc(var(--tree-indent) / 2)` within the indent column, so they stay centered under the toggle column at any indent — set `--tree-indent` to your toggle's width (e.g. `32px`) for exact alignment. That contract assumes the toggle sits flush at the start of your row content: any leading inset must come from `--tree-row-inset` (which guides follow), never from padding inside your template (which they can't see).
 
 ## Scrollbar
 
@@ -123,7 +126,7 @@ One number sizes every square in the row, so columns align by construction:
 
 - **Toggle button** — its touch/state target (`inline-size`/`block-size`).
 - **Checkbox host** — same target size (`treeNodeCheckbox` element).
-- **Thread line** — set `--tree-indent: var(--tree-toggle-size)` and the indent guide centers exactly under the toggle column at any size.
+- **Thread line** — set `--tree-indent: var(--tree-toggle-size)` and the indent guide centers exactly under the toggle column at any size. Precondition: the toggle is the first thing in the row, with no content-side leading padding — inset rows with `--tree-row-inset` instead, which rows, guides and the drop indicator all follow.
 - **Leaf spacer** — leaves have no toggle; the stand-in spacer is `calc(var(--tree-toggle-size) * var(--tree-toggle-spacing-factor))`.
 
 ```css

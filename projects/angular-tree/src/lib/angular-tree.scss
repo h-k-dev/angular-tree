@@ -23,7 +23,9 @@
   position: absolute;
   pointer-events: none;
   /* Logical properties: indent + insets mirror correctly in RTL (ROADMAP) */
-  inset-inline-start: calc(var(--tree-level) * var(--tree-indent, 1.5rem));
+  inset-inline-start: calc(
+    var(--tree-level) * var(--tree-indent, 1.5rem) + var(--tree-row-inset, 0px)
+  );
   inset-inline-end: calc(var(--_spacing) * 2);
   background: var(--tree-drop-indicator, var(--mat-sys-primary, #6750a4));
   border-radius: 1px;
@@ -242,7 +244,13 @@
   align-items: center;
   gap: calc(var(--_spacing) * 2);
   box-sizing: border-box;
-  padding-inline-start: calc(var(--tree-level) * var(--tree-indent, 1.5rem));
+  /* level·indent + a one-off --tree-row-inset. Rows, guides and the drop
+     indicator derive from this SAME origin and must shift together — a
+     consumer inset on row CONTENT would move rows but not guides, putting
+     the thread line beside the toggle by a constant at every depth. */
+  padding-inline-start: calc(
+    var(--tree-level) * var(--tree-indent, 1.5rem) + var(--tree-row-inset, 0px)
+  );
   cursor: default;
   user-select: none;
 }
@@ -257,7 +265,9 @@
      afford to be this wide because it only ever overlays row *padding*:
      any descendant row is indented at least one level deeper. Scales with
      --tree-indent. Logical properties → RTL-correct. */
-  inset-inline-start: calc(var(--tree-level) * var(--tree-indent, 1.5rem));
+  inset-inline-start: calc(
+    var(--tree-level) * var(--tree-indent, 1.5rem) + var(--tree-row-inset, 0px)
+  );
   inline-size: var(--tree-indent, 1.5rem);
   cursor: pointer;
 }

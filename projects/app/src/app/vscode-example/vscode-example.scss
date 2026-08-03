@@ -159,12 +159,16 @@
 
 // The Explorer tree: compact rows, chevron disclosure, indent guides. Tokens
 // tuned so guides centre under the chevron column (indent === twisty width).
+// The sidebar breathing room is --tree-row-inset, NOT padding on .vsc-label —
+// content padding would shift the chevrons but strand guides and the drop
+// line at the old origin (docs/THEMING.md); the token moves all three.
 .vsc-tree {
   flex: 1 1 auto;
   min-block-size: 0;
 
   --tree-toggle-size: 16px;
   --tree-indent: 16px;
+  --tree-row-inset: 8px; // VS Code insets Explorer rows from the sidebar edge
   --tree-bg: var(--mat-sys-surface-container-low);
   --tree-text: var(--mat-sys-on-surface);
   --tree-node-hover: var(--mat-sys-surface-container-high);

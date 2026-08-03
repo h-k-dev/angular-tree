@@ -15,6 +15,8 @@ interface RowBox {
   top: number;
   bottom: number;
   centre: number;
+  left: number;
+  right: number;
   colLeft: number;
   colRight: number;
   colBottom: number;
@@ -52,6 +54,8 @@ function measurePanel(page: Page, names: readonly string[]) {
         top: rect.top,
         bottom: rect.bottom,
         centre: (rect.top + rect.bottom) / 2,
+        left: rect.left,
+        right: rect.right,
         colLeft: col.left,
         colRight: col.right,
         colBottom: col.bottom,
@@ -72,6 +76,48 @@ function measurePanel(page: Page, names: readonly string[]) {
     );
     return { rows: measured, guides };
   }, names);
+}
+
+/**
+ * Rects of Explorer rows (by data-node-id) + guides on /vscode — the page
+ * that runs a non-zero --tree-row-inset (8px of sidebar breathing room).
+ * Same shape as measurePanel, different consumer markup (.vsc-twisty is the
+ * toggle column; leaf spacers carry the same class, so it exists on any row).
+ */
+function measureExplorer(page: Page, ids: readonly string[]) {
+  return page.evaluate((wanted) => {
+    const panel = document.querySelector('.vsc-tree')!;
+    const measured: Record<string, RowBox> = {};
+    for (const id of wanted) {
+      const row = panel.querySelector(`.tree-node[data-node-id="${id}"]`)!;
+      const rect = row.getBoundingClientRect();
+      const col = row.querySelector('.vsc-twisty')!.getBoundingClientRect();
+      measured[id] = {
+        top: rect.top,
+        bottom: rect.bottom,
+        centre: (rect.top + rect.bottom) / 2,
+        left: rect.left,
+        right: rect.right,
+        colLeft: col.left,
+        colRight: col.right,
+        colBottom: col.bottom,
+      };
+    }
+    const guides = [...panel.querySelectorAll<HTMLElement>('.tree-guide')].map(
+      (guide) => {
+        const rect = guide.getBoundingClientRect();
+        return {
+          level: Number(guide.style.getPropertyValue('--tree-level')),
+          top: rect.top,
+          bottom: rect.bottom,
+          left: rect.left,
+          right: rect.right,
+          elbow: guide.hasAttribute('data-elbow'),
+        };
+      },
+    );
+    return { rows: measured, guides };
+  }, ids);
 }
 
 /** The guide whose line starts at this row's bottom seam (its group's guide). */
@@ -177,6 +223,62 @@ test.describe('Indent-guide connectors', () => {
       Math.abs(lineX - (row['Links'].colLeft + row['Links'].colRight) / 2),
     ).toBeLessThanOrEqual(1);
     expect(Math.abs(guide.left - row['Home'].colRight)).toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe('Indent guides with --tree-row-inset', () => {
+  // The VS Code Explorer insets ALL rows 8px from the sidebar edge via the
+  // token. The failure mode this guards (consumer padding on row content):
+  // toggles shift by the inset while guides and the drop line stay behind —
+  // a CONSTANT offset at every depth. Hence: inset visibly applied at the
+  // root, and line-under-toggle-centre at TWO different depths.
+  const INSET = 8;
+
+  test('rows carry the inset and the line stays under the toggle at two depths', async ({
+    page,
+  }) => {
+    await page.goto('/vscode');
+    await waitForTree(page);
+    const { rows: row, guides } = await measureExplorer(page, [
+      'angular-tree',
+      'angular-tree/src',
+      'angular-tree/src/app',
+    ]);
+
+    // Depth 0: the row's content (its twisty) starts exactly the inset in.
+    expect(
+      Math.abs(row['angular-tree'].colLeft - row['angular-tree'].left - INSET),
+    ).toBeLessThanOrEqual(1);
+
+    for (const id of ['angular-tree/src', 'angular-tree/src/app']) {
+      const guide = guideOf(guides, row[id]);
+      const lineX = (guide.left + guide.right) / 2;
+      expect(
+        Math.abs(lineX - (row[id].colLeft + row[id].colRight) / 2),
+      ).toBeLessThanOrEqual(1);
+    }
+  });
+
+  test('RTL mirrors the inset together with the guides', async ({ page }) => {
+    await page.goto('/vscode?dir=rtl');
+    await waitForTree(page);
+    const { rows: row, guides } = await measureExplorer(page, [
+      'angular-tree',
+      'angular-tree/src',
+    ]);
+
+    expect(
+      Math.abs(
+        row['angular-tree'].right - row['angular-tree'].colRight - INSET,
+      ),
+    ).toBeLessThanOrEqual(1);
+
+    const parent = row['angular-tree/src'];
+    const guide = guideOf(guides, parent);
+    const lineX = (guide.left + guide.right) / 2;
+    expect(
+      Math.abs(lineX - (parent.colLeft + parent.colRight) / 2),
+    ).toBeLessThanOrEqual(1);
   });
 });
 
