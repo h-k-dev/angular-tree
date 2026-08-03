@@ -19,6 +19,7 @@ Because the chains sit at point of use rather than being declared on the host el
 | `--tree-font`              | `--mat-sys-body-medium`               | `400 0.875rem/1.25rem Roboto, sans-serif` | Typography (full `font` shorthand)                                    |
 | `--tree-node-hover`        | `--mat-sys-surface-container-highest` | `#e6e6e6`                                 | Row hover                                                             |
 | `--tree-node-selected`     | `--mat-sys-secondary-container`       | `#e8def8`                                 | Selected row (`[data-selected]`)                                      |
+| `--tree-node-radius`       | —                                     | `0px`                                     | Row corner radius (`.tree-node`)                                      |
 | `--tree-focus-ring`        | `--mat-sys-primary`                   | `#6750a4`                                 | `:focus-visible` outline                                              |
 | `--tree-drop-indicator`    | `--mat-sys-primary`                   | `#6750a4`                                 | Drop line/box, count badge                                            |
 | `--tree-drag-shadow`       | `--mat-sys-level3`                    | `0 2px 8px rgb(0 0 0 / 0.3)`              | Drag preview elevation                                                |

@@ -51,6 +51,12 @@ export class ApiReference {
       alters: 'Selected row ([data-selected])',
     },
     {
+      name: '--tree-node-radius',
+      system: null,
+      fallback: '0px',
+      alters: 'Row corner radius (.tree-node)',
+    },
+    {
       name: '--tree-focus-ring',
       system: '--mat-sys-primary',
       fallback: '#6750a4',
