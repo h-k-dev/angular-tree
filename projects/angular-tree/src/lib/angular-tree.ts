@@ -215,6 +215,16 @@ export class AngularTree<T> {
     ((node: T, term: string) => boolean) | undefined
   >(undefined);
 
+  /**
+   * A match also keeps its loaded descendants visible without a click. Off,
+   * a matched container whose children fail the term renders collapsed and
+   * opens on demand — right for "find the file"; on is "find the folder".
+   * Descendants revealed either way are not matches: they don't count
+   * toward `searchResults`. Loaded only — a lazy match still fetches on the
+   * user's expand.
+   */
+  readonly searchDescendants = input(false);
+
   /** Required for type-ahead — same rationale as `searchMatch`; inert without it. */
   readonly typeaheadText = input<((node: T) => string) | undefined>(undefined);
 
@@ -445,6 +455,7 @@ export class AngularTree<T> {
       selectedKeys: this.selectedKeys,
       searchTerm: this.searchTerm,
       searchMatch: this.searchMatch,
+      searchDescendants: this.searchDescendants,
     });
     this.#focus.connect({ viewport: this.viewport, focusMode: this.focusMode });
     // In-flight accessor fetches must not outlive the tree (v2 cancellation).

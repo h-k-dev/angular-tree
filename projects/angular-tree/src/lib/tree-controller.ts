@@ -74,6 +74,8 @@ export interface TreeControllerInputs<T> {
   selectedKeys: Signal<readonly string[] | undefined>;
   searchTerm: Signal<string>;
   searchMatch: Signal<((node: T, term: string) => boolean) | undefined>;
+  /** A match also keeps its loaded descendants visible (see `searchVisibleIds`). */
+  searchDescendants: Signal<boolean>;
 }
 
 /**
@@ -424,26 +426,51 @@ export class TreeController<T> {
 
   /**
    * Keys visible under the current search, or `null` when search is inactive.
-   * A match keeps its full ancestor chain visible (react-arborist behavior);
-   * expansion state is never mutated — clearing the term restores it intact.
+   * A match keeps its full ancestor chain visible (react-arborist behavior).
+   * Below a visible node the ordinary tree rules apply again: its children
+   * show when it is expanded — a chevron the user clicks while searching
+   * must do what it says — and, with `searchDescendants`, always, so a
+   * matched container shows its contents without a click. Ancestors that
+   * are only on a chain reveal nothing but the chain: their expansion is
+   * not an opinion about this search.
+   * Expansion state is never mutated — clearing the term restores it intact.
+   *
+   * One pass over the pre-order list with a stack of "open" levels: an entry
+   * inherits visibility exactly when its parent (the nearest shallower entry,
+   * so the top of the stack once deeper levels are popped) was left open.
    */
   readonly searchVisibleIds = computed<ReadonlySet<string> | null>(() => {
     const term = this.#inputs.searchTerm();
     const match = this.#inputs.searchMatch();
     if (!term || !match) return null; // no matcher = search inert (ROADMAP settled)
 
+    const withDescendants = this.#inputs.searchDescendants();
+    const expanded = this.expandedIds();
     const { list, map } = this.flat();
     const visible = new Set<string>();
+    const open: number[] = [];
     for (const entry of list) {
-      if (!match(entry.node, term)) continue;
-      for (
-        let current: FlatTreeNode<T> | undefined = entry;
-        current && !visible.has(current.key);
-        current =
-          current.parentKey != null ? map.get(current.parentKey) : undefined
-      ) {
-        visible.add(current.key);
+      while (open.length && entry.level <= open[open.length - 1]) open.pop();
+      const inherited =
+        open.length > 0 && open[open.length - 1] === entry.level - 1;
+
+      if (match(entry.node, term)) {
+        for (
+          let current: FlatTreeNode<T> | undefined = entry;
+          current && !visible.has(current.key);
+          current =
+            current.parentKey != null ? map.get(current.parentKey) : undefined
+        ) {
+          visible.add(current.key);
+        }
+      } else if (inherited) {
+        visible.add(entry.key);
+      } else {
+        continue;
       }
+
+      if (entry.expandable && (withDescendants || expanded.has(entry.key)))
+        open.push(entry.level);
     }
     return visible;
   });
@@ -470,9 +497,16 @@ export class TreeController<T> {
       for (const key of keys) {
         const flat = map.get(key)!;
         if (searchIds && !searchIds.has(key)) continue;
-        // Ancestors of matches render force-expanded while searching.
+        // While searching, a row renders force-expanded exactly when it has
+        // something visible to show. Ancestors of matches always do; a match
+        // whose children are all filtered out — or not loaded yet, on a lazy
+        // node — renders collapsed, so `aria-expanded` never claims children
+        // that aren't there and the chevron still offers the real expand.
         const isExpanded =
-          flat.expandable && (searchIds ? true : expanded.has(key));
+          flat.expandable &&
+          (searchIds
+            ? flat.childKeys.some((childKey) => searchIds.has(childKey))
+            : expanded.has(key));
         out.push({ flat, isExpanded });
         if (isExpanded) visit(flat.childKeys);
       }

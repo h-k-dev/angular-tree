@@ -43,6 +43,8 @@ export class DocumentsExample {
   }
 
   search = signal('');
+  /** Off = find files (ancestor chain only); on = a matched folder shows its contents. */
+  searchDescendants = signal(false);
 
   onSearch(event: Event) {
     this.search.set((event.target as HTMLInputElement).value);

@@ -48,6 +48,7 @@ function createController() {
     searchMatch: signal((node: PerfNode, term: string) =>
       node.name.includes(term),
     ),
+    searchDescendants: signal(false),
   };
   controller.connect(inputs);
   return { controller, searchTerm };

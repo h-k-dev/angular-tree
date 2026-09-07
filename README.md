@@ -94,7 +94,8 @@ The most-used surface — the [live demo](https://h-k-dev.github.io/angular-tree
 | `dataSource`, `childrenAccessor`, `expansionKey`            | Your data, described by functions; async children = lazy loading              |
 | `itemSize`                                                  | Fixed row height in px — the virtualization contract                          |
 | `selectedKeys`, `multi`, `checkboxSelection`                | Controlled selection — `[(selectedKeys)]` two-way over keys; optional cascade |
-| `searchTerm`, `searchMatch`                                 | Filtering; matches keep their ancestor chain visible                          |
+| `searchTerm`, `searchMatch`                                 | Filtering; matches keep their ancestor chain visible, and open on demand      |
+| `searchDescendants`                                         | A match shows its loaded descendants without a click (find the folder, not the file) |
 | `disableDrag`, `disableDrop`, `disableEdit`, `isSelectable` | Per-node behavior predicates — type rules live in your code, not the tree     |
 | `rowClass`, `rowStyle`                                      | Per-node row styling accessors; `rowStyle` also reaches the group's guide     |
 | `childrenDeps`                                              | Declarative lazy-cache invalidation — bind what your accessor reads           |

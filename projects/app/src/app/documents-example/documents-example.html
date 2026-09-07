@@ -8,6 +8,17 @@
     (input)="onSearch($event)"
   />
 
+  <!-- Search scope: files only (ancestor chain) vs. folders too (a matched
+       folder shows its contents). Reads best next to the box it modifies. -->
+  <button
+    matButton
+    (click)="searchDescendants.set(!searchDescendants())"
+    [attr.aria-pressed]="searchDescendants()"
+  >
+    <mat-icon>{{ searchDescendants() ? 'folder_open' : 'description' }}</mat-icon>
+    {{ searchDescendants() ? 'Folders match' : 'Files match' }}
+  </button>
+
   <button
     matButton
     (click)="toggleScale()"
@@ -70,6 +81,7 @@
       [class.demo-hidden]="view() !== 'preview'"
       [scale]="scale()"
       [searchTerm]="search()"
+      [searchDescendants]="searchDescendants()"
       [loading]="rootLoading()"
     />
   } @placeholder {

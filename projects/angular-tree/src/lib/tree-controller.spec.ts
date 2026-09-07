@@ -61,6 +61,7 @@ function createController(
     searchMatch: signal<
       ((node: DemoNode, term: string) => boolean) | undefined
     >(undefined),
+    searchDescendants: signal(false),
     ...overrides,
   };
   controller.connect(inputs);
@@ -158,6 +159,124 @@ describe('TreeController', () => {
           .visibleNodes()
           .every((row) => !row.flat.expandable || row.isExpanded),
       ).toBe(true);
+    });
+
+    it('renders a match expanded only when it has a visible child', () => {
+      const { controller, searchTerm } = createController({
+        searchMatch: signal(match),
+      });
+
+      // a2 matches but a2x does not: a2 has nothing to show, so it renders
+      // collapsed; a (its ancestor) still renders open around it.
+      searchTerm.set('two');
+      expect(
+        controller.visibleNodes().map((row) => [row.flat.key, row.isExpanded]),
+      ).toEqual([
+        ['a', true],
+        ['a2', false],
+      ]);
+
+      // A lazy match has no loaded children at all — same answer, and the
+      // collapsed chevron is what lets the user's expand fetch them.
+      searchTerm.set('lazy');
+      expect(
+        controller.visibleNodes().map((row) => [row.flat.key, row.isExpanded]),
+      ).toEqual([['c', false]]);
+    });
+
+    it('lets the user expand a match while searching — children show, nested collapsed ones do not', () => {
+      const { controller, searchTerm } = createController({
+        searchMatch: signal(match),
+      });
+      // 'alpha' matches a, a1, a2 — a2x ('Deep Match') stays filtered…
+      searchTerm.set('alpha');
+      expect(controller.visibleNodes().map((row) => row.flat.key)).toEqual([
+        'a',
+        'a1',
+        'a2',
+      ]);
+
+      // …expanding a reveals nothing new (its children already match), and
+      // a2 is still collapsed, so a2x stays hidden.
+      controller.setExpanded('a', true);
+      expect(controller.visibleNodes().map((row) => row.flat.key)).toEqual([
+        'a',
+        'a1',
+        'a2',
+      ]);
+
+      // The click on a2 is what reveals a2x — and a2 now renders open.
+      controller.setExpanded('a2', true);
+      expect(
+        controller.visibleNodes().map((row) => [row.flat.key, row.isExpanded]),
+      ).toEqual([
+        ['a', true],
+        ['a1', false],
+        ['a2', true],
+        ['a2x', false],
+      ]);
+
+      // Collapsing it hides them again; nothing about the term changed.
+      controller.setExpanded('a2', false);
+      expect(controller.searchVisibleIds()?.has('a2x')).toBe(false);
+    });
+
+    it('does not let a chain-only ancestor reveal its other children', () => {
+      const { controller, searchTerm } = createController({
+        searchMatch: signal(match),
+      });
+      // a is expanded, but under 'deep' it is only the path to a2x: a1 stays hidden.
+      controller.setExpanded('a', true);
+      searchTerm.set('deep');
+      expect(controller.visibleNodes().map((row) => row.flat.key)).toEqual([
+        'a',
+        'a2',
+        'a2x',
+      ]);
+    });
+
+    it('reveals the loaded descendants of a match with searchDescendants', () => {
+      const searchDescendants = signal(false);
+      const { controller, searchTerm } = createController({
+        searchMatch: signal(match),
+        searchDescendants,
+      });
+      searchTerm.set('two');
+
+      // Off: the ancestor-chain contract, a2x stays filtered.
+      expect(controller.visibleNodes().map((row) => row.flat.key)).toEqual([
+        'a',
+        'a2',
+      ]);
+
+      // On: a2's subtree comes along, and a2 now has something to open into.
+      searchDescendants.set(true);
+      expect(
+        controller.visibleNodes().map((row) => [row.flat.key, row.isExpanded]),
+      ).toEqual([
+        ['a', true],
+        ['a2', true],
+        ['a2x', false],
+      ]);
+      // Siblings outside the matched subtree stay filtered.
+      expect(controller.searchVisibleIds()?.has('a1')).toBe(false);
+    });
+
+    it('does not count revealed descendants as matches', () => {
+      const { controller, searchTerm } = createController({
+        searchMatch: signal(match),
+        searchDescendants: signal(true),
+      });
+      searchTerm.set('alpha');
+
+      // 'Alpha', 'Alpha One', 'Alpha Two' match; 'Deep Match' is only revealed.
+      expect(controller.visibleNodes().map((row) => row.flat.key)).toEqual([
+        'a',
+        'a1',
+        'a2',
+        'a2x',
+      ]);
+      expect(controller.searchMatchCount()).toBe(3);
     });
 
     it('never mutates expansion state — clearing the term restores it', () => {

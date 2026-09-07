@@ -102,6 +102,8 @@ export class TreeExample {
 
   /** Matching child keeps its ancestor chain visible. */
   readonly searchTerm = input('');
+  /** Search finds folders as well as files — a matched folder shows its contents. */
+  readonly searchDescendants = input(false);
 
   /** Root-level load flag → drives the projected `treeLoadingDef`. */
   readonly loading = input(false);
