@@ -51,6 +51,12 @@ export class ApiReference {
       alters: 'Selected row ([data-selected])',
     },
     {
+      name: '--tree-node-selected-hover',
+      system: '--tree-node-selected + 8% --mat-sys-on-secondary-container',
+      fallback: 'color-mix(in srgb, #e8def8, #1d192b 8%)',
+      alters: 'Hovered selected row — the M3 hover state layer over the selected fill',
+    },
+    {
       name: '--tree-node-reveal-opacity',
       system: null,
       fallback: 'unset → your var(…, 1) fallback',

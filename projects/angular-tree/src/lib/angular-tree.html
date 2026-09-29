@@ -18,14 +18,16 @@
   <!-- data-loading / data-error are styling hooks AND the template's only
        reads of the load-state computeds: without them a pending/failed load
        schedules no zoneless CD (loads change visibleRows only on success),
-       leaving the consumer's spinner/Retry def stale. -->
+       leaving the consumer's spinner/Retry def stale.
+       Drag is off while renaming: with no mouse drag delay, a text-selection
+       drag inside the input would start a row drag instead. -->
   <div
     (keyup)="$event.stopPropagation()"
     *cdkVirtualFor="let row of visibleRows(); trackBy: trackByKey"
     class="tree-node"
     role="treeitem"
     cdkDrag
-    [cdkDragDisabled]="row.dragDisabled"
+    [cdkDragDisabled]="row.dragDisabled || row.context.isEditing"
     [cdkDragStartDelay]="dragStartDelay"
     (cdkDragStarted)="onDragStart(row)"
     (cdkDragMoved)="onDragMove($event)"
@@ -54,7 +56,7 @@
     [style.--tree-level]="row.level"
     [style.height.px]="itemSize()"
     (click)="onRowClick(row, $event)"
-    (dblclick)="onRowDoubleClick(row)"
+    (dblclick)="onRowDoubleClick(row, $event)"
     (contextmenu)="onContextMenu(row, $event)"
   >
     <!-- One representative + count badge — never N previews (ROADMAP) -->
@@ -128,7 +130,7 @@
         [style.transform]="stickyShift()"
         [attr.data-sticky-key]="sticky.row.key"
         (click)="onStickyClick(sticky.row, $event)"
-        (dblclick)="onRowDoubleClick(sticky.row)"
+        (dblclick)="onRowDoubleClick(sticky.row, $event)"
         (contextmenu)="onContextMenu(sticky.row, $event)"
       >
         <ng-container

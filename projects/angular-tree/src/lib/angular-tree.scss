@@ -372,6 +372,20 @@
   );
 }
 
+/* Selected wins over hover by source order, so without this a hovered
+   selected row gave no feedback at all. Default = the M3 hover state layer:
+   8% on-secondary-container over the selected fill. */
+.tree-node[data-selected]:hover {
+  background: var(
+    --tree-node-selected-hover,
+    color-mix(
+      in srgb,
+      var(--tree-node-selected, var(--mat-sys-secondary-container, #e8def8)),
+      var(--mat-sys-on-secondary-container, #1d192b) 8%
+    )
+  );
+}
+
 .tree-node:focus-visible {
   outline: 2px solid var(--tree-focus-ring, var(--mat-sys-primary, #6750a4));
   outline-offset: -2px;

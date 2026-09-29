@@ -46,7 +46,7 @@ import type {
   TreeAnnouncements,
 } from './events';
 import { LoadResult, TreeController } from './tree-controller';
-import { rowElement } from './tree-dom';
+import { fromEditInput, rowElement } from './tree-dom';
 import { TreeDragSession } from './tree-drag-session';
 import { TreeFocusEngine } from './tree-focus-engine';
 import {
@@ -483,6 +483,7 @@ export class AngularTree<T> {
       rows: this.visibleRows,
       sticky: this.stickyRows,
       disableDrop: this.disableDrop,
+      disableDrag: this.disableDrag,
       expand: (node) => this.expand(node),
       drop: (event) => {
         this.moved.emit(event);
@@ -729,6 +730,8 @@ export class AngularTree<T> {
    * shortcuts, ROADMAP settled).
    */
   protected onRowClick(row: FlatRow<T>, event: MouseEvent) {
+    // Caret clicks in the rename input must not activate/select the row.
+    if (fromEditInput(event)) return;
     this.#controller.focusedId.set(row.key);
 
     if ((event.ctrlKey || event.metaKey) && this.multi()) {
@@ -755,8 +758,9 @@ export class AngularTree<T> {
    * Activation gesture under `clickAction: 'select'` — inert otherwise so
    * double-click stays entirely the consumer's (v1 rename-gesture decision).
    */
-  protected onRowDoubleClick(row: FlatRow<T>) {
-    if (this.clickAction() !== 'select') return;
+  protected onRowDoubleClick(row: FlatRow<T>, event: MouseEvent) {
+    // Double-click = select a word in the rename input, not activation.
+    if (fromEditInput(event) || this.clickAction() !== 'select') return;
     this.activated.emit(row.node);
   }
 
@@ -1021,8 +1025,7 @@ export class AngularTree<T> {
   protected onKeydown(event: KeyboardEvent) {
     // Keys inside a rename input belong to the input (Enter/Escape handled
     // by treeNodeEditInput), not to tree navigation.
-    if ((event.target as HTMLElement).closest('input[treeNodeEditInput]'))
-      return;
+    if (fromEditInput(event)) return;
 
     const rows = this.visibleRows();
     if (rows.length === 0) return;
@@ -1058,7 +1061,8 @@ export class AngularTree<T> {
 
     switch (command.kind) {
       case 'markMove':
-        this.#dnd.mark(row.key, command.effect);
+        // Nothing movable → unhandled: Ctrl/Cmd+C/X stay the browser's.
+        if (!this.#dnd.mark(row.key, command.effect)) return;
         break;
       case 'keyboardDrop':
         this.#dnd.keyboardDrop(row, command.zone);
@@ -1174,8 +1178,11 @@ export class AngularTree<T> {
       this.#writeSelection([row.key], 'replace', row.node, 'contextmenu');
     }
 
-    const selected = [...this.#controller.selectedIds()];
-    const ids = selected.length > 0 ? selected : [row.key];
+    // An unselectable row can't join the selection, so it stays outside it —
+    // the menu must then target THAT row alone, never the other rows the
+    // user didn't point at (a bulk Delete would hit the wrong nodes).
+    const selected = this.#controller.selectedIds();
+    const ids = selected.has(row.key) ? [...selected] : [row.key];
     const rect = rowElement(this.#host, row.key)?.getBoundingClientRect();
     const at = position ?? { x: rect?.left ?? 0, y: rect?.bottom ?? 0 };
 
@@ -1331,8 +1338,9 @@ export class AngularTree<T> {
 
   /// TreeApi (exportAs "angularTree" / viewChild) — CdkTree-compatible names.
 
+  /** As rendered — while searching, force-expanded match ancestors count. */
   isExpanded(node: T): boolean {
-    return this.#controller.expandedIds().has(this.expansionKey()(node));
+    return this.#controller.isShownExpanded(this.expansionKey()(node));
   }
 
   expand(node: T) {
@@ -1410,16 +1418,17 @@ export class AngularTree<T> {
    * keybinding on the tree element, a context-menu item, a row button, …).
    * Respects `disableEdit`.
    */
+  /** A `byKey.edit` for a key the model doesn't have yet (create-then-rename). */
+  #pendingEditKey: string | null = null;
+
   edit(node: T) {
     if (this.disableEdit()?.(node)) return;
     const key = this.expansionKey()(node);
-    // A pinned node's real row may sit under the band — the input renders
-    // THERE, so reveal it first (sticky scroll only; null/undefined = no-op).
-    const index = this.visibleRows().findIndex((row) => row.key === key);
-    if (index >= 0) {
-      const top = this.#stickyRevealTop(index, this.visibleRows()[index].level);
-      if (top != null) this.viewport().scrollToOffset(top);
-    }
+    this.#pendingEditKey = null;
+    // The input renders in the node's real row — reveal it (off-screen, or
+    // under the sticky band) or it mounts whenever the user scrolls there and
+    // steals focus then. Reveal only: the input autofocuses itself.
+    this.#focus.revealKey(key);
     this.#controller.editingId.set(key);
   }
 
@@ -1508,8 +1517,28 @@ export class AngularTree<T> {
     expandDescendants: (key: string) =>
       this.#withNode(key, (node) => this.expandDescendants(node)),
     isExpanded: (key: string): boolean =>
-      this.#controller.expandedIds().has(key),
-    edit: (key: string) => this.#withNode(key, (node) => this.edit(node)),
+      this.#controller.isShownExpanded(key),
+    /**
+     * A key not in the model yet is retried once after the next render —
+     * create-then-rename: the consumer's insert reaches the flat model only
+     * when change detection re-reads `dataSource`. Still missing then = no-op;
+     * a newer edit supersedes the pending one.
+     */
+    edit: (key: string) => {
+      if (this.#controller.flat().map.has(key)) {
+        this.#withNode(key, (node) => this.edit(node));
+        return;
+      }
+      this.#pendingEditKey = key;
+      afterNextRender(
+        () => {
+          if (this.#pendingEditKey !== key) return;
+          this.#pendingEditKey = null;
+          this.#withNode(key, (node) => this.edit(node));
+        },
+        { injector: this.#injector },
+      );
+    },
     focus: (key: string) => this.#withNode(key, (node) => this.focus(node)),
     scrollTo: (key: string) =>
       this.#withNode(key, (node) => this.scrollTo(node)),
@@ -1552,6 +1581,29 @@ export class AngularTree<T> {
   #applyExpansion(node: T, value: boolean) {
     if (this.isExpanded(node) === value) return;
     const key = this.expansionKey()(node);
+
+    // While searching, collapse is a session overlay (reset per term), never
+    // a stored write — clearing the term must restore the pre-search
+    // expansion intact. Re-expanding a session-collapsed row just lifts the
+    // overlay; only a genuine expand (a collapsed match) falls through to the
+    // stored write that loads and persists it. No `toggled`: that event
+    // mirrors [(expandedKeys)], which the overlay never changes.
+    if (this.#controller.isSearching()) {
+      const collapsed = this.#controller.searchCollapsedIds;
+      if (!value) {
+        collapsed.update((keys) => new Set(keys).add(key));
+        return;
+      }
+      if (collapsed().has(key)) {
+        collapsed.update((keys) => {
+          const next = new Set(keys);
+          next.delete(key);
+          return next;
+        });
+        return;
+      }
+    }
+
     this.#controller.setExpanded(key, value);
     this.#syncControlledExpansion();
     this.toggled.emit({ id: key, node, expanded: value });

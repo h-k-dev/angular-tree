@@ -104,23 +104,7 @@ export class TreeFocusEngine<T = unknown> {
    * `data-node-id` query).
    */
   focusKey(key: string) {
-    this.#controller.focusedId.set(key);
-
-    const visible = this.#controller.visibleNodes();
-    const index = visible.findIndex(({ flat }) => flat.key === key);
-    if (index < 0) return;
-    const viewport = this.#inputs.viewport();
-    // Under sticky scroll a row can be rendered yet hidden beneath the band —
-    // the render-range check can't see that, and native focus scrolling
-    // doesn't know the band exists (VS Code reveals with the same padding).
-    const revealTop = this.#inputs.revealTop(index, visible[index].flat.level);
-    if (revealTop === undefined) {
-      const range = viewport.getRenderedRange();
-      if (index < range.start || index >= range.end)
-        viewport.scrollToIndex(index);
-    } else if (revealTop !== null) {
-      viewport.scrollToOffset(revealTop);
-    }
+    if (!this.revealKey(key)) return;
 
     // activedescendant mode: DOM focus stays on the tree — aria-activedescendant
     // (bound to focusedId) does the announcing; no per-row focus dance.
@@ -135,6 +119,37 @@ export class TreeFocusEngine<T = unknown> {
     afterNextRender(() => this.#attemptFocus(key, 16), {
       injector: this.#injector,
     });
+  }
+
+  /**
+   * Makes `key` the roving-focus row and scrolls it into view WITHOUT moving
+   * DOM focus — for callers whose own element takes focus once the row
+   * renders (the rename input: a row-focus chase landing after its autofocus
+   * would blur it and end the rename, matrix bug #7). False when the key
+   * isn't a visible row.
+   */
+  revealKey(key: string): boolean {
+    this.#controller.focusedId.set(key);
+    // Supersedes any in-flight row-focus chase — it would land on the old
+    // target after the caller's element took focus. focusKey re-arms its own.
+    this.#focusAttempt = null;
+
+    const visible = this.#controller.visibleNodes();
+    const index = visible.findIndex(({ flat }) => flat.key === key);
+    if (index < 0) return false;
+    const viewport = this.#inputs.viewport();
+    // Under sticky scroll a row can be rendered yet hidden beneath the band —
+    // the render-range check can't see that, and native focus scrolling
+    // doesn't know the band exists (VS Code reveals with the same padding).
+    const revealTop = this.#inputs.revealTop(index, visible[index].flat.level);
+    if (revealTop === undefined) {
+      const range = viewport.getRenderedRange();
+      if (index < range.start || index >= range.end)
+        viewport.scrollToIndex(index);
+    } else if (revealTop !== null) {
+      viewport.scrollToOffset(revealTop);
+    }
+    return true;
   }
 
   /** Keeps `focusedId` + focus ownership in sync when focus arrives via Tab or pointer. */

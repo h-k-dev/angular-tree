@@ -39,7 +39,7 @@ What the tree does when the def is present:
 | `ids`                | `readonly string[]` | …the same selection as keys — what the menu should act on  |
 | `position`           | `{ x, y }`          | Where the menu opened                                      |
 
-Selection reconciliation happens _before_ the context is built (OS convention): right-clicking an unselected row selects it (replace); a row inside a multi-selection keeps the selection intact — so `ids`/`nodes` are always the set the user expects the action to hit.
+Selection reconciliation happens _before_ the context is built (OS convention): right-clicking an unselected row selects it (replace); a row inside a multi-selection keeps the selection intact; a row that can't be selected (`isSelectable` → `false`) leaves the selection untouched and the menu targets **that row alone**, never the other selected rows. So `ids`/`nodes` are always the set the user expects the action to hit.
 
 ### Shell tokens
 

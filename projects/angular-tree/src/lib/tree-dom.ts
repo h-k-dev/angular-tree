@@ -14,3 +14,13 @@ export function rowElement(host: HTMLElement, key: string): HTMLElement | null {
     `[data-node-id="${escapeAttributeValue(key)}"]`,
   );
 }
+
+/**
+ * The event started inside a rename input (`treeNodeEditInput`). Row
+ * gestures — keys, clicks, the context menu — belong to the input then: a
+ * row click would activate/select, and caret or text-selection clicks would
+ * do it on every press.
+ */
+export function fromEditInput(event: Event): boolean {
+  return (event.target as Element | null)?.closest?.('input[treeNodeEditInput]') != null;
+}

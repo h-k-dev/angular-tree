@@ -42,6 +42,8 @@ export interface TreeDragSessionInputs<T> {
   /** Sticky-scroll band rows, outermost (topmost-painted) first — decision 16. */
   sticky: Signal<readonly { readonly row: DragRow<T>; readonly top: number }[]>;
   disableDrop: Signal<((ctx: TreeDropContext<T>) => boolean) | undefined>;
+  /** Filters the drag set — pointer multi-drag and keyboard mark alike. */
+  disableDrag: Signal<((node: T) => boolean) | undefined>;
   /** Expand intent — must go through the component's single write path (toggled + lazy load). */
   expand: (node: T) => void;
   /** A validated drop was released — the component emits `moved` and announces. */
@@ -127,14 +129,24 @@ export class TreeDragSession<T = unknown> {
     this.#destroyRef.onDestroy(() => this.#reset());
   }
 
-  /** Marks the pressed row's pruned drag set for a keyboard drop (Ctrl+X / Ctrl+C). */
-  mark(pressedKey: string, effect: 'move' | 'copy') {
-    const keys = this.#controller.dragKeysFor(pressedKey);
+  /**
+   * Marks the pressed row's pruned drag set for a keyboard drop (Ctrl+X /
+   * Ctrl+C). Returns false when nothing may move — the caller must then leave
+   * the key to the browser: a swallowed Cmd+C in a read-only tree kills
+   * native copy and plants an invisible mark the next Escape "clears".
+   */
+  mark(pressedKey: string, effect: 'move' | 'copy'): boolean {
+    const keys = this.#controller.dragKeysFor(
+      pressedKey,
+      this.#inputs.disableDrag(),
+    );
+    if (keys.length === 0) return false;
     this.#marked.set({
       keys: new Set(keys),
       nodes: this.#controller.nodesForKeys(keys),
       effect,
     });
+    return true;
   }
 
   clearMark() {
@@ -171,7 +183,10 @@ export class TreeDragSession<T = unknown> {
   }
 
   dragStart(row: DragRow<T>) {
-    const keys = this.#controller.dragKeysFor(row.key);
+    const keys = this.#controller.dragKeysFor(
+      row.key,
+      this.#inputs.disableDrag(),
+    );
     this.#dragCopy = false;
     this.#dragCancelled = false;
     this.#drag.set({ keys, nodes: this.#controller.nodesForKeys(keys) });

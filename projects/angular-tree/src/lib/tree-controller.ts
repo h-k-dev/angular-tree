@@ -55,6 +55,26 @@ export interface FlatTreeNode<T> {
   readonly posInSet: number;
 }
 
+/**
+ * While searching, a row renders expanded exactly when it has something
+ * visible to show and the user hasn't collapsed it this search. Ancestors of
+ * matches always have; a match whose children are all filtered out — or not
+ * loaded yet, on a lazy node — renders collapsed, so `aria-expanded` never
+ * claims children that aren't there and the chevron still offers the real
+ * expand.
+ */
+function isSearchExpanded<T>(
+  entry: FlatTreeNode<T>,
+  searchIds: ReadonlySet<string>,
+  collapsed: ReadonlySet<string>,
+): boolean {
+  return (
+    entry.expandable &&
+    !collapsed.has(entry.key) &&
+    entry.childKeys.some((childKey) => searchIds.has(childKey))
+  );
+}
+
 /** A render-ready row: flat node + expansion resolved against search state. */
 export interface VisibleTreeNode<T> {
   readonly flat: FlatTreeNode<T>;
@@ -425,6 +445,34 @@ export class TreeController<T> {
   // ---------------------------------------------------------------------------
 
   /**
+   * Rows the user collapsed WHILE searching — a session overlay, reset by
+   * every term change. Search force-expands match ancestors without touching
+   * `expandedIds`, so collapsing one can't be a stored write (it's already
+   * "collapsed" there, and writing would break clear-the-term-restores-it).
+   * Writable-but-derived-by-default: the legitimate linkedSignal case.
+   */
+  readonly searchCollapsedIds = linkedSignal<string, ReadonlySet<string>>({
+    source: () => this.#inputs.searchTerm(),
+    computation: () => new Set(),
+  });
+
+  /** Whether search is actively filtering (a term AND a matcher). */
+  readonly isSearching = computed(() => this.searchVisibleIds() !== null);
+
+  /**
+   * Expansion as the USER sees it: while searching, the rendered state of a
+   * visible row (force-expanded ancestors included); otherwise — and for rows
+   * the search filtered out — the stored state. Toggle/collapse/ArrowLeft
+   * must act on this, or clicking a force-expanded row does nothing visible.
+   */
+  isShownExpanded(key: string): boolean {
+    const searchIds = this.searchVisibleIds();
+    if (!searchIds?.has(key)) return this.expandedIds().has(key);
+    const entry = this.flat().map.get(key);
+    return entry != null && isSearchExpanded(entry, searchIds, this.searchCollapsedIds());
+  }
+
+  /**
    * Keys visible under the current search, or `null` when search is inactive.
    * A match keeps its full ancestor chain visible (react-arborist behavior).
    * Below a visible node the ordinary tree rules apply again: its children
@@ -446,6 +494,7 @@ export class TreeController<T> {
 
     const withDescendants = this.#inputs.searchDescendants();
     const expanded = this.expandedIds();
+    const collapsed = this.searchCollapsedIds();
     const { list, map } = this.flat();
     const visible = new Set<string>();
     const open: number[] = [];
@@ -469,7 +518,11 @@ export class TreeController<T> {
         continue;
       }
 
-      if (entry.expandable && (withDescendants || expanded.has(entry.key)))
+      if (
+        entry.expandable &&
+        !collapsed.has(entry.key) &&
+        (withDescendants || expanded.has(entry.key))
+      )
         open.push(entry.level);
     }
     return visible;
@@ -491,22 +544,16 @@ export class TreeController<T> {
     const { map, rootKeys } = this.flat();
     const expanded = this.expandedIds();
     const searchIds = this.searchVisibleIds();
+    const collapsed = this.searchCollapsedIds();
     const out: VisibleTreeNode<T>[] = [];
 
     const visit = (keys: readonly string[]) => {
       for (const key of keys) {
         const flat = map.get(key)!;
         if (searchIds && !searchIds.has(key)) continue;
-        // While searching, a row renders force-expanded exactly when it has
-        // something visible to show. Ancestors of matches always do; a match
-        // whose children are all filtered out — or not loaded yet, on a lazy
-        // node — renders collapsed, so `aria-expanded` never claims children
-        // that aren't there and the chevron still offers the real expand.
-        const isExpanded =
-          flat.expandable &&
-          (searchIds
-            ? flat.childKeys.some((childKey) => searchIds.has(childKey))
-            : expanded.has(key));
+        const isExpanded = searchIds
+          ? isSearchExpanded(flat, searchIds, collapsed)
+          : flat.expandable && expanded.has(key);
         out.push({ flat, isExpanded });
         if (isExpanded) visit(flat.childKeys);
       }
@@ -637,27 +684,42 @@ export class TreeController<T> {
    * pressed row (selection untouched — Gmail semantics). Redundancy pruned:
    * a key with a selected ancestor rides along anyway. DFS order — first key
    * is the stable preview representative.
+   *
+   * `disableDrag` nodes never travel — filtered BEFORE pruning, so a locked
+   * selected folder stays put without swallowing its explicitly selected
+   * children. A disabled PRESSED row yields `[]` even with draggable rows
+   * selected — pointer parity: `cdkDragDisabled` never lets that drag start.
    */
-  dragKeysFor(pressedKey: string): readonly string[] {
+  dragKeysFor(
+    pressedKey: string,
+    disableDrag?: (node: T) => boolean,
+  ): readonly string[] {
+    const { list, map } = this.flat();
+    const draggable = (key: string) => {
+      const entry = map.get(key);
+      return entry != null && !disableDrag?.(entry.node);
+    };
+    if (!draggable(pressedKey)) return [];
+
     const selected = this.selectedIds();
     if (!selected.has(pressedKey)) return [pressedKey];
 
-    const { list, map } = this.flat();
+    const travelling = new Set([...selected].filter(draggable));
     const out: string[] = [];
     for (const entry of list) {
-      if (!selected.has(entry.key)) continue;
-      let ancestorSelected = false;
+      if (!travelling.has(entry.key)) continue;
+      let ancestorTravels = false;
       for (
         let parent = entry.parentKey;
         parent != null;
         parent = map.get(parent)!.parentKey
       ) {
-        if (selected.has(parent)) {
-          ancestorSelected = true;
+        if (travelling.has(parent)) {
+          ancestorTravels = true;
           break;
         }
       }
-      if (!ancestorSelected) out.push(entry.key);
+      if (!ancestorTravels) out.push(entry.key);
     }
     return out;
   }

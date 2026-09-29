@@ -19,6 +19,7 @@ Because the chains sit at point of use rather than being declared on the host el
 | `--tree-font`              | `--mat-sys-body-medium`               | `400 0.875rem/1.25rem Roboto, sans-serif` | Typography (full `font` shorthand)                                    |
 | `--tree-node-hover`        | `--mat-sys-surface-container-highest` | `#e6e6e6`                                 | Row hover                                                             |
 | `--tree-node-selected`     | `--mat-sys-secondary-container`       | `#e8def8`                                 | Selected row (`[data-selected]`)                                      |
+| `--tree-node-selected-hover` | `--tree-node-selected` + 8% `--mat-sys-on-secondary-container` | `color-mix(in srgb, #e8def8, #1d192b 8%)` | Hovered selected row: the M3 hover state layer over the selected fill |
 | `--tree-node-reveal-opacity`    | _(published by the tree — read-only)_ | unset → your `var(…, 1)` fallback | Row-state output: `0` at rest, `1` while the row is hovered, holds focus, or is selected — see [Revealing row actions](#revealing-row-actions-on-hover) |
 | `--tree-node-reveal-visibility` | _(published by the tree — read-only)_ | unset → your `var(…, visible)` fallback | Companion of the above: `hidden` / `visible`, so hidden actions also leave the Tab order and the accessibility tree |
 | `--tree-node-radius`       | —                                     | `0px`                                     | Row corner radius (`.tree-node`)                                      |
