@@ -39,6 +39,8 @@ export interface TreeDragSessionInputs<T> {
   viewport: Signal<CdkVirtualScrollViewport>;
   itemSize: Signal<number>;
   rows: Signal<readonly DragRow<T>[]>;
+  /** Sticky-scroll band rows, outermost (topmost-painted) first — decision 16. */
+  sticky: Signal<readonly { readonly row: DragRow<T>; readonly top: number }[]>;
   disableDrop: Signal<((ctx: TreeDropContext<T>) => boolean) | undefined>;
   /** Expand intent — must go through the component's single write path (toggled + lazy load). */
   expand: (node: T) => void;
@@ -242,6 +244,24 @@ export class TreeDragSession<T = unknown> {
     const viewportTop =
       viewport.elementRef.nativeElement.getBoundingClientRect().top;
     const size = this.#inputs.itemSize();
+
+    // The sticky band paints over the list top: a pointer there means the
+    // PINNED node — a drop inside it (VS Code resolves sticky rows to their
+    // source node). Outer rows paint on top, so the first hit wins.
+    const sticky = this.#inputs.sticky();
+    if (sticky.length > 0) {
+      const bandY = clientY - viewportTop;
+      const bandBottom = sticky[sticky.length - 1].top + size;
+      if (bandY >= 0 && bandY < bandBottom) {
+        this.#targetSticky(
+          drag,
+          sticky.find(({ top }) => bandY >= top && bandY < top + size),
+          size,
+        );
+        return;
+      }
+    }
+
     const contentY = clientY - viewportTop + viewport.measureScrollOffset();
     const rows = this.#inputs.rows();
     const index = Math.floor(contentY / size);
@@ -299,6 +319,37 @@ export class TreeDragSession<T = unknown> {
             level: insideFirst ? row.level + 1 : row.level,
           },
     );
+  }
+
+  /** Drop-inside a pinned row, same validation as the list; a band gap targets nothing. */
+  #targetSticky(
+    drag: { keys: readonly string[]; nodes: readonly T[] },
+    pinned: { readonly row: DragRow<T>; readonly top: number } | undefined,
+    size: number,
+  ) {
+    this.#scheduleHoverExpand(null); // pinned rows are expanded by definition
+    const target = pinned
+      ? this.#controller.dropTargetFor(drag.keys, pinned.row.key, 'inside')
+      : null;
+    if (
+      !pinned ||
+      !target ||
+      this.#inputs.disableDrop()?.({
+        dragNodes: drag.nodes,
+        parentNode: target.parentNode,
+        index: target.index,
+      })
+    ) {
+      this.#clearDropTarget();
+      return;
+    }
+    this.#pendingDrop = target;
+    this.#dropIndicator.set({
+      top: pinned.top,
+      height: size,
+      inside: true,
+      level: pinned.row.level,
+    });
   }
 
   /** Hovering the make-child zone auto-expands after a delay (ROADMAP). */

@@ -18,6 +18,12 @@ import { rowElement } from './tree-dom';
 export interface TreeFocusEngineInputs {
   viewport: Signal<CdkVirtualScrollViewport>;
   focusMode: Signal<'roving' | 'activedescendant'>;
+  /**
+   * Sticky-scroll reveal (decision 16): the scrollTop that brings the row
+   * clear of its pinned ancestors, `null` when it already is, `undefined`
+   * while sticky scroll is off (CDK's render-range check applies).
+   */
+  revealTop: (index: number, level: number) => number | null | undefined;
 }
 
 /**
@@ -28,7 +34,8 @@ export interface TreeFocusEngineInputs {
  * focus-retention effect across data replacement (Phase 9), and the
  * tree-owns-focus flag behind it.
  * CDK touchpoints: `CdkVirtualScrollViewport` (`scrollToIndex`,
- * `getRenderedRange`); `afterNextRender` against this component's injector.
+ * `getRenderedRange`, `scrollToOffset` for sticky-scroll reveals);
+ * `afterNextRender` against this component's injector.
  */
 // autoProvided: false — this is per-tree component state, not an app-wide
 // singleton. Without it, @Service() lazily registers a root provider, and an
@@ -99,14 +106,21 @@ export class TreeFocusEngine<T = unknown> {
   focusKey(key: string) {
     this.#controller.focusedId.set(key);
 
-    const index = this.#controller
-      .visibleNodes()
-      .findIndex(({ flat }) => flat.key === key);
+    const visible = this.#controller.visibleNodes();
+    const index = visible.findIndex(({ flat }) => flat.key === key);
     if (index < 0) return;
     const viewport = this.#inputs.viewport();
-    const range = viewport.getRenderedRange();
-    if (index < range.start || index >= range.end)
-      viewport.scrollToIndex(index);
+    // Under sticky scroll a row can be rendered yet hidden beneath the band —
+    // the render-range check can't see that, and native focus scrolling
+    // doesn't know the band exists (VS Code reveals with the same padding).
+    const revealTop = this.#inputs.revealTop(index, visible[index].flat.level);
+    if (revealTop === undefined) {
+      const range = viewport.getRenderedRange();
+      if (index < range.start || index >= range.end)
+        viewport.scrollToIndex(index);
+    } else if (revealTop !== null) {
+      viewport.scrollToOffset(revealTop);
+    }
 
     // activedescendant mode: DOM focus stays on the tree — aria-activedescendant
     // (bound to focusedId) does the announcing; no per-row focus dance.

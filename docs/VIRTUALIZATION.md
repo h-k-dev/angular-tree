@@ -112,6 +112,17 @@ Virtualization and async `childrenAccessor` compose safely by design (see ROADMA
 
 Auto-scroll near viewport edges drives `scrollToOffset()` manually, and rows that become rendered mid-drag pick up drop-zone tracking — standard `cdkDropList` auto-scroll doesn't know about the virtual viewport. Fixed `itemSize` keeps the three-zone drop math (top 25% / middle 50% / bottom 25%) exact.
 
+## Sticky scroll (`stickyScroll`)
+
+VS Code's sticky ancestors can't be CSS `position: sticky`: by the time an ancestor should pin, virtualization has usually destroyed its row. So the tree renders a separate band over the viewport top, with **copies** of the ancestor rows drawn from your own `treeNodeDef` (the context carries `isSticky: true`). The stacking math is a port of VS Code's `StickyScrollController`, and fixed `itemSize` reduces all of it to index arithmetic:
+
+- **What pins:** an ancestor pins once its own row has scrolled under the band. The row directly under the band pins only if it's an expanded parent with visible children. Nothing pins at `scrollTop` 0.
+- **Push:** as a group's last descendant scrolls past, that group's pinned row slides up flush with the next row (any pinned row, not only the last).
+- **Cap:** at most `stickyScrollMaxRows` rows (default 7), and never more than 40% of the viewport height. Overflow drops the innermost rows, so the outermost ancestors stay.
+- **Reveals leave room for the band:** `scrollTo(node)`, focus moves, and `edit()` put a node below its own pinned ancestors, so the focused or edited row never hides under the band.
+
+The band recomputes on scroll in O(depth) against an index built once per visibility change. Scroll frames that leave the stack unchanged re-render nothing.
+
 ## SSR
 
 The viewport has no size on the server. The plan (ROADMAP cross-cutting): render the first `ssrRowCount` rows statically and reconcile on hydration. Until that lands, treat server rendering of the tree body as empty-by-design.

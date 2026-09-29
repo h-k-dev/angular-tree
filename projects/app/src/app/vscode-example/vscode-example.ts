@@ -19,6 +19,7 @@ import {
   TreeContextMenu,
   TreeNodeDef,
   TreeNodeEditInput,
+  TreeNodeToggle,
 } from '@h-k-dev/angular-tree';
 
 import {
@@ -91,7 +92,8 @@ A high-performance Angular tree component.`;
  * The VS Code example: the Explorer file tree in a macOS window, wired to that
  * editor's gestures with the tree's own inputs — `clickAction: 'select'` (a
  * click highlights the row, no checkboxes), `enterAction: 'edit'` (Enter renames
- * inline), and a folder click that ALSO toggles the folder. The tree is
+ * inline), a folder click that ALSO toggles the folder, and `stickyScroll`
+ * (VS Code's sticky ancestors — open `src/app/content` and scroll). The tree is
  * CONTROLLED: rename emits an intent, this component applies it to its own data.
  * Only the macOS window chrome (traffic lights) uses literal colours — the tree
  * itself is themed from our `--mat-sys-*` palette, so it follows light/dark.
@@ -106,6 +108,7 @@ A high-performance Angular tree component.`;
     TreeContextMenu,
     TreeNodeDef,
     TreeNodeEditInput,
+    TreeNodeToggle,
   ],
   templateUrl: './vscode-example.html',
   styleUrl: './vscode-example.scss',

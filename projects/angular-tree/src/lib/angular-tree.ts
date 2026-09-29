@@ -60,6 +60,13 @@ import {
   typeaheadTarget,
 } from './tree-keyboard';
 import { TreeMenuHost } from './tree-menu-host';
+import {
+  computeStickyIndex,
+  resolveStickyNodes,
+  revealScrollTop,
+  stickyBandHeight,
+  stickyClearance,
+} from './tree-sticky';
 import { TreeContextMenu } from './tree-context-menu';
 import { TreeNodeDef } from './tree-node-def';
 import { TreeEmptyDef, TreeLoadingDef } from './tree-state-def';
@@ -90,6 +97,15 @@ interface FlatRow<T> {
   /** Tri-state for `aria-checked` under `checkboxSelection`. */
   readonly checkState: Signal<'checked' | 'unchecked' | 'indeterminate'>;
   readonly dragDisabled: boolean;
+  readonly context: TreeNodeContext<T>;
+  readonly injector: Injector;
+}
+
+/** One row pinned in the sticky-scroll band (decision 16). Internal. */
+interface StickyRow<T> {
+  readonly row: FlatRow<T>;
+  /** Band-relative px (VS Code position — pushed up during the hand-off). */
+  readonly top: number;
   readonly context: TreeNodeContext<T>;
   readonly injector: Injector;
 }
@@ -292,6 +308,25 @@ export class AngularTree<T> {
   readonly labelOverflow = input<'scroll' | 'ellipsis'>('scroll');
 
   /**
+   * Sticky scroll (v2, decision 16 — VS Code `workbench.tree.enableStickyScroll`
+   * parity, opt-in here): the ancestors of the top row pin to the viewport
+   * top, rendered with your own `treeNodeDef` (`isSticky` in the context),
+   * and hand off with a push as each group scrolls past. Clicking a pinned row
+   * scrolls its node back into view under its ancestors, focuses it, and then
+   * behaves like a plain row click (`clickAction` decides); its toggle
+   * collapses it; a drop onto it lands inside (`disableDrop` gates). The band
+   * is `aria-hidden` pointer sugar — ArrowLeft-to-parent is the keyboard path.
+   */
+  readonly stickyScroll = input(false);
+
+  /**
+   * Most rows the sticky band pins (VS Code `stickyScrollMaxItemCount`,
+   * default 7, clamped ≥ 1). The band is also capped at 40 % of the viewport
+   * height; either way the OUTERMOST ancestors are the ones kept.
+   */
+  readonly stickyScrollMaxRows = input(7);
+
+  /**
    * Root-level load in flight — shows the projected `treeLoadingDef` over the
    * tree. Consumer-driven (the data is controlled); distinct from a lazy
    * *child* load, which drives per-row `isLoading`.
@@ -428,6 +463,7 @@ export class AngularTree<T> {
         this.#renderedRange.set(range),
       );
       this.#destroyRef.onDestroy(() => subscription.unsubscribe());
+      this.#mirrorScrollGeometry(viewport);
     });
     this.#menu.connect({
       viewport: this.viewport,
@@ -437,6 +473,7 @@ export class AngularTree<T> {
       viewport: this.viewport,
       itemSize: this.itemSize,
       rows: this.visibleRows,
+      sticky: this.stickyRows,
       disableDrop: this.disableDrop,
       expand: (node) => this.expand(node),
       drop: (event) => {
@@ -457,7 +494,11 @@ export class AngularTree<T> {
       searchMatch: this.searchMatch,
       searchDescendants: this.searchDescendants,
     });
-    this.#focus.connect({ viewport: this.viewport, focusMode: this.focusMode });
+    this.#focus.connect({
+      viewport: this.viewport,
+      focusMode: this.focusMode,
+      revealTop: (index, level) => this.#stickyRevealTop(index, level),
+    });
     // In-flight accessor fetches must not outlive the tree (v2 cancellation).
     this.#destroyRef.onDestroy(() => this.#controller.abortAll());
 
@@ -479,7 +520,11 @@ export class AngularTree<T> {
       if (this.#controller.selectedIds().size === 0) return;
       // Row clicks manage selection themselves; guide clicks collapse groups;
       // overlay clicks (context menu, dialogs) act ON the selection.
-      if (target.closest('[data-node-id], .tree-guide, .cdk-overlay-container'))
+      if (
+        target.closest(
+          '[data-node-id], .tree-guide, .tree-sticky, .cdk-overlay-container',
+        )
+      )
         return;
       if (insideHost) {
         // Scrollbar drags are not deselect gestures (layoutless envs skip this).
@@ -642,6 +687,7 @@ export class AngularTree<T> {
           get checkState() {
             return checkState();
           },
+          isSticky: false,
         },
         injector: Injector.create({
           parent: this.#injector,
@@ -728,6 +774,195 @@ export class AngularTree<T> {
     if (!parent) return;
     this.collapse(parent.node);
     this.#focus.focusKey(parentKey);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Sticky scroll (v2, decision 16) — the math is tree-sticky.ts (VS Code port)
+  // ---------------------------------------------------------------------------
+
+  /** Scroll offsets + viewport box, mirrored for the band (written on scroll/resize). */
+  readonly #scrollTop = signal(0);
+  readonly #scrollLeft = signal(0);
+  readonly #viewportHeight = signal(0);
+  /** The band must not cover the vertical scrollbar — overlay scrollbars measure 0. */
+  protected readonly scrollbarInset = signal(0);
+
+  #mirrorScrollGeometry(viewport: CdkVirtualScrollViewport) {
+    const element = viewport.elementRef.nativeElement;
+    const measure = () => {
+      this.#viewportHeight.set(element.clientHeight);
+      this.scrollbarInset.set(
+        Math.max(0, element.offsetWidth - element.clientWidth),
+      );
+    };
+    measure();
+    // Layoutless environments (jsdom) have no ResizeObserver — re-measure on
+    // scroll instead, so a faked viewport size still reaches the band.
+    const observer =
+      typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null;
+    observer?.observe(element);
+    const subscription = viewport.elementScrolled().subscribe(() => {
+      this.#scrollTop.set(element.scrollTop);
+      this.#scrollLeft.set(element.scrollLeft);
+      if (!observer) measure();
+    });
+    this.#destroyRef.onDestroy(() => {
+      subscription.unsubscribe();
+      observer?.disconnect();
+    });
+  }
+
+  readonly #stickyMaxRows = computed(() =>
+    Math.max(1, Math.floor(this.stickyScrollMaxRows())),
+  );
+
+  /** Parent/subtree-end per visible row — visibility changes only, never scroll. */
+  readonly #stickyIndex = computed(() =>
+    this.stickyScroll()
+      ? computeStickyIndex(this.#controller.visibleNodes())
+      : null,
+  );
+
+  /**
+   * Per-row band parts, memoized on the FlatRow so a scroll frame that keeps
+   * the same stack re-renders nothing (a fresh context object per frame would
+   * rebuild the consumer's template view). Same WeakMap-memo shape as the
+   * controller's accessor cache; entries die with their FlatRow.
+   */
+  readonly #stickyParts = new WeakMap<
+    FlatRow<T>,
+    Pick<StickyRow<T>, 'context' | 'injector'>
+  >();
+
+  #stickyPartsFor(row: FlatRow<T>) {
+    const cached = this.#stickyParts.get(row);
+    if (cached) return cached;
+    const base = row.context;
+    const handle = row.injector.get(TREE_NODE);
+    const parts = {
+      context: {
+        $implicit: base.$implicit,
+        key: base.key,
+        level: base.level,
+        expandable: base.expandable,
+        isExpanded: base.isExpanded,
+        index: base.index,
+        get isSelected() {
+          return base.isSelected;
+        },
+        // The rename input belongs to the real row — never a second one here.
+        isEditing: false,
+        get isLoading() {
+          return base.isLoading;
+        },
+        get hasError() {
+          return base.hasError;
+        },
+        get checkState() {
+          return base.checkState;
+        },
+        isSticky: true,
+      },
+      injector: Injector.create({
+        parent: this.#injector,
+        providers: [
+          {
+            provide: TREE_NODE,
+            useValue: {
+              ...handle,
+              // VS Code: a sticky twistie moves focus to the node, then toggles.
+              toggle: () => {
+                this.#controller.focusedId.set(row.key);
+                handle.toggle();
+              },
+            } satisfies TreeNodeHandle,
+          },
+        ],
+      }),
+    };
+    this.#stickyParts.set(row, parts);
+    return parts;
+  }
+
+  /** The pinned stack, outermost first; `[]` while off, at the top, or layoutless. */
+  protected readonly stickyRows = computed<readonly StickyRow<T>[]>(
+    () => {
+      const index = this.#stickyIndex();
+      if (!index) return [];
+      const rows = this.visibleRows();
+      return resolveStickyNodes(index, {
+        scrollTop: this.#scrollTop(),
+        itemSize: this.itemSize(),
+        viewportHeight: this.#viewportHeight(),
+        maxRows: this.#stickyMaxRows(),
+      }).map(({ index: at, top }) => ({
+        row: rows[at],
+        top,
+        ...this.#stickyPartsFor(rows[at]),
+      }));
+    },
+    // Most scroll frames leave the stack unchanged — don't re-render the band.
+    {
+      equal: (a, b) =>
+        a.length === b.length &&
+        a.every((entry, i) => entry.row === b[i].row && entry.top === b[i].top),
+    },
+  );
+
+  protected readonly stickyHeight = computed(() =>
+    stickyBandHeight(this.stickyRows(), this.itemSize()),
+  );
+
+  /** Band rows follow horizontal scroll under `labelOverflow: 'scroll'`. */
+  protected readonly stickyShift = computed(() => {
+    const left = this.#scrollLeft();
+    return left ? `translateX(${-left}px)` : null;
+  });
+
+  /**
+   * VS Code `reveal()` with sticky padding: the scrollTop that brings the row
+   * fully into view BELOW its own pinned ancestors, `null` when it already
+   * is, `undefined` while sticky scroll is off (callers keep CDK defaults).
+   */
+  #stickyRevealTop(index: number, level: number): number | null | undefined {
+    if (!this.stickyScroll()) return undefined;
+    const viewport = this.viewport();
+    return revealScrollTop(
+      index,
+      this.itemSize(),
+      viewport.measureScrollOffset(),
+      viewport.getViewportSize(),
+      stickyClearance(level, this.itemSize(), this.#stickyMaxRows()),
+    );
+  }
+
+  /** Aligns a row directly under its own pinned ancestors (VS Code reveal, relativeTop 0). */
+  #scrollBelowAncestors(index: number, level: number) {
+    this.viewport().scrollToOffset(
+      Math.max(
+        0,
+        index * this.itemSize() -
+          stickyClearance(level, this.itemSize(), this.#stickyMaxRows()),
+      ),
+    );
+  }
+
+  /**
+   * VS Code sticky click (`handleStickyScrollMouseEvent`): scroll the node to
+   * sit right under its own ancestors, focus it — then the row's own plain-
+   * click funnel, so `clickAction` decides (decision 16). Selection-modifier
+   * clicks skip the reveal and only change selection (VS Code hands those to
+   * the list untouched).
+   */
+  protected onStickyClick(row: FlatRow<T>, event: MouseEvent) {
+    const modifier =
+      this.multi() && (event.ctrlKey || event.metaKey || event.shiftKey);
+    if (!modifier) {
+      const index = this.visibleRows().indexOf(row);
+      if (index >= 0) this.#scrollBelowAncestors(index, row.level);
+      this.#focus.focusKey(row.key);
+    }
+    this.onRowClick(row, event);
   }
 
   /**
@@ -1169,17 +1404,29 @@ export class AngularTree<T> {
    */
   edit(node: T) {
     if (this.disableEdit()?.(node)) return;
-    this.#controller.editingId.set(this.expansionKey()(node));
+    const key = this.expansionKey()(node);
+    // A pinned node's real row may sit under the band — the input renders
+    // THERE, so reveal it first (sticky scroll only; null/undefined = no-op).
+    const index = this.visibleRows().findIndex((row) => row.key === key);
+    if (index >= 0) {
+      const top = this.#stickyRevealTop(index, this.visibleRows()[index].level);
+      if (top != null) this.viewport().scrollToOffset(top);
+    }
+    this.#controller.editingId.set(key);
   }
 
   focus(node: T): void {
     this.#focus.focusKey(this.expansionKey()(node));
   }
 
+  /** Aligns the node to the top — under sticky scroll, below its own pinned ancestors. */
   scrollTo(node: T): void {
     const key = this.expansionKey()(node);
     const index = this.visibleRows().findIndex((row) => row.key === key);
-    if (index >= 0) this.viewport().scrollToIndex(index);
+    if (index < 0) return;
+    if (this.stickyScroll())
+      this.#scrollBelowAncestors(index, this.visibleRows()[index].level);
+    else this.viewport().scrollToIndex(index);
   }
 
   /**

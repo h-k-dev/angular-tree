@@ -95,6 +95,54 @@
   }
 </cdk-virtual-scroll-viewport>
 
+<!-- Sticky scroll (decision 16, VS Code parity): the top row's ancestors,
+     pinned over the viewport top in the consumer's own defs (isSticky). A
+     sibling of the viewport, not scroll content — virtualization has usually
+     destroyed the ancestor rows' DOM, so the band renders its own copies.
+     aria-hidden pointer sugar (keyboard: ArrowLeft-to-parent); no ids, no
+     data-node-id, no tabindex — row lookups and AT only ever see real rows.
+     mousedown default is cancelled so a click never steals DOM focus (VS
+     Code) — the click handler moves focus to the revealed row itself. -->
+@if (stickyRows().length > 0) {
+  <div
+    class="tree-sticky"
+    aria-hidden="true"
+    [style.height.px]="stickyHeight()"
+    [style.inset-inline-end.px]="scrollbarInset()"
+    (mousedown)="$event.preventDefault()"
+  >
+    @for (
+      sticky of stickyRows();
+      track sticky.row.key;
+      let i = $index, count = $count
+    ) {
+      <!-- Outer rows paint over inner ones mid-push (VS Code append order). -->
+      <div
+        class="tree-sticky-row"
+        [class]="rowClassFor(sticky.row)"
+        [style]="rowStyleFor(sticky.row)"
+        [style.--tree-level]="sticky.row.level"
+        [style.height.px]="itemSize()"
+        [style.top.px]="sticky.top"
+        [style.z-index]="count - i"
+        [style.transform]="stickyShift()"
+        [attr.data-sticky-key]="sticky.row.key"
+        (click)="onStickyClick(sticky.row, $event)"
+        (dblclick)="onRowDoubleClick(sticky.row)"
+        (contextmenu)="onContextMenu(sticky.row, $event)"
+      >
+        <ng-container
+          *ngTemplateOutlet="
+            templateFor(sticky.row);
+            context: sticky.context;
+            injector: sticky.injector
+          "
+        />
+      </div>
+    }
+  </div>
+}
+
 @if (dropIndicator(); as indicator) {
   <div
     class="tree-drop-indicator"

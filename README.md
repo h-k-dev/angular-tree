@@ -101,6 +101,7 @@ The most-used surface — the [live demo](https://h-k-dev.github.io/angular-tree
 | `childrenDeps`                                              | Declarative lazy-cache invalidation — bind what your accessor reads           |
 | `expandedKeys`, `defaultExpandedKeys`                       | Controlled expansion — `[(expandedKeys)]` two-way; or initial-only keys       |
 | `loading`, `indentGuides`                                   | Root-level loading state, clickable guide lines                               |
+| `stickyScroll`, `stickyScrollMaxRows`                       | VS Code-style sticky ancestors pinned over the list top (opt-in, cap 7)       |
 
 | Output                                  | Fires when                                                           |
 | --------------------------------------- | -------------------------------------------------------------------- |

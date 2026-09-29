@@ -94,6 +94,19 @@ export class ApiReference {
         'Indent guide lines ([indentGuides]); hover uses --tree-focus-ring',
     },
     {
+      name: '--tree-sticky-bg',
+      system: '--tree-bg → --mat-sys-surface',
+      fallback: '#ffffff',
+      alters:
+        'Sticky-scroll band and its rows ([stickyScroll]) — keep it opaque: the list scrolls underneath',
+    },
+    {
+      name: '--tree-sticky-shadow',
+      system: '--mat-sys-shadow at 36% alpha',
+      fallback: 'oklch(from #000000 l c h / 0.36)',
+      alters: 'Colour of the 3px inset shadow under the sticky band',
+    },
+    {
       name: '--tree-menu-bg',
       system: '--mat-sys-surface-container',
       fallback: '#f3edf7',

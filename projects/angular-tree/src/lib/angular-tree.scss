@@ -21,6 +21,7 @@
 
 .tree-drop-indicator {
   position: absolute;
+  z-index: 2; /* above the sticky band — drops onto pinned rows show here */
   pointer-events: none;
   /* Logical properties: indent + insets mirror correctly in RTL (ROADMAP) */
   inset-inline-start: calc(
@@ -239,7 +240,10 @@
   max-inline-size: 100cqw;
 }
 
-.tree-node {
+/* Sticky rows share the row box so a pinned copy lines up pixel-exact with
+   the real row it stands in for. */
+.tree-node,
+.tree-sticky-row {
   display: flex;
   align-items: center;
   gap: calc(var(--_spacing) * 2);
@@ -308,7 +312,53 @@
   );
 }
 
-.tree-node:hover {
+/*
+ * Sticky-scroll band (decision 16) — VS Code tree.css parity: an opaque
+ * container over the viewport top (never over the scrollbar: the inline-end
+ * inset is measured), rows absolutely placed at their pushed positions, a
+ * 3px inset shadow under the band, pointer cursor + hover on rows. Rows show
+ * no selection paint — VS Code's sticky copies don't either. The indent
+ * guides pass UNDER the opaque band.
+ */
+.tree-sticky {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  background: var(
+    --tree-sticky-bg,
+    var(--tree-bg, var(--mat-sys-surface, #ffffff))
+  );
+}
+
+.tree-sticky::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 100%;
+  block-size: 3px;
+  pointer-events: none;
+  box-shadow: var(
+      --tree-sticky-shadow,
+      oklch(from var(--mat-sys-shadow, #000000) l c h / 0.36)
+    )
+    0 6px 6px -6px inset;
+}
+
+.tree-sticky-row {
+  position: absolute;
+  inset-inline: 0;
+  overflow: hidden;
+  cursor: pointer;
+  /* Opaque per row: mid-push, an outer row paints over the inner one. */
+  background: var(
+    --tree-sticky-bg,
+    var(--tree-bg, var(--mat-sys-surface, #ffffff))
+  );
+}
+
+.tree-node:hover,
+.tree-sticky-row:hover {
   background: var(
     --tree-node-hover,
     var(--mat-sys-surface-container-highest, #e6e6e6)

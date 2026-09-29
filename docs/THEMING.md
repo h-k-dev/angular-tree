@@ -29,6 +29,8 @@ Because the chains sit at point of use rather than being declared on the host el
 | `--tree-indent`            | —                                     | `1.5rem`                                  | Per-level indentation step                                            |
 | `--tree-row-inset`         | —                                     | `0px`                                     | One-off leading inset applied to rows, indent guides and the drop indicator alike — use this instead of padding your own row wrapper, which shifts the content but not the guides |
 | `--tree-guide`             | `--mat-sys-outline-variant`           | `#cac4d0`                                 | Indent guide lines (`[indentGuides]`); hover uses `--tree-focus-ring` |
+| `--tree-sticky-bg`         | `--tree-bg` → `--mat-sys-surface`     | `#ffffff`                                 | Sticky-scroll band and its rows (`[stickyScroll]`) — keep it opaque: the list scrolls underneath |
+| `--tree-sticky-shadow`     | `--mat-sys-shadow` at 36% alpha       | `oklch(from #000000 l c h / 0.36)`        | Colour of the 3px inset shadow under the sticky band (VS Code's)       |
 | `--tree-menu-bg`           | `--mat-sys-surface-container`         | `#f3edf7`                                 | Built-in context-menu shell background (`treeContextMenu`)            |
 | `--tree-menu-radius`       | —                                     | `8px`                                     | Context-menu shell corner radius                                      |
 | `--tree-menu-shadow`       | `--mat-sys-level2`                    | `0 2px 8px rgb(0 0 0 / 0.25)`             | Context-menu shell elevation                                          |

@@ -33,6 +33,14 @@ export interface TreeNodeContext<S> {
    * (icon while `'unchecked'`, checkbox visual otherwise) in consumer templates.
    */
   checkState: CheckState;
+  /**
+   * The def is rendering inside the `stickyScroll` band, not the list (v2,
+   * decision 16). A sticky row click reveals the node, so gestures that act
+   * on the row in place — e.g. a label click-to-toggle — should skip it here
+   * (VS Code: only the twistie collapses a sticky row). `isEditing` is always
+   * `false` in the band; the rename input stays on the real row.
+   */
+  isSticky: boolean;
 }
 
 /**

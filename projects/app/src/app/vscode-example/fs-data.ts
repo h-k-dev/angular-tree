@@ -52,6 +52,77 @@ export const DEFAULT_OPEN = [
   'angular-tree/src/app',
 ];
 
+/** A folder with a component's three files per stem (`deal-list.component.ts`, …). */
+function folder(
+  path: string,
+  stems: readonly string[],
+  subfolders: readonly FsDir[] = [],
+): FsDir {
+  const name = path.slice(path.lastIndexOf('/') + 1);
+  const files = stems.flatMap((stem) =>
+    ['.component.ts', '.component.html', '.component.scss'].map(
+      (suffix): FsFile => ({
+        path: `${path}/${stem}${suffix}`,
+        name: `${stem}${suffix}`,
+        kind: 'file',
+      }),
+    ),
+  );
+  return { path, name, kind: 'dir', children: [...subfolders, ...files] };
+}
+
+const CONTENT_ROOT = 'angular-tree/src/app/content';
+const CRM = `${CONTENT_ROOT}/partials/crm`;
+
+/**
+ * content › partials › crm › deals › pipeline. Under angular-tree › src › app
+ * a pipeline file has EIGHT ancestors — one past the default cap of 7, so the
+ * band visibly keeps the outermost seven (VS Code's rule).
+ */
+const CONTENT: FsDir = folder(
+  CONTENT_ROOT,
+  ['page-shell', 'content-outlet'],
+  [
+    folder(
+      `${CONTENT_ROOT}/partials`,
+      ['partial-host', 'partial-registry'],
+      [
+        folder(
+          CRM,
+          ['crm-layout', 'crm-toolbar', 'crm-sidebar'],
+          [
+            folder(
+              `${CRM}/deals`,
+              ['deal-list', 'deal-detail', 'deal-filters'],
+              [
+                folder(`${CRM}/deals/pipeline`, [
+                  'pipeline-board',
+                  'pipeline-column',
+                  'pipeline-card',
+                  'pipeline-drag-preview',
+                  'pipeline-stage-header',
+                  'pipeline-empty-state',
+                ]),
+              ],
+            ),
+            folder(`${CRM}/contacts`, [
+              'contact-list',
+              'contact-card',
+              'contact-detail',
+              'contact-merge-dialog',
+            ]),
+          ],
+        ),
+        folder(`${CONTENT_ROOT}/partials/billing`, [
+          'invoice-list',
+          'invoice-detail',
+          'payment-form',
+        ]),
+      ],
+    ),
+  ],
+);
+
 export const WORKSPACE: readonly FsNode[] = [
   {
     path: 'angular-tree',
@@ -85,6 +156,10 @@ export const WORKSPACE: readonly FsNode[] = [
             name: 'app',
             kind: 'dir',
             children: [
+              // The stickyScroll seed: deep and long, collapsed by default so
+              // the rows the other examples read stay on screen. Open it and
+              // scroll — its ancestors pin and hand off like VS Code's.
+              CONTENT,
               {
                 path: 'angular-tree/src/app/app.ts',
                 name: 'app.ts',

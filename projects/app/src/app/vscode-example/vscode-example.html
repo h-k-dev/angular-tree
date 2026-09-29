@@ -54,6 +54,7 @@
         [typeaheadText]="nodeName"
         [itemSize]="22"
         [indentGuides]="true"
+        [stickyScroll]="true"
         [labelOverflow]="'ellipsis'"
         [clickAction]="'select'"
         [enterAction]="'edit'"
@@ -65,13 +66,18 @@
              handler doesn't stop propagation, the row's `select` click still fires,
              so a folder click BOTH toggles and highlights. A single `.vsc-label`
              wrapper keeps row spacing identical to files (the tree's inter-child
-             gap only applies between top-level row children). -->
+             gap only applies between top-level row children).
+             Sticky scroll: in the pinned band (isSticky) a label click must
+             REVEAL the folder instead, so the label toggle skips there; the
+             chevron is a real twistie (treeNodeToggle) — it collapses in both
+             places and, like VS Code's, never changes the selection. -->
         <ng-container
           *treeNodeDef="
             let node;
             when: isDir;
             let isExpanded = isExpanded;
-            let isEditing = isEditing
+            let isEditing = isEditing;
+            let isSticky = isSticky
           "
         >
           @if (isEditing) {
@@ -83,8 +89,8 @@
               <input treeNodeEditInput class="vsc-rename" [value]="node.name" />
             </span>
           } @else {
-            <span class="vsc-label" (click)="tree.toggle(node)">
-              <mat-icon class="vsc-twisty">{{
+            <span class="vsc-label" (click)="isSticky || tree.toggle(node)">
+              <mat-icon class="vsc-twisty" treeNodeToggle>{{
                 isExpanded ? 'expand_more' : 'chevron_right'
               }}</mat-icon>
               <mat-icon class="vsc-icon vsc-icon--folder">{{
