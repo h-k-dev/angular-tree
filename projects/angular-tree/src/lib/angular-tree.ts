@@ -338,6 +338,14 @@ export class AngularTree<T> {
    * -shaped like the behavior predicates). Def content renders *inside* the
    * row, so consumer templates can't reach it; this can. Row element only —
    * never the guide overlays (a row-designed class would wreck them).
+   *
+   * The row is the TREE's element: a rule for these classes in your
+   * component's scoped (Emulated) stylesheet compiles to
+   * `.my-row[_ngcontent-…]` and silently never matches — style them from a
+   * global stylesheet. For scoped styling use `rowStyle` with a custom
+   * property your def content reads, e.g.
+   * `rowStyle: n => ({ '--my-row-opacity': '0.45' })` +
+   * `.label { opacity: var(--my-row-opacity, 1) }`.
    */
   readonly rowClass = input<
     ((node: T) => string | readonly string[] | undefined) | undefined

@@ -68,12 +68,14 @@ test.describe('tree inside MatDialog', () => {
   test('external MatMenu on the row more_vert coexists with the built-in menu', async ({
     page,
   }) => {
-    await dialog(page)
+    const row = dialog(page)
       .locator('.tree-node')
       .filter({ hasText: 'Cases' })
-      .first()
-      .getByRole('button', { name: /Options for/ })
-      .click();
+      .first();
+    // The ⋮ is revealed on row hover (row-state tokens) — hover first, as a
+    // user's pointer does.
+    await row.hover();
+    await row.getByRole('button', { name: /Options for/ }).click();
 
     const matMenu = page.locator('.mat-mdc-menu-panel');
     await expect(matMenu).toBeVisible();

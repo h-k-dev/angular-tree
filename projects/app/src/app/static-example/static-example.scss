@@ -127,11 +127,10 @@
     color: var(--mat-sys-tertiary);
   }
 
-  // rowClass demo (Phase 15 #6): the accessor tags the tree-owned row element,
-  // this stylesheet does the rest — instances get a Framer-accent inset bar.
-  .row-instance {
-    box-shadow: inset 2px 0 0 var(--mat-sys-tertiary);
-  }
+  // rowClass demo (Phase 15 #6): the accessor tags the tree-owned row element
+  // with `.row-instance` — styled from the GLOBAL styles.scss, because a
+  // scoped rule here would compile to `.row-instance[_ngcontent-…]` and never
+  // match the tree's row.
 }
 
 .tool-panel-bar {

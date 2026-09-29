@@ -100,7 +100,10 @@ export class StaticExample {
     };
   };
 
-  /** rowClass lands on the tree-owned ROW element — def content can't reach it. */
+  /**
+   * rowClass lands on the tree-owned ROW element — def content can't reach it,
+   * and neither can this component's scoped SCSS: the rule lives in styles.scss.
+   */
   framerRowClass = (node: DesignNode) =>
     node.kind === 'instance' ? 'row-instance' : undefined;
 

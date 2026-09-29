@@ -19,6 +19,8 @@ Because the chains sit at point of use rather than being declared on the host el
 | `--tree-font`              | `--mat-sys-body-medium`               | `400 0.875rem/1.25rem Roboto, sans-serif` | Typography (full `font` shorthand)                                    |
 | `--tree-node-hover`        | `--mat-sys-surface-container-highest` | `#e6e6e6`                                 | Row hover                                                             |
 | `--tree-node-selected`     | `--mat-sys-secondary-container`       | `#e8def8`                                 | Selected row (`[data-selected]`)                                      |
+| `--tree-node-reveal-opacity`    | _(published by the tree — read-only)_ | unset → your `var(…, 1)` fallback | Row-state output: `0` at rest, `1` while the row is hovered, holds focus, or is selected — see [Revealing row actions](#revealing-row-actions-on-hover) |
+| `--tree-node-reveal-visibility` | _(published by the tree — read-only)_ | unset → your `var(…, visible)` fallback | Companion of the above: `hidden` / `visible`, so hidden actions also leave the Tab order and the accessibility tree |
 | `--tree-node-radius`       | —                                     | `0px`                                     | Row corner radius (`.tree-node`)                                      |
 | `--tree-focus-ring`        | `--mat-sys-primary`                   | `#6750a4`                                 | `:focus-visible` outline                                              |
 | `--tree-drop-indicator`    | `--mat-sys-primary`                   | `#6750a4`                                 | Drop line/box, count badge                                            |
@@ -103,6 +105,40 @@ angular-tree .tree-node[data-move-source] {
 }
 ```
 
+Those selectors target the tree's own row element, so they only work from a **global** stylesheet: in your component's scoped (Emulated) styles, `.tree-node` is outside your view and would need `::ng-deep`. For the most common row-state need there's a scoped route instead, described next.
+
+### Revealing row actions on hover
+
+"Show the row's actions on hover" (VS Code, Finder) is the classic row-state pattern: an action button inside your `treeNodeDef` content should appear only while its row is hovered, holds focus, or is selected. A selector like `.tree-node:hover .row-action` needs `::ng-deep`, because the row belongs to the tree. So the tree publishes that state as two **output tokens** on every row. Custom properties inherit into your def content no matter the view encapsulation, so a plain scoped rule reads them:
+
+```scss
+.row-action {
+  opacity: var(--tree-node-reveal-opacity, 1);
+  visibility: var(--tree-node-reveal-visibility, visible);
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+}
+
+// Your own overrides stay plain scoped rules — e.g. keep the ⋮ visible while
+// its MatMenu is open (the pointer has left the row, focus is in the overlay).
+.row-action[aria-expanded='true'] {
+  opacity: 1;
+  visibility: visible;
+}
+```
+
+| Row state                                                      | `--tree-node-reveal-opacity` | `--tree-node-reveal-visibility` |
+| -------------------------------------------------------------- | ---------------------------- | ------------------------------- |
+| At rest                                                        | `0`                          | `hidden`                        |
+| `:hover`, `:focus-within`, or `[data-selected]`                 | `1`                          | `visible`                       |
+| Sticky-scroll row (`[stickyScroll]`), at rest / `:hover`        | `0` / `1`                    | `hidden` / `visible`            |
+| Touch / coarse pointer (`not ((hover: hover) and (pointer: fine))`) | unset                    | unset                           |
+
+- **Touch gets always-visible actions for free.** The tokens are only declared under `(hover: hover) and (pointer: fine)`. Everywhere else they stay unset and your fallback (`1` / `visible`) applies: no extra CSS, and nothing stays hidden behind a hover a finger can't do.
+- **`visibility`, not just `opacity`.** A `visibility: hidden` button is skipped by Tab and hidden from assistive tech. `:focus-within` is in the reveal set, so tabbing from a focused row into its action finds it visible. `visibility` animates discretely: it flips at the start of the fade-in and the end of the fade-out, so the pair above transitions cleanly.
+- **Read-only.** The tree declares these on the row element, which beats any value inherited from an ancestor. To force a state, set `opacity`/`visibility` on _your_ element, as above. Don't set the tokens.
+
 ### Per-node styling (`rowClass` / `rowStyle`)
 
 For styling that depends on your _data_ rather than tree state, the accessor inputs put classes and inline styles on the tree-owned row element (def content renders _inside_ the row and can't reach it). Because every `--tree-*` chain resolves at point of use, `rowStyle` is the per-node token override: return `{ '--tree-guide': node.color }` and that node's thread line tints — the tree additionally applies the **group parent's** `rowStyle` to that group's indent-guide overlay, since guides are siblings of the rows and would never inherit a row-applied variable on their own. `rowClass` stays row-only (classes designed for rows would wreck the overlay geometry). Tree-owned geometry (`height`, guide `top`, `--tree-level`) always wins over the consumer map.
@@ -110,6 +146,19 @@ For styling that depends on your _data_ rather than tree state, the accessor inp
 ```ts
 rowStyle = (node: DocNode) =>
   node.kind === 'category' ? { '--tree-guide': node.color } : undefined;
+```
+
+**`rowClass` classes can't be styled from your component's scoped CSS.** They land on the tree's row element, so an Emulated rule like `.my-row--dimmed { opacity: 0.45 }` compiles to `.my-row--dimmed[_ngcontent-…]` and silently never matches. Style `rowClass` classes from a global stylesheet. To stay scoped, use `rowStyle` to set a custom property and read it in your own def content:
+
+```ts
+rowStyle = (node: DocNode) =>
+  node.archived ? { '--my-row-opacity': '0.45' } : undefined;
+```
+
+```scss
+.node-label {
+  opacity: var(--my-row-opacity, 1);
+}
 ```
 
 ## Consumer-template tokens (convention)

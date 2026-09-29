@@ -88,3 +88,11 @@ body {
   color: var(--shiki-dark) !important;
   background-color: var(--shiki-dark-bg) !important;
 }
+
+// rowClass lands on the TREE's row element, outside every consumer view: a
+// scoped rule for it compiles to `.row-instance[_ngcontent-…]` and silently
+// never matches (docs/THEMING.md § Per-node styling). Global on purpose —
+// the Static example's Framer instances get their accent inset bar here.
+.tool-panel--framer .tree-node.row-instance {
+  box-shadow: inset 2px 0 0 var(--mat-sys-tertiary);
+}

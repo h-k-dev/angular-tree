@@ -38,10 +38,27 @@ mat-dialog-content {
   flex: 0 0 auto;
 }
 
+// Revealed on row hover / focus / selection via the tree's row-state tokens —
+// plain scoped CSS, no ::ng-deep. Unset on touch → always visible.
 .upload-more {
   @include ghost-icon-button(var(--tree-toggle-size));
   margin-inline-start: auto;
   margin-inline-end: 0.25rem;
+  opacity: var(--tree-node-reveal-opacity, 1);
+  visibility: var(--tree-node-reveal-visibility, visible);
+  // Restates the mixin's background-color transition — a bare `transition`
+  // here would replace it.
+  transition:
+    background-color 120ms ease,
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+
+  // MatMenu open: the pointer is on the menu and focus is in the overlay, so
+  // the row lost both — keep the trigger its menu hangs from on screen.
+  &[aria-expanded='true'] {
+    opacity: 1;
+    visibility: visible;
+  }
 }
 
 // Items projected into the tree's menu shell (rendered in the overlay)

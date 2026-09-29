@@ -51,6 +51,20 @@ export class ApiReference {
       alters: 'Selected row ([data-selected])',
     },
     {
+      name: '--tree-node-reveal-opacity',
+      system: null,
+      fallback: 'unset → your var(…, 1) fallback',
+      alters:
+        'Read-only row-state output: 0 at rest, 1 on row hover / focus-within / selected (fine pointers only) — read it on row actions, no ::ng-deep',
+    },
+    {
+      name: '--tree-node-reveal-visibility',
+      system: null,
+      fallback: 'unset → your var(…, visible) fallback',
+      alters:
+        'Read-only companion: hidden / visible — hidden actions also leave the Tab order and the accessibility tree',
+    },
+    {
       name: '--tree-node-radius',
       system: null,
       fallback: '0px',

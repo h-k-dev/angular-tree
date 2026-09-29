@@ -376,3 +376,32 @@
   outline: 2px solid var(--tree-focus-ring, var(--mat-sys-primary, #6750a4));
   outline-offset: -2px;
 }
+
+/*
+ * Row-state OUTPUT tokens — the reveal pattern (row actions on hover). Unlike
+ * every --tree-* chain above, these are DECLARED here and READ by consumer
+ * def content: the row is the tree's element, so a consumer selector like
+ * `.tree-node:hover .row-action` needs ::ng-deep, while custom properties
+ * inherit into def content regardless of view encapsulation. Read-only like
+ * --tree-level — an ancestor override loses to these element declarations;
+ * consumers force a state on their OWN element instead (menu-open, pinned).
+ * Fine pointers only: touch never hovers, so there the tokens stay unset and
+ * the consumer's `var(…, 1)` fallback keeps actions always visible.
+ */
+@media (hover: hover) and (pointer: fine) {
+  .tree-node,
+  .tree-sticky-row {
+    --tree-node-reveal-opacity: 0;
+    --tree-node-reveal-visibility: hidden;
+  }
+
+  /* :focus-within, not :focus-visible — Tab from the focused row into its
+     action must find it visible (visibility: hidden is skipped by Tab).
+     Sticky rows are aria-hidden pointer sugar with no selection paint:
+     hover only. */
+  .tree-node:is(:hover, :focus-within, [data-selected]),
+  .tree-sticky-row:hover {
+    --tree-node-reveal-opacity: 1;
+    --tree-node-reveal-visibility: visible;
+  }
+}
