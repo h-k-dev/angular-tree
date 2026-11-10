@@ -507,6 +507,7 @@ export class AngularTree<T> {
       viewport: this.viewport,
       focusMode: this.focusMode,
       revealTop: (index, level) => this.#stickyRevealTop(index, level),
+      isDragging: () => this.#dnd.dragCount() > 0,
     });
     // In-flight accessor fetches must not outlive the tree (v2 cancellation).
     this.#destroyRef.onDestroy(() => this.#controller.abortAll());

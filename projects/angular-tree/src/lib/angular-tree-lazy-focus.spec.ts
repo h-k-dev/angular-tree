@@ -4,8 +4,10 @@ import { Component, signal, viewChild } from '@angular/core';
 
 polyfillJsdomScrolling();
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 
 import { AngularTree } from './angular-tree';
+import { TreeDragSession } from './tree-drag-session';
 import { TreeNodeDef } from './tree-node-def';
 
 interface DemoNode {
@@ -175,6 +177,39 @@ describe('AngularTree v2 — lazy invalidation & focus', () => {
         ?.closest('[data-node-id]')
         ?.getAttribute('data-node-id'),
     ).toBe('a2');
+  });
+
+  it('focus retention stands down while a pointer drag is in flight, and resumes after it', async () => {
+    const session = fixture.debugElement
+      .query(By.directive(AngularTree))
+      .injector.get<TreeDragSession<DemoNode>>(TreeDragSession);
+    rowEl('b')!.focus();
+
+    // What CDK does at drag start: the pressed row loses focus to the body
+    // with no focusout naming an outside destination.
+    session.dragStart(tree.visibleRows().find((row) => row.key === 'b')!);
+    (document.activeElement as HTMLElement).blur();
+
+    // A hover-expand changes the visible rows mid-drag. Re-focusing the drag
+    // source here is what scrolled the hovered folder out from under the
+    // pointer in a real browser (e2e/drag-hover-expand.spec.ts).
+    tree.expand(host.data()[0]);
+    await settle();
+    await flushMicrotasks();
+    await settle();
+    expect(document.activeElement).toBe(document.body);
+
+    // Drag over: the next row change retains focus as usual.
+    session.dragEnd();
+    host.data.set(makeData());
+    await settle();
+    await flushMicrotasks();
+    await settle();
+    expect(
+      (document.activeElement as HTMLElement | null)
+        ?.closest('[data-node-id]')
+        ?.getAttribute('data-node-id'),
+    ).toBe('b');
   });
 
   it('focus retention never steals focus back after the user left the tree', async () => {

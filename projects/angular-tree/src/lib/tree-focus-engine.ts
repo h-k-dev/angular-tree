@@ -24,6 +24,8 @@ export interface TreeFocusEngineInputs {
    * while sticky scroll is off (CDK's render-range check applies).
    */
   revealTop: (index: number, level: number) => number | null | undefined;
+  /** A pointer drag is in flight — focus retention stands down until it ends. */
+  isDragging: () => boolean;
 }
 
 /**
@@ -191,6 +193,13 @@ export class TreeFocusEngine<T = unknown> {
     this.#prevVisibleKeys = keys;
 
     if (prev.length === 0 || !this.#treeOwnsFocus) return;
+    // CDK blurs the pressed row at drag start (focus → body) without a
+    // focusout the tree can read, so mid-drag every row change looks like
+    // orphaned focus. Re-focusing the drag source then lets native focus
+    // scrolling drag the viewport after it: a hover-expand pushes the source
+    // below the fold and the folder under the pointer scrolls away. The
+    // drop's own data change runs after the drag has ended and retains then.
+    if (this.#inputs.isDragging()) return;
     if (this.#inputs.focusMode() === 'activedescendant') return; // DOM focus never leaves the tree
     const focused = this.#controller.focusedId();
     if (focused == null) return;
