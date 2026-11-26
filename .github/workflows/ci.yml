@@ -81,16 +81,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bunx semantic-release@25
 
-  deploy-pages:
+  # The demo is uploaded in one job and deployed in the next. Doing both in one
+  # job races GitHub's artifact listing: deploy-pages looks the artifact up by
+  # name a few hundred ms after the upload finalizes and the listing does not
+  # hold it yet ("Found 1 artifact(s)" is the unrelated `dist`, then "No
+  # artifacts named github-pages"). Re-running cannot recover such a run.
+  # actions/deploy-pages#451.
+  build-pages:
     needs: build
     if: github.event_name == 'push' && github.ref_name == 'main'
     runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -114,6 +114,16 @@ jobs:
         with:
           path: dist/app/browser
 
+  deploy-pages:
+    needs: build-pages
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
