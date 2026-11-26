@@ -1,11 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import {
-  graphemesOf,
-  MiddleEllipsis,
-  middleEllipsis,
-} from './middle-ellipsis';
+import { graphemesOf, MiddleEllipsis, middleEllipsis } from './middle-ellipsis';
 
 /**
  * The pure core is measured with a deterministic fake (10px per grapheme —
@@ -102,7 +98,9 @@ describe('MiddleEllipsis (directive contract)', () => {
   let label: HTMLElement;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [Host],
+    }).compileComponents();
     fixture = TestBed.createComponent(Host);
     await fixture.whenStable();
     label = fixture.nativeElement.querySelector('span');
@@ -121,5 +119,90 @@ describe('MiddleEllipsis (directive contract)', () => {
     await fixture.whenStable();
     expect(label.textContent).toBe('renamed');
     expect(label.getAttribute('title')).toBe('renamed');
+  });
+});
+
+@Component({
+  imports: [MiddleEllipsis],
+  template: `
+    @for (text of texts; track text) {
+      <span [middleEllipsis]="text"></span>
+    }
+  `,
+})
+class ManyLabels {
+  readonly texts = Array.from(
+    { length: 12 },
+    (_, index) => `A fully spelled-out node label number ${index}`,
+  );
+}
+
+describe('MiddleEllipsis (many labels in one render)', () => {
+  const textContent = Object.getOwnPropertyDescriptor(
+    Node.prototype,
+    'textContent',
+  )!;
+  let log: ('read' | 'write')[];
+
+  beforeEach(() => {
+    log = [];
+    // jsdom has neither layout nor a canvas: every label reports 100px, and a
+    // glyph is 10px wide.
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(readonly callback: ResizeObserverCallback) {}
+        observe() {
+          this.callback(
+            [{ contentRect: { width: 100 } } as ResizeObserverEntry],
+            this as unknown as ResizeObserver,
+          );
+        }
+        disconnect() {}
+      },
+    );
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      measureText: (text: string) => ({ width: text.length * 10 }),
+    } as unknown as CanvasRenderingContext2D);
+    const getComputedStyle = window.getComputedStyle.bind(window);
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((element) => {
+      log.push('read');
+      return getComputedStyle(element);
+    });
+    Object.defineProperty(Node.prototype, 'textContent', {
+      ...textContent,
+      set(this: Node, value: string) {
+        if (this instanceof HTMLSpanElement) log.push('write');
+        textContent.set!.call(this, value);
+      },
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(Node.prototype, 'textContent', textContent);
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('reads every font before it writes any label', async () => {
+    await TestBed.configureTestingModule({
+      imports: [ManyLabels],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(ManyLabels);
+    await fixture.whenStable();
+
+    const labels: HTMLElement[] = [
+      ...fixture.nativeElement.querySelectorAll('span'),
+    ];
+    expect(labels.every((label) => label.textContent!.includes('…'))).toBe(
+      true,
+    );
+    // A read after a write is a forced style recalc — one per label when the
+    // two alternate.
+    const truncation = log.slice(log.indexOf('read'));
+    expect(truncation.filter((entry) => entry === 'read')).toHaveLength(12);
+    expect(truncation.lastIndexOf('read')).toBeLessThan(
+      truncation.indexOf('write'),
+    );
   });
 });

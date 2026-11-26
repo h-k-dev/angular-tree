@@ -1,8 +1,8 @@
 import {
   afterNextRender,
+  afterRenderEffect,
   DestroyRef,
   Directive,
-  effect,
   ElementRef,
   inject,
   input,
@@ -117,8 +117,7 @@ export function middleEllipsis(
   ): string | null => {
     const halves = (count: number): [string, string] => [
       parts.slice(0, Math.ceil(count / 2)).join(''),
-      (count ? parts.slice(parts.length - (count >> 1)).join('') : '') +
-        suffix,
+      (count ? parts.slice(parts.length - (count >> 1)).join('') : '') + suffix,
     ];
     const keep = largestFitting(parts.length - 1, (count) =>
       fitsComposed(...halves(count)),
@@ -130,7 +129,10 @@ export function middleEllipsis(
     const dot = text.lastIndexOf('.');
     // A leading dot (".gitignore") or no dot has no extension to protect.
     if (dot > 0) {
-      const result = cutBalanced(graphemesOf(text.slice(0, dot)), text.slice(dot));
+      const result = cutBalanced(
+        graphemesOf(text.slice(0, dot)),
+        text.slice(dot),
+      );
       if (result !== null) return result;
       // Even `…ext` overflows — the extension itself must give way (ladder).
     }
@@ -212,6 +214,12 @@ export class MiddleEllipsis {
   /** Bumped when `document.fonts` finishes a load — metrics changed. */
   readonly #fontsGeneration = signal(0);
 
+  /** The measurer and the font generation it was built in. */
+  #measurer?: {
+    readonly generation: number;
+    readonly measure: TextMeasure | null;
+  };
+
   constructor() {
     const destroyRef = inject(DestroyRef);
 
@@ -237,18 +245,39 @@ export class MiddleEllipsis {
       }
     });
 
-    // DOM sync is a process, not a derivation — hence an effect. The measurer
-    // is rebuilt per run: font metrics may have changed (#fontsGeneration).
-    effect(() => {
-      const text = this.middleEllipsis();
-      const width = this.#width();
-      this.#fontsGeneration();
-      const measure = width > 0 ? cssTextMeasure(this.#element) : null;
-      this.#element.textContent = measure
-        ? middleEllipsis(text, width - 1, measure, {
-            tail: this.middleEllipsisTail(),
-          })
-        : text;
+    // DOM sync is a process, not a derivation — hence an effect, split in two
+    // after-render phases. Every instance reads its font (earlyRead) before
+    // any instance writes its label (write): Angular runs a phase for ALL
+    // sequences before the next phase. Alternating the two per instance made
+    // each write dirty style for the next instance's getComputedStyle — one
+    // full-page style recalc PER LABEL (consumer report 2026-11-23: a 1000-row
+    // table of labels hung the tab). Batched, a render pays one recalc however
+    // many labels it has. The measurer is cached per font generation, and an
+    // unchanged label is not written.
+    afterRenderEffect({
+      earlyRead: () => {
+        const generation = this.#fontsGeneration();
+        return this.#width() > 0 ? this.#measurerFor(generation) : null;
+      },
+      write: (measurer) => {
+        const text = this.middleEllipsis();
+        const measure = measurer();
+        const label = measure
+          ? middleEllipsis(text, this.#width() - 1, measure, {
+              tail: this.middleEllipsisTail(),
+            })
+          : text;
+        if (this.#element.textContent !== label)
+          this.#element.textContent = label;
+      },
     });
+  }
+
+  /** The element's font is read once per font generation — never on resize. */
+  #measurerFor(generation: number): TextMeasure | null {
+    if (this.#measurer?.generation !== generation) {
+      this.#measurer = { generation, measure: cssTextMeasure(this.#element) };
+    }
+    return this.#measurer.measure;
   }
 }
