@@ -9,7 +9,6 @@ import { Subject } from 'rxjs';
 
 import { AngularTree } from './angular-tree';
 import { TreeNodeDef } from './tree-node-def';
-import { TREE_NODE } from './types';
 import type { LoadChildrenEvent, MoveEvent, ToggleEvent } from './events';
 
 interface DemoNode {
@@ -159,7 +158,7 @@ describe('AngularTree', () => {
     const handle = tree
       .visibleRows()
       .find((row) => row.key === 'a')!
-      .injector.get(TREE_NODE);
+      .handle;
 
     handle.toggleSelection();
     expect(new Set(host.selected())).toEqual(new Set(['a', 'a1', 'a2', 'a2x']));

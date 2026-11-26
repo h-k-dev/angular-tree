@@ -20,12 +20,16 @@
        schedules no zoneless CD (loads change visibleRows only on success),
        leaving the consumer's spinner/Retry def stale.
        Drag is off while renaming: with no mouse drag delay, a text-selection
-       drag inside the input would start a row drag instead. -->
+       drag inside the input would start a row drag instead.
+       The outlet's injector is the SLOT's, not the row's: it must outlive a
+       recycle, or the consumer's content is rebuilt on every scroll step. -->
   <div
     (keyup)="$event.stopPropagation()"
     *cdkVirtualFor="let row of visibleRows(); trackBy: trackByKey"
     class="tree-node"
     role="treeitem"
+    [treeRowSlot]="row.handle"
+    #slot="treeRowSlot"
     cdkDrag
     [cdkDragDisabled]="row.dragDisabled || row.context.isEditing"
     [cdkDragStartDelay]="dragStartDelay"
@@ -70,7 +74,7 @@
       *ngTemplateOutlet="
         templateFor(row);
         context: row.context;
-        injector: row.injector
+        injector: slot.injector
       "
     />
   </div>

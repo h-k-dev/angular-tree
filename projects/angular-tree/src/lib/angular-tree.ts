@@ -69,6 +69,7 @@ import {
 } from './tree-sticky';
 import { TreeContextMenu } from './tree-context-menu';
 import { TreeNodeDef } from './tree-node-def';
+import { TreeRowSlot } from './tree-row-slot';
 import { TreeEmptyDef, TreeLoadingDef } from './tree-state-def';
 import {
   TREE_NODE,
@@ -98,7 +99,8 @@ interface FlatRow<T> {
   readonly checkState: Signal<'checked' | 'unchecked' | 'indeterminate'>;
   readonly dragDisabled: boolean;
   readonly context: TreeNodeContext<T>;
-  readonly injector: Injector;
+  /** Reaches node content through the row slot's `TREE_NODE` (TreeRowSlot). */
+  readonly handle: TreeNodeHandle;
 }
 
 /** One row pinned in the sticky-scroll band (decision 16). Internal. */
@@ -126,6 +128,7 @@ interface StickyRow<T> {
     CdkDragPreview,
     CdkDropList,
     CdkMenu,
+    TreeRowSlot,
   ],
   providers: [TreeController, TreeFocusEngine, TreeMenuHost, TreeDragSession],
   hostDirectives: [CdkContextMenuTrigger],
@@ -699,10 +702,7 @@ export class AngularTree<T> {
           },
           isSticky: false,
         },
-        injector: Injector.create({
-          parent: this.#injector,
-          providers: [{ provide: TREE_NODE, useValue: handle }],
-        }),
+        handle,
       };
     }),
   );
@@ -851,7 +851,7 @@ export class AngularTree<T> {
     const cached = this.#stickyParts.get(row);
     if (cached) return cached;
     const base = row.context;
-    const handle = row.injector.get(TREE_NODE);
+    const handle = row.handle;
     const parts = {
       context: {
         $implicit: base.$implicit,
@@ -1517,8 +1517,7 @@ export class AngularTree<T> {
     toggle: (key: string) => this.#withNode(key, (node) => this.toggle(node)),
     expandDescendants: (key: string) =>
       this.#withNode(key, (node) => this.expandDescendants(node)),
-    isExpanded: (key: string): boolean =>
-      this.#controller.isShownExpanded(key),
+    isExpanded: (key: string): boolean => this.#controller.isShownExpanded(key),
     /**
      * A key not in the model yet is retried once after the next render —
      * create-then-rename: the consumer's insert reaches the flat model only

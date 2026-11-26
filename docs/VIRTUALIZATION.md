@@ -11,7 +11,7 @@ The tree never renders your nested data directly. `TreeController` flattens it i
 Two consequences worth internalizing:
 
 1. **DOM size is O(viewport), not O(data).** The 100k-mode demo keeps ~30 rows in the DOM.
-2. **Rows are disposable.** A row's DOM can be destroyed and recreated at any moment as it scrolls out of and back into view. This is why all state — expansion, selection, editing, in-flight lazy loads — lives in `TreeController`, never in the row. If you build custom node templates with their own stateful components, treat them the same way: derive everything from the template context, own nothing.
+2. **Rows are disposable — and reused.** A row's DOM can be destroyed and recreated at any moment as it scrolls out of and back into view, and a row that leaves is usually handed to the next node that arrives: your `treeNodeDef` content stays mounted and only its context changes (a different def means a rebuild). This is why all state — expansion, selection, editing, in-flight lazy loads — lives in `TreeController`, never in the row. Build custom node templates the same way: derive everything from the template context, own nothing. A component in your row that keeps local state (an open popover, a draft value) will carry it over to another node unless it resets when its inputs change.
 
 ## `itemSize` — fixed row height
 

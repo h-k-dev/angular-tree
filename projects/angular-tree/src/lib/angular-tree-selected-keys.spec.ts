@@ -7,7 +7,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AngularTree } from './angular-tree';
 import { TreeNodeDef } from './tree-node-def';
-import { TREE_NODE } from './types';
 import type { SelectEvent } from './events';
 
 interface DemoNode {
@@ -94,7 +93,7 @@ describe('AngularTree controlled selection (selectedKeys)', () => {
     const handle = tree
       .visibleRows()
       .find((row) => row.key === 'b')!
-      .injector.get(TREE_NODE);
+      .handle;
 
     handle.toggleSelection();
     await fixture.whenStable();
@@ -109,7 +108,7 @@ describe('AngularTree controlled selection (selectedKeys)', () => {
     const handle = tree
       .visibleRows()
       .find((row) => row.key === 'b')!
-      .injector.get(TREE_NODE);
+      .handle;
     handle.toggleSelection();
     await fixture.whenStable();
     const emissions = host.events.length;
